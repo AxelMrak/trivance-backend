@@ -1,7 +1,7 @@
 import express from "express";
 import { errorHandler } from "./middlewares/errorHandler";
 import cors from "cors";
-
+import mainRouter from "./routes";
 const app = express();
 
 app.use(cors());
@@ -14,7 +14,7 @@ app.get("/health", (_req, res) => {
     status: "OK",
   });
 });
-
+app.use("/api", mainRouter);
 app.use(errorHandler);
 
 export default app;
