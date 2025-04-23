@@ -1,9 +1,13 @@
 import app from "./app";
+import { config } from "./config/constants";
 
-const port = process.env.PORT || 5000;
+const PORT = config.PORT;
 
-app.listen(port, () => {
-  /* eslint-disable no-console */
-  console.log(`Listening: http://localhost:${port}`);
-  /* eslint-enable no-console */
-});
+app
+  .listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  })
+  .on("error", (error) => {
+    console.error("Server failed to start:", error.message);
+    process.exit(1);
+  });
