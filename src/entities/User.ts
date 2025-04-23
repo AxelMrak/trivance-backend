@@ -10,10 +10,10 @@ export interface User {
   name: string;
   email: string;
   password: string;
+  phone: string;
   company_id: string;
   created_at: string;
   role: UserRole;
-  phone: string;
 }
 
 export type CreateUserDTO = Omit<User, "id" | "created_at" | "company_id" | "role">;
