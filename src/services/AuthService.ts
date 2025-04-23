@@ -7,4 +7,7 @@ export class AuthService {
   async signUp(payload: CreateUserDTO): Promise<User> {
     return this.repository.signUp(payload);
   }
+  async signIn(email: string, password: string): Promise<any> {
+  return this.repository.signIn(email, password);
+}
 }

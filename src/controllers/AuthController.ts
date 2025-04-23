@@ -14,4 +14,14 @@ export class AuthController {
       res.status(500).json({ message: "Error signing up", error });
     }
   };
+  signIn = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    const session = await this.authService.signIn(email, password);
+    res.status(200).json(session);
+  } catch (error) {
+    res.status(401).json({ message: "Invalid credentials", error });
+  }
+};
 }
