@@ -1,0 +1,15 @@
+
+# Backend Dockerfile (Express)
+FROM node:20
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 3001
+
+CMD npm test || echo "Tests failed, continuing..." && npm start
+
