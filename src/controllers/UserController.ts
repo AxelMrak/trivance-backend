@@ -17,9 +17,7 @@ export class UserController {
     try {
       const userId = req.params.id;
 
-      console.log("User ID:", req.params);
-      const user = await this.userService.getUserById(userId);
-      console.log("User data:", user);
+      const user = await this.userService.getUserByID(userId);
       if (user) {
         res.json(user);
       } else {
