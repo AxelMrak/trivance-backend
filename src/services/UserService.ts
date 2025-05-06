@@ -1,5 +1,5 @@
-import { UserRepository } from "../repositories/UserRepository";
-import { User } from "@supabase/supabase-js";
+import { UserRepository } from "@repositories/UserRepository";
+import { User } from "@entities/User";
 
 export class UserService {
   constructor(private repository: UserRepository) {}
@@ -8,7 +8,7 @@ export class UserService {
     return this.repository.findAll();
   }
 
-  async getUserById(id: string): Promise<User | null> {
+  async getUserByID(id: string): Promise<User | null> {
     return this.repository.findById(id);
   }
 }

@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import { UserService } from "../services/UserService";
+import { UserService } from "@services/UserService";
 
 export class UserController {
   constructor(private userService: UserService) {}
 
-  getAll = async (req: Request, res: Response) => {
+  getAll = async (_req: Request, res: Response) => {
     try {
       const users = await this.userService.getUsers();
       res.json(users);
@@ -17,9 +17,8 @@ export class UserController {
     try {
       const userId = req.params.id;
 
-      console.log("User ID:", req.params);
-      const user = await this.userService.getUserById(userId);
-      console.log("User data:", user);
+      const user = await this.userService.getUserByID(userId);
+
       if (user) {
         res.json(user);
       } else {

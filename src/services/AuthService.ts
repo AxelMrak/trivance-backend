@@ -1,6 +1,6 @@
-import { User } from "@supabase/supabase-js";
-import { AuthRepository } from "../repositories/AuthRepository";
-import { CreateUserDTO } from "../entities/User";
+import { AuthRepository } from "@repositories/AuthRepository";
+import { User, CreateUserDTO } from "@entities/User";
+
 export class AuthService {
   constructor(private repository: AuthRepository) {}
 
@@ -8,6 +8,6 @@ export class AuthService {
     return this.repository.signUp(payload);
   }
   async signIn(email: string, password: string): Promise<any> {
-  return this.repository.signIn(email, password);
-}
+    return this.repository.signIn(email, password);
+  }
 }

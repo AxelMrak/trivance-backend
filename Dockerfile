@@ -1,15 +1,18 @@
 
-# Backend Dockerfile (Express)
-FROM node:20
+FROM node:18
 
 WORKDIR /app
 
 COPY package*.json ./
+
 RUN npm install
 
 COPY . .
 
 EXPOSE 3001
 
-CMD npm test || echo "Tests failed, continuing..." && npm start
+CMD echo "Starting BACKEND service..." && \
+    echo "Running npm run dev..." && \
+    npm run dev
+    # CMD ["npm", "start"]
 

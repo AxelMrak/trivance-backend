@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { AuthRepository } from "../repositories/AuthRepository";
-import { AuthService } from "../services/AuthService";
-import { AuthController } from "../controllers/AuthController";
-import { validateUserCreate, validateUserSignIn } from "../middlewares/validation";
+import { AuthController } from "@controllers/AuthController";
+import { AuthService } from "@services/AuthService";
+import { AuthRepository } from "@repositories/AuthRepository";
+import { validateUserCreate, validateUserSignIn } from "@middlewares/validation";
 
 const router = Router();
 

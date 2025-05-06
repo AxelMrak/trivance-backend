@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { AuthService } from "../services/AuthService";
+import { AuthService } from "@services/AuthService";
 
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -15,13 +15,13 @@ export class AuthController {
     }
   };
   signIn = async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body;
+    try {
+      const { email, password } = req.body;
 
-    const session = await this.authService.signIn(email, password);
-    res.status(200).json(session);
-  } catch (error) {
-    res.status(401).json({ message: "Invalid credentials", error });
-  }
-};
+      const session = await this.authService.signIn(email, password);
+      res.status(200).json(session);
+    } catch (error) {
+      res.status(401).json({ message: "Invalid credentials", error });
+    }
+  };
 }
