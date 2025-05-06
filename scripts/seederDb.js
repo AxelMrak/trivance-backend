@@ -15,6 +15,7 @@ const initialUsers = [
   "agustin2015.castillo@gmail.com",
   "nahuposebon@gmail.com",
   "lautaro.ajrz@gmail.com",
+  "axel@test.com",
 ];
 
 const users = initialUsers.map((email) => {

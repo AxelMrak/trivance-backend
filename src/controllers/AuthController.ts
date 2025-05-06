@@ -21,7 +21,9 @@ export class AuthController {
       const session = await this.authService.signIn(email, password);
       res.status(200).json(session);
     } catch (error) {
-      res.status(401).json({ message: "Invalid credentials", error });
+      if (error instanceof Error) {
+        res.status(401).json({ message: error.message });
+      }
     }
   };
 }
