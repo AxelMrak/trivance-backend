@@ -20,10 +20,13 @@ describe("GET /health", () => {
 
 describe("GET /api", () => {
   it("Get API health", (done) => {
-    request(app)
-      .get("/api")
-      .set("Accept", "application/json")
-      .expect("Content-Type", /json/)
-      .expect(200, done);
+    request(app).get("/api").set("Accept", "application/json").expect(
+      200,
+      {
+        message: "API is running",
+        status: "OK",
+      },
+      done,
+    );
   });
 });
