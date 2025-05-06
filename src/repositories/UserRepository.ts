@@ -1,6 +1,5 @@
-import { supabase } from "../config/db";
-import { BaseRepository } from "./BaseRepository";
-import { User } from "@supabase/supabase-js";
+import { BaseRepository } from "@repositories/BaseRepository";
+import { User } from "@entities/User";
 
 export class UserRepository extends BaseRepository<User> {
   constructor() {

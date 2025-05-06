@@ -1,4 +1,5 @@
-import { UserRepository } from "../repositories/UserRepository";
+import { UserRepository } from "@repositories/UserRepository";
+import { User } from "@entities/User";
 
 export class UserService {
   constructor(private repository: UserRepository) {}

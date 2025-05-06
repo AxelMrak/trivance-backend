@@ -1,11 +1,11 @@
-import { dbClient } from "../config/db";
+import { dbClient } from "@/config/db";
 import {
   generateGetAllQuery,
   generateGetByIdQuery,
   generateCreateQuery,
   generateUpdateQuery,
   generateDeleteQuery,
-} from "../queries/baseQueries";
+} from "@queries/BaseQueries";
 
 export class BaseRepository<T> {
   protected table: string;
@@ -62,7 +62,7 @@ export class BaseRepository<T> {
     }
   }
 
-  async delete(id: string): Promise<number | null> {
+  async delete(id: string): Promise<number | string | null> {
     try {
       const query = generateDeleteQuery(this.table);
       const result = await dbClient.query(query, [id]);

@@ -23,7 +23,9 @@ const users = initialUsers.map((email) => {
     name,
     email,
     password: "password",
-    role: "superuser",
+    role: "SUPER_USER",
+    phone: "1234567890",
+    address: "123 San Martin, Mendoza, Argentina",
   };
 });
 
@@ -69,11 +71,10 @@ const seedDb = async () => {
       const hashed = bcrypt.hashSync(user.password, 10);
       await client.query(
         `INSERT INTO users (
-           id, company_id, name, email, password, role
+          id, company_id, name, email, password, role, phone, address
          ) VALUES (
-           uuid_generate_v4(), $1, $2, $3, $4, $5
-         )`,
-        [companyId, user.name, user.email, hashed, user.role],
+          uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7  )`,
+        [companyId, user.name, user.email, hashed, user.role, user.phone, user.address],
       );
       console.log(`➕ Inserted user: ${user.email}`);
     }

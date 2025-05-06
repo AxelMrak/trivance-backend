@@ -9,6 +9,7 @@ export const validateUserCreate: RequestHandler = (req, res, next) => {
       password: z.string().min(8),
       confirmedPassword: z.string().min(8),
       phone: z.string().min(10),
+      address: z.string().min(5),
     })
     .refine((data) => data.password === data.confirmedPassword, {
       message: "Passwords do not match",
@@ -27,6 +28,7 @@ export const validateUserCreate: RequestHandler = (req, res, next) => {
   }
   next();
 };
+
 export const validateUserSignIn: RequestHandler = (req, res, next) => {
   const schema = z.object({
     email: z.string().email(),

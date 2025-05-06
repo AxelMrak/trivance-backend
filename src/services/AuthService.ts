@@ -1,5 +1,5 @@
-import { AuthRepository } from "../repositories/AuthRepository";
-import { CreateUserDTO } from "../entities/User";
+import { AuthRepository } from "@repositories/AuthRepository";
+import { User, CreateUserDTO } from "@entities/User";
 
 export class AuthService {
   constructor(private repository: AuthRepository) {}

@@ -1,6 +1,6 @@
 import { Pool } from "pg";
-import { config } from "./constants";
+import { config } from "@config/constants";
 
 export const dbClient = new Pool({
-  DATABASE_URL: config.DATABASE_URL,
+  connectionString: config.DB_URL,
 });
