@@ -5,7 +5,7 @@ dotenv.config();
 export const config = {
   PORT: process.env.PORT || 3004,
   NODE_ENV: process.env.NODE_ENV || "development",
-  DB_URL: process.env.DB_URL || "postgres://postgres:postgres@trivance-db:5432/trivance_db",
+  DB_URL: process.env.DATABASE_URL || "postgres://postgres:postgres@trivance-db:5432/trivance_db",
   DB_USER: process.env.DB_USER || "postgres",
   DB_PASSWORD: process.env.DB_PASSWORD || "postgres",
   DB_NAME: process.env.DB_NAME || "trivance_db",
