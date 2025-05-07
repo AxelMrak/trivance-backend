@@ -6,6 +6,7 @@ import {
   generateUpdateQuery,
   generateDeleteQuery,
   generateFindByFieldQuery,
+  generateDeleteByFieldQuery,
 } from "@queries/BaseQueries";
 
 export class BaseRepository<T> {
@@ -81,6 +82,16 @@ export class BaseRepository<T> {
       return result.rows[0] || null;
     } catch (error) {
       console.error(`Error fetching by field from ${this.table}:`, error);
+      throw new Error("Database error");
+    }
+  }
+  async deleteByField(field: string, value: string): Promise<number | string | null> {
+    try {
+      const query = generateDeleteByFieldQuery(this.table, field);
+      const result = await dbClient.query(query, [value]);
+      return result.rows[0]?.id || null;
+    } catch (error) {
+      console.error(`Error deleting by field from ${this.table}:`, error);
       throw new Error("Database error");
     }
   }
