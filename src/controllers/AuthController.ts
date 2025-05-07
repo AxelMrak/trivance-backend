@@ -7,11 +7,12 @@ export class AuthController {
   signUp = async (req: Request, res: Response) => {
     try {
       const payload = req.body;
-
       const user = await this.authService.signUp(payload);
       res.status(201).json(user);
     } catch (error) {
-      res.status(500).json({ message: "Error signing up", error });
+      if (error instanceof Error) {
+        res.status(500).json({ message: error.message });
+      }
     }
   };
   signIn = async (req: Request, res: Response) => {
@@ -21,7 +22,9 @@ export class AuthController {
       const session = await this.authService.signIn(email, password);
       res.status(200).json(session);
     } catch (error) {
-      res.status(401).json({ message: "Invalid credentials", error });
+      if (error instanceof Error) {
+        res.status(401).json({ message: error.message });
+      }
     }
   };
 }

@@ -28,3 +28,15 @@ export interface CreateUserDTO {
   phone: string | null;
   address: string | null;
 }
+
+export interface PublicUserDTO {
+  id: string;
+  company_id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  role: UserRole;
+  created_at: Date;
+  updated_at: Date;
+}

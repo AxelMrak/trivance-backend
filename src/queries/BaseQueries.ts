@@ -24,3 +24,7 @@ export const generateDeleteQuery = (table: string): string => {
 export const generateCountQuery = (table: string): string => {
   return `SELECT COUNT(*) FROM ${table}`;
 };
+
+export const generateFindByFieldQuery = (table: string, field: string): string => {
+  return `SELECT * FROM ${table} WHERE ${field} = $1`;
+};

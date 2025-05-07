@@ -10,7 +10,7 @@ export const config: {
   DB_PASSWORD: string;
   DB_NAME: string;
 } = {
-  PORT: process.env.PORT || 3004,
+  PORT: process.env.PORT || 3001,
   NODE_ENV: process.env.NODE_ENV || "development",
   DB_URL: process.env.DATABASE_URL || "postgres://postgres:postgres@trivance-db:5432/trivance_db",
   DB_USER: process.env.DB_USER || "postgres",
