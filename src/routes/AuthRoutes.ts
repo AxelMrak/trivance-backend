@@ -3,7 +3,7 @@ import { AuthController } from "@controllers/AuthController";
 import { AuthService } from "@services/AuthService";
 import { AuthRepository } from "@repositories/AuthRepository";
 import { validateUserCreate, validateUserSignIn } from "@middlewares/validation";
-import authMiddleware from '@middlewares/AuthMiddleware';
+import authMiddleware from '@middlewares/authmiddleware';
 const router = Router();
 
 const authRepository = new AuthRepository();
