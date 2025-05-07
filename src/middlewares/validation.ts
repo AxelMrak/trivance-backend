@@ -1,15 +1,17 @@
 import { RequestHandler } from "express";
 import { z } from "zod";
-
+const userRole = z.enum(['GUEST', 'CLIENT', 'STAFF', 'MANAGER', 'ADMIN', 'SUPER_USER']);	
 export const validateUserCreate: RequestHandler = (req, res, next) => {
   const schema = z
     .object({
+      company_id: z.string().min(1),
       name: z.string().min(3),
       email: z.string().email(),
       password: z.string().min(8),
       confirmedPassword: z.string().min(8),
       phone: z.string().min(10),
       address: z.string().min(5),
+      role: userRole,
     })
     .refine((data) => data.password === data.confirmedPassword, {
       message: "Passwords do not match",
