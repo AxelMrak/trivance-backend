@@ -13,7 +13,7 @@ interface SignInResponse {
 
 export class AuthService {
   constructor(private repository: AuthRepository) {}
-
+//TODO: fix any type 
   async signUp(payload: any): Promise<SignInResponse | null> {
     const userExists = await this.repository.findByField("email", payload.email);
     if (userExists) {
