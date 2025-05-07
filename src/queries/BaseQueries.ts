@@ -28,3 +28,6 @@ export const generateCountQuery = (table: string): string => {
 export const generateFindByFieldQuery = (table: string, field: string): string => {
   return `SELECT * FROM ${table} WHERE ${field} = $1`;
 };
+export const generateDeleteByFieldQuery = (table: string, field: string): string => {
+  return `DELETE FROM ${table} WHERE ${field} = $1 RETURNING id`;
+}

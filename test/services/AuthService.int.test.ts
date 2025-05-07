@@ -2,9 +2,11 @@ import { AuthService } from "@services/AuthService";
 import { AuthRepository } from "@repositories/AuthRepository";
 import { dbClient } from "@config/db";
 import bcrypt from "bcryptjs";
+import { SessionRepository } from "@repositories/SessionRepository";
 
 const repository = new AuthRepository();
-const service = new AuthService(repository);
+const sessionRepository = new SessionRepository();
+const service = new AuthService(repository,sessionRepository);
 const testUser = {
   company_id: "22222222-2222-2222-2222-222222222222",
   name: "Test User",
@@ -38,7 +40,7 @@ describe("AuthService - signIn", () => {
   });
 
   it("should authenticate a valid user", async () => {
-    const result = await service.signIn("test@example.com", "testpass123");
+    const result = await service.signIn("test@example.com", "testpass123", "user-agent", "19234224");
 
     expect(result).toHaveProperty("user.email", "test@example.com");
     expect(result.session.token).toBeDefined();
@@ -46,13 +48,13 @@ describe("AuthService - signIn", () => {
   });
 
   it("should throw if password is incorrect", async () => {
-    await expect(service.signIn("test@example.com", "wrongpassword")).rejects.toThrow(
+    await expect(service.signIn("test@example.com", "wrongpassword", "user-agent", "19234224")).rejects.toThrow(
       "Invalid password",
     );
   });
 
   it("should throw if user does not exist", async () => {
-    await expect(service.signIn("nonexistent@example.com", "testpass123")).rejects.toThrow(
+    await expect(service.signIn("nonexistent@example.com", "testpass123", "user-agent", "19234224")).rejects.toThrow(
       "The user does not exist",
     );
   });
