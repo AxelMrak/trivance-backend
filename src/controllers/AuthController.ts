@@ -24,8 +24,10 @@ export class AuthController {
   signIn = async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
+    const userAgent = req.headers["user-agent"] || "unknown";
+    const ipAddress = req.ip || req.connection?.remoteAddress || "unknown";
 
-      const session = await this.authService.signIn(email, password);
+      const session = await this.authService.signIn(email, password, userAgent, ipAddress);
       res.status(200).json(session);
     } catch (error) {
       if (error instanceof Error) {
