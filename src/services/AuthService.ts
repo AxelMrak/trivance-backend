@@ -2,7 +2,6 @@ import { AuthRepository } from "@repositories/AuthRepository";
 import { CreateUserDTO, PublicUserDTO } from "@entities/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { intervalsToken } from "@utils/const";
 
 interface SignInResponse {
   user: PublicUserDTO;
@@ -15,7 +14,6 @@ interface SignInResponse {
 export class AuthService {
   constructor(private repository: AuthRepository) {}
 
-  // * TODO: Add types for payload and response. We can reuse SignInResponse, refactor and isolate the logic
   async signUp(payload: any): Promise<SignInResponse | null> {
     const userExists = await this.repository.findByField("email", payload.email);
     if (userExists) {
@@ -39,7 +37,7 @@ export class AuthService {
     }
 
     const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET!, {
-      expiresIn: intervalsToken.oneDayStr,
+      expiresIn: "24h",
     });
 
     const data: SignInResponse = {
@@ -56,7 +54,7 @@ export class AuthService {
       },
       session: {
         token,
-        expiresIn: intervalsToken.oneDay,
+        expiresIn: 24 * 60 * 60,
       },
     };
 
@@ -76,7 +74,7 @@ export class AuthService {
     }
 
     const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET!, {
-      expiresIn: intervalsToken.oneDayStr,
+      expiresIn: "24h",
     });
 
     const data: SignInResponse = {
@@ -93,7 +91,7 @@ export class AuthService {
       },
       session: {
         token,
-        expiresIn: intervalsToken.oneDay,
+        expiresIn: 24 * 60 * 60,
       },
     };
 
