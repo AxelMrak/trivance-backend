@@ -1,5 +1,5 @@
 import { AuthRepository } from "@repositories/AuthRepository";
-import { CreateUserDTO, PublicUserDTO } from "@entities/User";
+import { CreateUserDTO, PublicUserDTO, UserRole } from "@entities/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { SessionRepository } from "@/repositories/SessionRepository";
@@ -17,21 +17,26 @@ export class AuthService {
     private repository: AuthRepository,
     private sessionRepo: SessionRepository,
   ) {} //TODO: fix any type
-  async signUp(payload: any): Promise<SignInResponse | null> {
+  async signUp(payload: any, userAgent: string, ipAddress: string): Promise<SignInResponse | null> {
     const userExists = await this.repository.findByField("email", payload.email);
     if (userExists) {
       throw new Error("User already exists");
     }
 
     const hashedPassword = await bcrypt.hash(payload.password, 10);
+    const companyId = process.env.COMPANY_ID || "";
+    if (!companyId) {
+      throw new Error("Company ID is not set");
+    }
+    const userRole = UserRole.GUEST;
 
     const user = await this.repository.create({
-      company_id: payload.company_id,
+      company_id: companyId,
       name: payload.name,
       email: payload.email,
       phone: payload.phone,
       address: payload.address,
-      role: payload.role,
+      role: Number(userRole),
       password: hashedPassword,
     });
 
@@ -41,6 +46,13 @@ export class AuthService {
 
     const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET!, {
       expiresIn: "24h",
+    });
+
+    await this.sessionRepo.create({
+      user_id: user.id,
+      token,
+      user_agent: userAgent,
+      ip_address: ipAddress,
     });
 
     const data: SignInResponse = {
