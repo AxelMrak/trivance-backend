@@ -2,7 +2,6 @@ import { AuthRepository } from "@repositories/AuthRepository";
 import { CreateUserDTO, PublicUserDTO } from "@entities/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { Session } from "inspector/promises";
 import { SessionRepository } from "@/repositories/SessionRepository";
 
 interface SignInResponse {
@@ -14,7 +13,10 @@ interface SignInResponse {
 }
 
 export class AuthService {
-  constructor(private repository: AuthRepository, private sessionRepo: SessionRepository) {} //TODO: fix any type 
+  constructor(
+    private repository: AuthRepository,
+    private sessionRepo: SessionRepository,
+  ) {} //TODO: fix any type
   async signUp(payload: any): Promise<SignInResponse | null> {
     const userExists = await this.repository.findByField("email", payload.email);
     if (userExists) {
@@ -62,7 +64,12 @@ export class AuthService {
     return data;
   }
 
-  async signIn(email: string, password: string, user_agent: string, ip_address: string): Promise<SignInResponse> {
+  async signIn(
+    email: string,
+    password: string,
+    user_agent: string,
+    ip_address: string,
+  ): Promise<SignInResponse> {
     const user = await this.repository.findByField("email", email);
     if (!user) {
       throw new Error("The user does not exist");
@@ -78,11 +85,11 @@ export class AuthService {
       expiresIn: "24h",
     });
     await this.sessionRepo.create({
-    user_id: user.id,
-    token,
-    user_agent,
-    ip_address,
-  });
+      user_id: user.id,
+      token,
+      user_agent,
+      ip_address,
+    });
 
     const data: SignInResponse = {
       user: {
@@ -103,5 +110,13 @@ export class AuthService {
     };
 
     return data;
+  }
+
+  async signOut(token: string): Promise<void> {
+    const session = await this.sessionRepo.findByField("token", token);
+    if (!session) {
+      throw new Error("Session not found");
+    }
+    await this.sessionRepo.delete(session.id);
   }
 }

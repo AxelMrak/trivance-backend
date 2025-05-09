@@ -1,12 +1,6 @@
-declare global {
-  namespace Express {
-    interface Request {
-      user?: any; // TODO: Define a proper type for user
-    }
-  }
-}
 import { Request, Response } from "express";
 import { AuthService } from "@services/AuthService";
+
 export class AuthController {
   constructor(private authService: AuthService) {}
 
@@ -24,29 +18,38 @@ export class AuthController {
   signIn = async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
-    const userAgent = req.headers["user-agent"] || "unknown";
-    const ipAddress = req.ip || req.connection?.remoteAddress || "unknown";
+      const userAgent = req.headers["user-agent"] || "unknown";
+      const ipAddress = req.ip || req.connection?.remoteAddress || "unknown";
 
-      const session = await this.authService.signIn(email, password, userAgent, ipAddress);
-      res.status(200).json(session);
+      const data = await this.authService.signIn(email, password, userAgent, ipAddress);
+
+      const token = data.session.token;
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: data.session.expiresIn * 1000,
+        path: "/",
+      });
+
+      res.status(200).json({ user: data.user });
     } catch (error) {
       if (error instanceof Error) {
         res.status(401).json({ message: error.message });
       }
     }
   };
-  protectedRoute = async (req: Request, res: Response) => {
+  signOut = async (req: Request, res: Response) => {
     try {
-      const user = req.user; 
-      if (!user) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-      res.status(200).json({ message: "Protected route accessed", user });
+      const token = req.cookies.token;
+      await this.authService.signOut(token);
+      res.clearCookie("token");
+      res.status(200).json({ message: "Logged out successfully" });
     } catch (error) {
       if (error instanceof Error) {
-        res.status(500).json({ message: error.message });
+        res.status(401).json({ message: error.message });
       }
     }
   };
-  
 }
