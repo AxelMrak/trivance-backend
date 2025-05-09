@@ -5,14 +5,6 @@
 module.exports.up = (pgm) => {
   pgm.createExtension("uuid-ossp", { ifNotExists: true });
 
-  pgm.sql(`
-    DO $$ BEGIN
-      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
-        CREATE TYPE user_role AS ENUM ('GUEST', 'CLIENT', 'STAFF', 'MANAGER', 'ADMIN', 'SUPER_USER');
-      END IF;
-    END $$;
-  `);
-
   pgm.createTable("companies", {
     id: {
       type: "uuid",
@@ -41,9 +33,9 @@ module.exports.up = (pgm) => {
     phone: { type: "text", notNull: true },
     address: { type: "text", notNull: true },
     role: {
-      type: "user_role",
+      type: "int",
       notNull: true,
-      default: "GUEST",
+      default: 0,
     },
     created_at: { type: "timestamp", default: pgm.func("now()") },
     updated_at: { type: "timestamp", default: pgm.func("now()") },
