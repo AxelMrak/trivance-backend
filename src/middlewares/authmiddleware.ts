@@ -1,26 +1,26 @@
-    import { Request, Response, NextFunction } from "express";
-    import jwt from "jsonwebtoken";
-        interface AuthRequest extends Request {
-    user?: any; // TODO: Define a proper type for user
-    }
+import { Response, NextFunction, Request } from "express";
+import jwt from "jsonwebtoken";
 
-    const AuthMiddleware = (req:AuthRequest, res:Response, next:NextFunction) => {
-    const authHeader = req.headers['authorization'];
+const AuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const token = req.cookies?.token;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(403).json({ message: 'No token provided or malformed header' });
-    }
+  if (!token) {
+    return res.status(403).json({ message: "No token provided" });
+  }
 
-    const token = authHeader.split(' ')[1];
+  const isTokenValid = jwt.verify(token, process.env.JWT_SECRET!);
 
-    jwt.verify(token, process.env.JWT_SECRET as string, (err, decoded) => {
-        if (err) {
-            console.log("Error de verificación del token:", err);
-        return res.status(401).json({ message: 'Invalid or expired token' });
-        }
+  if (!isTokenValid) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
-        req.user = decoded; 
-        next();
-    });
-    };
-    export default AuthMiddleware;
+  const decoded = jwt.decode(token);
+
+  if (!decoded) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  next();
+};
+
+export default AuthMiddleware;
