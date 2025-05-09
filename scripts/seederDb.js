@@ -24,7 +24,7 @@ const users = initialUsers.map((email) => {
     name,
     email,
     password: "password",
-    role: "SUPER_USER",
+    role: 5,
     phone: "1234567890",
     address: "123 San Martin, Mendoza, Argentina",
   };
