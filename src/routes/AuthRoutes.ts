@@ -4,7 +4,7 @@ import { AuthService } from "@services/AuthService";
 import { AuthRepository } from "@repositories/AuthRepository";
 import { SessionRepository } from "@repositories/SessionRepository";
 import { validateUserCreate, validateUserSignIn } from "@middlewares/validation";
-import authMiddleware from '@middlewares/authmiddleware';
+import authMiddleware from "@middlewares/authmiddleware";
 const router = Router();
 const sessionRepository = new SessionRepository();
 
@@ -14,5 +14,7 @@ const authController = new AuthController(authService);
 
 router.post("/sign-up", validateUserCreate, authController.signUp);
 router.post("/sign-in", validateUserSignIn, authController.signIn);
-router.get("/protected",authMiddleware, authController.protectedRoute); 
+router.post("/sign-out", authMiddleware, authController.signOut);
+
+/* router.get("/protected",authMiddleware, authController.protectedRoute); */
 export default router;
