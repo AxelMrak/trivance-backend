@@ -95,4 +95,14 @@ export class BaseRepository<T> {
       throw new Error("Database error");
     }
   }
+  async deleteAllbyField(field: string, value: string): Promise<number | string | null> {
+    try {
+      const query = `DELETE FROM ${this.table} WHERE ${field} = $1 RETURNING id`;
+      const result = await dbClient.query(query, [value]);
+      return result.rows[0]?.id || null;
+    } catch (error) {
+      console.error(`Failed to delete all by ${field} in ${this.table}:`, error);
+      throw new Error("Failed to delete records");
+    }
+  }
 }
