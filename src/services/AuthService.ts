@@ -44,10 +44,7 @@ export class AuthService {
       throw new Error("Error creating user");
     }
 
-    const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET!, {
-      expiresIn: "24h",
-    });
-
+    const token = this.generateToken(user.id, user.role);
     await this.sessionRepo.create({
       user_id: user.id,
       token,
@@ -55,80 +52,62 @@ export class AuthService {
       ip_address: ipAddress,
     });
 
-    const data: SignInResponse = {
-      user: {
-        id: user.id,
-        company_id: user.company_id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        address: user.address,
-        role: user.role,
-        created_at: user.created_at,
-        updated_at: user.updated_at,
-      },
-      session: {
-        token,
-        expiresIn: 24 * 60 * 60,
-      },
-    };
-
-    return data;
+    return this.buildResponse(user, token);
   }
 
-  async signIn(
-    email: string,
-    password: string,
-    user_agent: string,
-    ip_address: string,
-  ): Promise<SignInResponse> {
+  async signIn(email: string, password: string, userAgent: string, ipAddress: string): Promise<SignInResponse> {
     const user = await this.repository.findByField("email", email);
-    if (!user) {
-      throw new Error("The user does not exist");
-    }
+    if (!user) throw new Error("The user does not exist");
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) throw new Error("Invalid password");
 
-    if (!isPasswordValid) {
-      throw new Error("Invalid password");
-    }
+    await this.terminateUserSessions(user.id);
 
-    const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET!, {
-      expiresIn: "24h",
-    });
+    const token = this.generateToken(user.id, user.role);
     await this.sessionRepo.create({
       user_id: user.id,
       token,
-      user_agent,
-      ip_address,
+      user_agent: userAgent,
+      ip_address: ipAddress,
     });
 
-    const data: SignInResponse = {
-      user: {
-        id: user.id,
-        company_id: user.company_id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        address: user.address,
-        role: user.role,
-        created_at: user.created_at,
-        updated_at: user.updated_at,
-      },
-      session: {
-        token,
-        expiresIn: 24 * 60 * 60,
-      },
-    };
-
-    return data;
+    return this.buildResponse(user, token);
   }
 
   async signOut(token: string): Promise<void> {
     const session = await this.sessionRepo.findByField("token", token);
-    if (!session) {
-      throw new Error("Session not found");
-    }
-    await this.sessionRepo.delete(session.id);
+    if (!session) throw new Error("Session not found");
+
+    const deletedCount = await this.sessionRepo.deleteAllbyField("user_id", session.user_id);
+    if (deletedCount === 0) throw new Error("No sessions were deleted");
+  }
+  
+  private generateToken(userId: string, role: number): string {
+    return jwt.sign({ userId, role }, process.env.JWT_SECRET!, { expiresIn: "24h" });
+  }
+
+  private async terminateUserSessions(userId: string): Promise<void> {
+    await this.sessionRepo.deleteAllbyField("user_id", userId);
+  }
+
+  private buildResponse(user: PublicUserDTO, token: string): SignInResponse {
+    return {
+      user: {
+        id: user.id,
+        company_id: user.company_id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        address: user.address,
+        role: user.role,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+      },
+      session: {
+        token,
+        expiresIn: 24 * 60 * 60,
+      },
+    };
   }
 }
