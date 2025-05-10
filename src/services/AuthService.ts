@@ -77,10 +77,10 @@ export class AuthService {
 
   async signOut(token: string): Promise<void> {
     const session = await this.sessionRepo.findByField("token", token);
-    if (!session) throw new Error("Session not found");
-
-    const deletedCount = await this.sessionRepo.deleteAllbyField("user_id", session.user_id);
-    if (deletedCount === 0) throw new Error("No sessions were deleted");
+    if (!session) {
+      throw new Error("Session not found");
+    }
+    await this.sessionRepo.delete(session.id);
   }
   
   private generateToken(userId: string, role: number): string {
