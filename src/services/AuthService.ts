@@ -61,9 +61,7 @@ export class AuthService {
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) throw new Error("Invalid password");
-
-    await this.terminateUserSessions(user.id);
-
+    
     const token = this.generateToken(user.id, user.role);
     await this.sessionRepo.create({
       user_id: user.id,
@@ -87,9 +85,12 @@ export class AuthService {
     return jwt.sign({ userId, role }, process.env.JWT_SECRET!, { expiresIn: "24h" });
   }
 
+  /**
+   * PENDING: Uncomment this method when the session management is implemented
   private async terminateUserSessions(userId: string): Promise<void> {
     await this.sessionRepo.deleteAllbyField("user_id", userId);
   }
+ */
 
   private buildResponse(user: PublicUserDTO, token: string): SignInResponse {
     return {
