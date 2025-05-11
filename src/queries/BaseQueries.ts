@@ -30,4 +30,4 @@ export const generateFindByFieldQuery = (table: string, field: string): string =
 };
 export const generateDeleteByFieldQuery = (table: string, field: string): string => {
   return `DELETE FROM ${table} WHERE ${field} = $1 RETURNING id`;
-}
+};

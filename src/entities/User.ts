@@ -20,15 +20,6 @@ export interface User {
   updated_at: Date;
 }
 
-export interface CreateUserDTO {
-  name: string | null;
-  email: string | null;
-  password: string | null;
-  confirmedPassword: string | null;
-  phone: string | null;
-  address: string | null;
-}
-
 export interface PublicUserDTO {
   id: string;
   company_id: string;

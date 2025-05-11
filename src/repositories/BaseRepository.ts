@@ -85,6 +85,7 @@ export class BaseRepository<T> {
       throw new Error("Database error");
     }
   }
+
   async deleteByField(field: string, value: string): Promise<number | string | null> {
     try {
       const query = generateDeleteByFieldQuery(this.table, field);
@@ -95,6 +96,7 @@ export class BaseRepository<T> {
       throw new Error("Database error");
     }
   }
+
   async deleteAllbyField(field: string, value: string): Promise<number | string | null> {
     try {
       const query = `DELETE FROM ${this.table} WHERE ${field} = $1 RETURNING id`;

@@ -1,23 +1,23 @@
-import { AuthRepository } from "@repositories/AuthRepository";
-import { CreateUserDTO, PublicUserDTO, UserRole } from "@entities/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { SessionRepository } from "@/repositories/SessionRepository";
 
-interface SignInResponse {
-  user: PublicUserDTO;
-  session: {
-    token: string;
-    expiresIn: number;
-  };
-}
+import { AuthRepository } from "@repositories/AuthRepository";
+import { PublicUserDTO, UserRole } from "@entities/User";
+import { SessionRepository } from "@/repositories/SessionRepository";
+import { SignInResponse } from "@entities/Response";
+import { SignupRequest } from "@entities/Request";
 
 export class AuthService {
   constructor(
     private repository: AuthRepository,
     private sessionRepo: SessionRepository,
-  ) {} //TODO: fix any type
-  async signUp(payload: any, userAgent: string, ipAddress: string): Promise<SignInResponse | null> {
+  ) {}
+
+  async signUp(
+    payload: SignupRequest,
+    userAgent: string,
+    ipAddress: string,
+  ): Promise<SignInResponse | null> {
     const userExists = await this.repository.findByField("email", payload.email);
     if (userExists) {
       throw new Error("User already exists");
@@ -55,13 +55,18 @@ export class AuthService {
     return this.buildResponse(user, token);
   }
 
-  async signIn(email: string, password: string, userAgent: string, ipAddress: string): Promise<SignInResponse> {
+  async signIn(
+    email: string,
+    password: string,
+    userAgent: string,
+    ipAddress: string,
+  ): Promise<SignInResponse> {
     const user = await this.repository.findByField("email", email);
     if (!user) throw new Error("The user does not exist");
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) throw new Error("Invalid password");
-    
+
     const token = this.generateToken(user.id, user.role);
     await this.sessionRepo.create({
       user_id: user.id,
@@ -80,7 +85,7 @@ export class AuthService {
     }
     await this.sessionRepo.delete(session.id);
   }
-  
+
   private generateToken(userId: string, role: number): string {
     return jwt.sign({ userId, role }, process.env.JWT_SECRET!, { expiresIn: "24h" });
   }

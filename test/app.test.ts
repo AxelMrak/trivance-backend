@@ -1,5 +1,6 @@
-import app from "@/app";
 import request from "supertest";
+
+import app from "@/app";
 
 describe("GET /health", () => {
   it("Get server health", (done) => {
