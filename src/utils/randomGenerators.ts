@@ -10,7 +10,7 @@ export function randomEmail(): string {
 }
 
 export function randomPhone(): string {
-  const prefix = "+54911"; 
-  const number = Math.floor(Math.random() * 90000000 + 10000000); 
+  const prefix = "+54911";
+  const number = Math.floor(Math.random() * 90000000 + 10000000);
   return `${prefix}${number}`;
 }

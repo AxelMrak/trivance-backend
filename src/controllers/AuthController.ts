@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+
 import { AuthService } from "@services/AuthService";
 
 export class AuthController {
@@ -33,6 +34,7 @@ export class AuthController {
       }
     }
   };
+
   signIn = async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
@@ -58,6 +60,7 @@ export class AuthController {
       }
     }
   };
+
   signOut = async (req: Request, res: Response) => {
     try {
       const token = req.cookies.token;

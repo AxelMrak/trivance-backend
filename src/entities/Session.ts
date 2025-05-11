@@ -6,3 +6,8 @@ export interface Session {
   ip_address: string;
   created_at: Date;
 }
+
+export interface PublicSession {
+  token: string;
+  expiresIn: number;
+}

@@ -1,16 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 
-interface ErrorResponse {
-  status: number;
-  message: string;
-  details?: any;
-}
+import { ErrorResponse } from "@/entities/Response";
 
 export const errorHandler = (err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error("[ERROR]", err.stack);
 
-  let response: ErrorResponse | any = {};
-
+  //"I want it to respond to eventually take the form of ErrorResponse, but it doesn't force me to have all of its properties at first."
+  const response: Partial<ErrorResponse> = {};
   switch (err.name) {
     case "ValidationError":
       response.status = 400;
