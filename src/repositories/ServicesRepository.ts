@@ -1,7 +1,7 @@
-import { Session } from "@entities/Session";
+import { Service } from "@entities/Service";
 import { BaseRepository } from "@repositories/BaseRepository";
-export class ServicesRepository extends BaseRepository<Session> {
+export class ServicesRepository extends BaseRepository<Service> {
   constructor() {
-    super("sessions");
+    super("services");
   }
 }
