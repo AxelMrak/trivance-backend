@@ -1,19 +1,17 @@
 import { Router } from "express";
 
-import { ServicesController } from "@controllers/ServicesController";
-import { ServicesService } from "@services/ServicesService";
-import { ServicesRepository } from "@repositories/ServicesRepository";
+import authMiddleware from "@middlewares/authmiddleware";
+import { validateServiceCreate } from "@middlewares/validation";
+import { ServicesRepository } from "@/repositories/ServiceRepository";
+import { ServiceHandlerService } from "@/services/ServiceHandlerService";
+import { ServiceController } from "@/controllers/ServiceController";
 
 const router = Router();
-const sessionRepository = new SessionRepository();
+const serviceRepository = new ServicesRepository();
+const serviceHandlerService = new ServiceHandlerService(serviceRepository);
+const serviceController = new ServiceController(serviceHandlerService);
 
-const authRepository = new AuthRepository();
-const authService = new AuthService(authRepository, sessionRepository);
-const authController = new AuthController(authService);
-
-router.post("/sign-up", validateUserCreate, authController.signUp);
-router.post("/sign-in", validateUserSignIn, authController.signIn);
-router.post("/sign-out", authMiddleware, authController.signOut);
+router.post("/create", [validateServiceCreate, authMiddleware], serviceController.createService);
 
 /* router.get("/protected",authMiddleware, authController.protectedRoute); */
 export default router;

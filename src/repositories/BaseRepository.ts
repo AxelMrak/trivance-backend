@@ -7,6 +7,7 @@ import {
   generateDeleteQuery,
   generateFindByFieldQuery,
   generateDeleteByFieldQuery,
+  generateGetByCompanyIdQuery,
 } from "@queries/BaseQueries";
 
 export class BaseRepository<T> {
@@ -34,6 +35,17 @@ export class BaseRepository<T> {
       return result.rows[0] || null;
     } catch (error) {
       console.error(`Error fetching by ID from ${this.table}:`, error);
+      throw new Error("Database error");
+    }
+  }
+
+  async findByCompanyId(companyId: string): Promise<T[]> {
+    try {
+      const query = generateGetByCompanyIdQuery(this.table);
+      const result = await dbClient.query(query, [companyId]);
+      return result.rows;
+    } catch (error) {
+      console.error(`Error fetching by company ID from ${this.table}:`, error);
       throw new Error("Database error");
     }
   }

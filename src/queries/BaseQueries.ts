@@ -6,6 +6,10 @@ export const generateGetByIdQuery = (table: string): string => {
   return `SELECT * FROM ${table} WHERE id = $1`;
 };
 
+export const generateGetByCompanyIdQuery = (table: string): string => {
+  return `SELECT * FROM ${table} WHERE company_id = $1`;
+};
+
 export const generateCreateQuery = (table: string, columns: string[]): string => {
   const columnNames = columns.join(", ");
   const placeholders = columns.map((_, index) => `$${index + 1}`).join(", ");

@@ -47,3 +47,23 @@ export const validateUserSignIn: RequestHandler = (req, res, next) => {
   }
   next();
 };
+
+export const validateServiceCreate: RequestHandler = (req, res, next) => {
+  const schema = z.object({
+    name: z.string().min(3),
+    description: z.string().min(5),
+    price: z.number().positive(),
+    duration: z.number().positive(),
+  });
+  const result = schema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Validation error",
+      errors: result.error.errors.map((error) => ({
+        field: error.path[0],
+        message: error.message,
+      })),
+    });
+  }
+  next();
+};
