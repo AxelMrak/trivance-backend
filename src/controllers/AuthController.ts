@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-
 import { AuthService } from "@services/AuthService";
 
 export class AuthController {
@@ -9,7 +8,7 @@ export class AuthController {
     try {
       const payload = req.body;
       const userAgent = req.headers["user-agent"] || "unknown";
-      const ipAddress = req.ip || req.connection?.remoteAddress || "unknown";
+      const ipAddress = req.ip || "unknown";
 
       const data = await this.authService.signUp(payload, userAgent, ipAddress);
 
@@ -39,7 +38,7 @@ export class AuthController {
     try {
       const { email, password } = req.body;
       const userAgent = req.headers["user-agent"] || "unknown";
-      const ipAddress = req.ip || req.connection?.remoteAddress || "unknown";
+      const ipAddress = req.ip || "unknown";
 
       const data = await this.authService.signIn(email, password, userAgent, ipAddress);
 
