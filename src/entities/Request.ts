@@ -6,3 +6,10 @@ export interface SignupRequest {
   phone: string;
   address: string;
 }
+
+export interface ServiceRequest{
+  name: String,
+  description: string,
+  price: number,
+  duration: string,
+}
