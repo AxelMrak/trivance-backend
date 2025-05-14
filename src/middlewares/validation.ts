@@ -53,7 +53,7 @@ export const validateServiceCreate: RequestHandler = (req, res, next) => {
     name: z.string().min(3),
     description: z.string().min(5),
     price: z.number().positive(),
-    duration: z.number().positive(),
+    duration: z.string().min(3),
   });
   const result = schema.safeParse(req.body);
   if (!result.success) {

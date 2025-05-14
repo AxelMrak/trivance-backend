@@ -5,6 +5,16 @@
 module.exports.up = (pgm) => {
   pgm.createExtension("uuid-ossp", { ifNotExists: true });
 
+  pgm.createTable("companies", {
+    id: {
+      type: "uuid",
+      primaryKey: true,
+      default: pgm.func("uuid_generate_v4()"),
+    },
+    name: { type: "varchar(100)", notNull: true },
+    created_at: { type: "timestamp", default: pgm.func("now()") },
+  });
+
   pgm.createTable("users", {
     id: {
       type: "uuid",
@@ -23,9 +33,9 @@ module.exports.up = (pgm) => {
     phone: { type: "text", notNull: true },
     address: { type: "text", notNull: true },
     role: {
-      type: "user_role",
+      type: "int",
       notNull: true,
-      default: "GUEST",
+      default: 0,
     },
     created_at: { type: "timestamp", default: pgm.func("now()") },
     updated_at: { type: "timestamp", default: pgm.func("now()") },
@@ -45,7 +55,7 @@ module.exports.up = (pgm) => {
     },
     name: { type: "text", notNull: true },
     description: { type: "text" },
-    duration: { type: "interval", notNull: true }, // Se puede usar TIME para una duración fija
+    duration: { type: "interval", notNull: true },
     price: { type: "numeric(10, 2)" },
     created_at: { type: "timestamp", default: pgm.func("now()") },
   });
@@ -72,8 +82,8 @@ module.exports.up = (pgm) => {
   pgm.createIndex("users", "company_id");
   pgm.createIndex("users", "role");
   pgm.createIndex("sessions", "user_id");
-  pgm.createIndex("sessions", "created_at");
   pgm.createIndex("services", "company_id");
+  pgm.createIndex("services", "id", { unique: true });
 };
 
 /**
