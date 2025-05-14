@@ -7,9 +7,9 @@ export interface SignupRequest {
   address: string;
 }
 
-export interface ServiceRequest{
-  name: String,
-  description: string,
-  price: number,
-  duration: string,
+export interface ServiceRequest {
+  name: string;
+  description: string;
+  price: number;
+  duration: string;
 }
