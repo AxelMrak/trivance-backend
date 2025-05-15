@@ -16,6 +16,6 @@ const authController = new AuthController(authService);
 router.post("/sign-up", validateUserCreate, authController.signUp);
 router.post("/sign-in", validateUserSignIn, authController.signIn);
 router.post("/sign-out", authMiddleware, authController.signOut);
-
+router.get("/me", authMiddleware, authController.getMe);
 /* router.get("/protected",authMiddleware, authController.protectedRoute); */
 export default router;

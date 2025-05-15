@@ -1,25 +1,42 @@
-import { Response, NextFunction, Request } from "express";
+import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { User } from "@/entities/User";
 
-const AuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+declare global {
+  namespace Express {
+    interface Request {
+      user?: JwtPayload;
+    }
+  }
+}
+
+type JwtPayload = Pick<User, "id" | "name" | "email" | "company_id" | "role">;
+
+const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const token = extractToken(req);
+
   if (!token) {
     return res.status(403).json({ message: "No token provided" });
   }
 
-  const isTokenValid = jwt.verify(token, process.env.JWT_SECRET!);
-
-  if (!isTokenValid) {
-    return res.status(401).json({ message: "Unauthorized" });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    req.user = decoded;
+    next();
+  } catch {
+    return res.status(401).json({ message: "Invalid token" });
   }
-
-  const decoded = jwt.decode(token);
-
-  if (!decoded) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  next();
 };
 
-export default AuthMiddleware;
+const extractToken = (req: Request): string | undefined => {
+  if (req.cookies?.token) return req.cookies.token;
+
+  const authHeader = req.headers['authorization'];
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.slice(7);
+  }
+
+  return undefined;
+};
+
+export default authMiddleware;
