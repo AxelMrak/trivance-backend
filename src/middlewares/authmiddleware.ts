@@ -29,14 +29,13 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
 };
 
 const extractToken = (req: Request): string | undefined => {
-  if (req.cookies?.token) {
-    return req.cookies.token;
-  }
+  if (req.cookies?.token) return req.cookies.token;
 
   const authHeader = req.headers['authorization'];
-  if (authHeader && typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
-    return authHeader.slice(7); 
+  if (authHeader?.startsWith("Bearer ")) {
+    return authHeader.slice(7);
   }
+
   return undefined;
 };
 
