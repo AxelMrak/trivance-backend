@@ -1,6 +1,14 @@
 import { Request, Response } from "express";
 import { AuthService } from "@services/AuthService";
 
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any;
+    }
+  }
+}
+
 export class AuthController {
   constructor(private authService: AuthService) {}
 
@@ -71,5 +79,12 @@ export class AuthController {
         res.status(401).json({ message: error.message });
       }
     }
+  };
+  getMe = (req: Request, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    return res.status(200).json({ user: req.user });
   };
 }
