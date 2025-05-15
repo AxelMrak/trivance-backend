@@ -8,7 +8,6 @@ export class ServiceController {
     try {
       const payload = req.body;
       const service = await this.serviceHandlerService.createService(payload);
-      console.log("Service created successfully", service);
       return res.status(201).json(service);
     } catch (error) {
       if (error instanceof Error) {
@@ -30,7 +29,7 @@ export class ServiceController {
     }
   };
 
-  getAllCompanyServices = async (res: Response) => {
+  getAllCompanyServices = async (_req: Request, res: Response) => {
     try {
       const services = await this.serviceHandlerService.getAllCompanyServices();
       return res.status(200).json(services);

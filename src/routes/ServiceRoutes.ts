@@ -12,6 +12,10 @@ const serviceHandlerService = new ServiceHandlerService(serviceRepository);
 const serviceController = new ServiceController(serviceHandlerService);
 
 router.post("/create", [validateServiceCreate, authMiddleware], serviceController.createService);
+router.get("/get/:id", authMiddleware, serviceController.getServiceById);
+router.get("/getAll", authMiddleware, serviceController.getAllCompanyServices);
+router.put("/update/:id", [validateServiceCreate, authMiddleware], serviceController.updateService);
+router.delete("/delete/:id", authMiddleware, serviceController.deleteService);
 
 /* router.get("/protected",authMiddleware, authController.protectedRoute); */
 export default router;
