@@ -1,5 +1,4 @@
 import app from "@/app";
-import "@/types/express"
 import { config } from "@config/constants";
 
 const PORT = config.PORT;
