@@ -12,8 +12,8 @@ declare global {
 
 type JwtPayload = Pick<User, "id" | "name" | "email" | "company_id" | "role">;
 
-const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const token = extractToken(req);
+const AuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
 
   if (!token) {
     return res.status(403).json({ message: "No token provided" });
@@ -28,15 +28,4 @@ const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-const extractToken = (req: Request): string | undefined => {
-  if (req.cookies?.token) return req.cookies.token;
-
-  const authHeader = req.headers['authorization'];
-  if (authHeader?.startsWith("Bearer ")) {
-    return authHeader.slice(7);
-  }
-
-  return undefined;
-};
-
-export default authMiddleware;
+export default AuthMiddleware;
