@@ -72,11 +72,13 @@ export class AuthController {
       }
     }
   };
-  getMe = (req: Request, res: Response): void => {
-    if (!req.user) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
-    res.status(200).json({ user: req.user });
-  };
+   getMe = (req: Request, res: Response): void => {
+     const user = req.user;
+
+     if (!user) {
+       res.status(401).json({ message: "Unauthorized" });
+       return;
+     }
+     res.status(200).json({ user });
+   };
 }
