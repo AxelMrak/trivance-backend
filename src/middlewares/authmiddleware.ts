@@ -1,18 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { User } from "@/entities/User";
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JwtPayload;
-    }
-  }
+interface AuthRequest extends Request {
+  user?: JwtPayload;
 }
+export type JwtPayload = {
+  userId: string;
+  role: number;
+};
 
-type JwtPayload = Pick<User, "id" | "name" | "email" | "company_id" | "role">;
-
-const AuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
+const AuthMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
   const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
 
   if (!token) {
@@ -29,4 +26,3 @@ const AuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export default AuthMiddleware;
-

@@ -25,7 +25,8 @@
       "@migrations/*": ["./migrations/*"],
       "@scripts/*": ["./scripts/*"],
       "@test/*": ["./test/*"]
-    }
+    },
   },
   "include": ["./*.js", "src/**/*.ts", "test/**/*.ts"]
 }
+
