@@ -1,4 +1,4 @@
-// src/controllers/ClientController.ts
+
 import { Request, Response } from "express";
 import { ClientService } from "@services/ClientService";
 import { User, PublicUserDTO } from "@entities/User";
@@ -9,7 +9,7 @@ export class ClientController {
   getAll = async (_req: Request, res: Response) => {
     try {
       const clients = await this.clientService.getClients();
-      // Convertir a PublicUserDTO (opcional)
+    
       const publicClients: PublicUserDTO[] = clients.map(this.convertToPublicClient);
       res.json(publicClients);
     } catch (error) {
@@ -24,7 +24,6 @@ export class ClientController {
       const client = await this.clientService.getClientByID(clientId);
 
       if (client) {
-        // Convertir a PublicUserDTO (opcional)
         const publicClient: PublicUserDTO = this.convertToPublicClient(client);
         res.json(publicClient);
       } else {
@@ -41,10 +40,12 @@ export class ClientController {
       const clientData = req.body;
       const newClient = await this.clientService.createClient(clientData);
 
-      // Convertir a PublicUserDTO (opcional)
       const publicClient: PublicUserDTO = this.convertToPublicClient(newClient);
       res.status(201).json(publicClient);
     } catch (error) {
+      if (!req.body.company_id) {
+        return res.status(400).json({ message: "company_id is required" });
+      }      
       console.error("Error creating client:", error);
       res.status(500).json({ message: "Error creating client", error });
     }
@@ -58,7 +59,6 @@ export class ClientController {
       const updatedClient = await this.clientService.updateClient(clientId, clientData);
 
       if (updatedClient) {
-        // Convertir a PublicUserDTO (opcional)
         const publicClient: PublicUserDTO = this.convertToPublicClient(updatedClient);
         res.json(publicClient);
       } else {
@@ -76,7 +76,7 @@ export class ClientController {
       const success = await this.clientService.deleteClient(clientId);
 
       if (success) {
-        res.status(204).send(); // No Content
+        res.status(204).send(); 
       } else {
         res.status(404).json({ message: "Client not found" });
       }

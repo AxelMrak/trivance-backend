@@ -1,4 +1,4 @@
-// src/services/ClientService.ts
+
 import { UserRepository } from "@repositories/UserRepository";
 import { User, UserRole } from "@entities/User";
 
@@ -18,7 +18,6 @@ export class ClientService {
   }
 
   async createClient(userData: Omit<User, "id" | "created_at" | "updated_at">): Promise<User> {
-    // Ensure the role is CLIENT
     const clientData = { ...userData, role: UserRole.CLIENT };
     return this.userRepository.create(clientData);
   }
@@ -29,7 +28,6 @@ export class ClientService {
       return null;
     }
 
-    // Prevent changing the role to something other than CLIENT
     if (userData.role && userData.role !== UserRole.CLIENT) {
       throw new Error("Cannot change client role to a non-client role.");
     }
