@@ -17,6 +17,17 @@ export class BaseRepository<T> {
     this.table = table;
   }
 
+  protected async findWithCondition(whereClause: string, values: any[] = []): Promise<T[]> {
+    try {
+      const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
+      const result = await dbClient.query(query, values);
+      return result.rows;
+    } catch (error) {
+      console.error(`Error fetching with condition from ${this.table}:`, error);
+      throw new Error("Database error");
+    }
+  }
+
   async findAll(): Promise<T[]> {
     try {
       const query = generateGetAllQuery(this.table);
