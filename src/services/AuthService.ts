@@ -85,7 +85,23 @@ export class AuthService {
     }
     await this.sessionRepo.delete(session.id);
   }
-
+  async getUserById(id: string): Promise<PublicUserDTO | null> {
+    const user = await this.repository.findByField("id", id);
+    if (!user) return null;
+  
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      role: user.role,
+      company_id: user.company_id,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+    };
+  }
+  
   private generateToken(userId: string, role: number): string {
     return jwt.sign({ userId, role }, process.env.JWT_SECRET!, { expiresIn: "24h" });
   }
