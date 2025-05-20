@@ -1,15 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JwtPayload;
-    }
-  }
-}
-
-type JwtPayload = {
+export type JwtPayload = {
   userId: string;
   role: number;
 };
