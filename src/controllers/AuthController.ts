@@ -1,5 +1,10 @@
 import { Request, Response } from "express";
 import { AuthService } from "@services/AuthService";
+import { JwtPayload } from "@/middlewares/authmiddleware";
+
+interface AuthRequest extends Request {
+  user?: JwtPayload;
+}
 
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -11,7 +16,6 @@ export class AuthController {
       const ipAddress = req.ip || "unknown";
 
       const data = await this.authService.signUp(payload, userAgent, ipAddress);
-
       const token = data?.session?.token;
 
       if (!token) {
@@ -41,7 +45,6 @@ export class AuthController {
       const ipAddress = req.ip || "unknown";
 
       const data = await this.authService.signIn(email, password, userAgent, ipAddress);
-
       const token = data.session.token;
 
       res.cookie("token", token, {
@@ -72,20 +75,21 @@ export class AuthController {
       }
     }
   };
-  getMe = async (req: Request, res: Response): Promise<void> => {
+
+  
+  getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     if (!req.user?.userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
-  
+
     const user = await this.authService.getUserById(req.user.userId);
-  
+
     if (!user) {
       res.status(404).json({ message: "User not found" });
       return;
     }
-  
+
     res.status(200).json({ user });
   };
 }
-

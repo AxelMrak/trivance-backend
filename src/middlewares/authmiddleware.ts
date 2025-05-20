@@ -1,12 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
+interface AuthRequest extends Request {
+  user?: JwtPayload;
+}
 export type JwtPayload = {
   userId: string;
   role: number;
 };
 
-const AuthMiddleware = (req: Request, res: Response, next: NextFunction) => {
+const AuthMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
   const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
 
   if (!token) {
