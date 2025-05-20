@@ -72,12 +72,20 @@ export class AuthController {
       }
     }
   };
-  getMe = (req: Request, res: Response): void => {
-    if (!req.user) {
+  getMe = async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
-    res.status(200).json({ user: req.user });
+  
+    const user = await this.authService.getUserById(req.user.userId);
+  
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+  
+    res.status(200).json({ user });
   };
 }
 
