@@ -17,9 +17,13 @@ export class ClientService {
     return null;
   }
 
-  async createClient(userData: Omit<User, "id" | "created_at" | "updated_at">): Promise<User> {
-    const clientData = { ...userData, role: UserRole.CLIENT };
-    return this.userRepository.create(clientData);
+  async getClientInfo(id: string): Promise<User | null> {
+    const user = await this.userRepository.findById(id);
+    if (user && user.role === UserRole.CLIENT) {
+      return user;
+    }else {
+      return null;
+    }
   }
 
   async updateClient(id: string, userData: Partial<User>): Promise<User | null> {

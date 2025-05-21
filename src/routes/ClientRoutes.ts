@@ -13,7 +13,7 @@ const clientController = new ClientController(clientService);
 
 router.get("/get-all", AuthMiddleware, clientController.getAll);
 router.get("/get-by-id/:id", AuthMiddleware, clientController.getById);
-router.post("/create", AuthMiddleware, clientController.create);
+router.post("/getClient", AuthMiddleware, clientController.getClientInfo);
 router.put("/update/:id", AuthMiddleware, clientController.update);
 router.delete("/delete/:id", AuthMiddleware, clientController.delete);
 
