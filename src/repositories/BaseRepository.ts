@@ -17,7 +17,7 @@ export class BaseRepository<T> {
     this.table = table;
   }
 
-  protected async findWithCondition(whereClause: string, values: any[] = []): Promise<T[]> {
+  async findWithCondition(whereClause: string, values: any[] = []): Promise<T[]> {
     try {
       const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
       const result = await dbClient.query(query, values);
