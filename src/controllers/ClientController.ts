@@ -1,15 +1,15 @@
 import { Request, Response } from "express";
-import { ClientService } from "@services/ClientService";
 
+import { ClientService } from "@services/ClientService";
+import { UserRole } from "@/entities/User";
 
 export class ClientController {
   constructor(private clientService: ClientService) {}
 
   getAll = async (_req: Request, res: Response) => {
     try {
-      const clients = await this.clientService.getClients();
+      const clients = await this.clientService.getClientsByRole(UserRole.CLIENT);
       res.json(clients);
-
     } catch (error) {
       console.error("Error fetching clients:", error);
       res.status(500).json({ message: "Error fetching clients", error });

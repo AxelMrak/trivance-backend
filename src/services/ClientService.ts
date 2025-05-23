@@ -1,15 +1,16 @@
-import { UserRepository } from "@repositories/UserRepository";
 import { User, UserRole } from "@entities/User";
+import { ClientRepository } from "@repositories/ClientRepository";
 
 export class ClientService {
-  constructor(private userRepository: UserRepository) {}
+  constructor(private clientRepository: ClientRepository) {}
 
-  async getClients(): Promise<User[]> {
-    return this.userRepository.findWithCondition("role = $1", [UserRole.CLIENT]);
+  async getClientsByRole(role: UserRole): Promise<User[]> {
+    const clients = await this.clientRepository.findWithCondition("role = ?", [role]);
+    return clients;
   }
 
   async getClientByID(id: string): Promise<User | null> {
-    const user = await this.userRepository.findById(id);
+    const user = await this.clientRepository.findById(id);
     if (user && user.role === UserRole.CLIENT) {
       return user;
     }
@@ -26,7 +27,7 @@ export class ClientService {
       throw new Error("Cannot change client role to a non-client role.");
     }
 
-    return this.userRepository.update(id, userData);
+    return this.clientRepository.update(id, userData);
   }
 
   async deleteClient(id: string): Promise<boolean> {
@@ -34,7 +35,7 @@ export class ClientService {
     if (!existingClient) {
       return false;
     }
-    await this.userRepository.delete(id);
+    await this.clientRepository.delete(id);
     return true;
   }
 }
