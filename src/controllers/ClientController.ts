@@ -6,7 +6,7 @@ import { UserRole } from "@/entities/User";
 export class ClientController {
   constructor(private clientService: ClientService) {}
 
-  getAll = async (_req: Request, res: Response) => {
+  getAllClients = async (_req: Request, res: Response) => {
     try {
       const clients = await this.clientService.getClientsByRole(UserRole.CLIENT);
       res.json(clients);
@@ -16,7 +16,7 @@ export class ClientController {
     }
   };
 
-  getById = async (req: Request, res: Response) => {
+  getClientById = async (req: Request, res: Response) => {
     try {
       const clientId = req.params.id;
       const client = await this.clientService.getClientByID(clientId);
@@ -32,7 +32,7 @@ export class ClientController {
     }
   };
 
-  update = async (req: Request, res: Response) => {
+  updateClient = async (req: Request, res: Response) => {
     try {
       const clientId = req.params.id;
       const clientData = req.body;
@@ -50,7 +50,7 @@ export class ClientController {
     }
   };
 
-  delete = async (req: Request, res: Response) => {
+  deleteClient = async (req: Request, res: Response) => {
     try {
       const clientId = req.params.id;
       const success = await this.clientService.deleteClient(clientId);

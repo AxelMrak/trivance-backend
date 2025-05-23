@@ -10,6 +10,6 @@ const userRepository = new UserRepository();
 const userService = new UserService(userRepository);
 const userController = new UserController(userService);
 
-router.get("/get-all", userController.getAll);
-router.get("/get-by-id/:id", userController.getById);
+router.get("/getAll", userController.getAll);
+router.get("/get/:id", userController.getById);
 export default router;

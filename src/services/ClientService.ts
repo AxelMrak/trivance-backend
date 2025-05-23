@@ -5,16 +5,25 @@ export class ClientService {
   constructor(private clientRepository: ClientRepository) {}
 
   async getClientsByRole(role: UserRole): Promise<User[]> {
+    console.log(`Fetching clients with role: ${role}`);
     const clients = await this.clientRepository.findWithCondition("role = ?", [role]);
+    if (clients.length === 0) {
+      throw new Error(`No clients found with ${role} role.`);
+    }
     return clients;
   }
 
   async getClientByID(id: string): Promise<User | null> {
-    const user = await this.clientRepository.findById(id);
-    if (user && user.role === UserRole.CLIENT) {
-      return user;
+    const user = await this.clientRepository.findOneWithConditions(
+      ["id = ?", "role = ?"],
+      [id, UserRole.CLIENT],
+    );
+
+    if (!user) {
+      throw new Error(`Client with ID ${id} not found.`);
     }
-    return null;
+
+    return user;
   }
 
   async updateClient(id: string, userData: Partial<User>): Promise<User | null> {

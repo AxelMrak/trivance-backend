@@ -28,6 +28,18 @@ export class BaseRepository<T> {
     }
   }
 
+  async findOneWithConditions(whereClauses: string[], values: any[] = []): Promise<T | null> {
+    try {
+      const whereClause = whereClauses.join(" AND ");
+      const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
+      const result = await dbClient.query(query, values);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error(`Error fetching one with conditions from ${this.table}:`, error);
+      throw new Error("Database error");
+    }
+  }
+
   async findAll(): Promise<T[]> {
     try {
       const query = generateGetAllQuery(this.table);
