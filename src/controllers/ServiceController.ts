@@ -1,5 +1,6 @@
-import { ServiceHandlerService } from "@/services/ServiceHandlerService";
 import { Request, Response } from "express";
+
+import { ServiceHandlerService } from "@/services/ServiceHandlerService";
 
 export class ServiceController {
   constructor(private serviceHandlerService: ServiceHandlerService) {}

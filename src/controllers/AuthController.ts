@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+
 import { AuthService } from "@services/AuthService";
 import { JwtPayload } from "@/middlewares/authmiddleware";
 
@@ -76,7 +77,6 @@ export class AuthController {
     }
   };
 
-  
   getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     if (!req.user?.userId) {
       res.status(401).json({ message: "Unauthorized" });
