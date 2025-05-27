@@ -15,7 +15,7 @@ export class ClientService {
 
   async getClientByID(id: string): Promise<User | null> {
     const user = await this.clientRepository.findOneWithConditions(
-      ["id = ?", "role = ?"],
+      ["id = $1", "role = $2"],
       [id, UserRole.CLIENT],
     );
 

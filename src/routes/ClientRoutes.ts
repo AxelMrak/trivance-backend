@@ -13,6 +13,7 @@ const clientController = new ClientController(clientService);
 
 router.get("/getAll", AuthMiddleware, clientController.getAllClients);
 router.get("/get/:id", AuthMiddleware, clientController.getClientById);
+//TODO: Why is this returning password on the response? BLACK GUY or #000000 guy FIX THIS NOW!!!!!!!!!!!!!! :)
 router.put("/update/:id", AuthMiddleware, clientController.updateClient);
 router.delete("/delete/:id", AuthMiddleware, clientController.deleteClient);
 

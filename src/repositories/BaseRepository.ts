@@ -16,7 +16,7 @@ export class BaseRepository<T> {
   constructor(table: string) {
     this.table = table;
   }
-
+  // TODO: IMPROVE ERROR HANDLING WITH BETTER MESSAGES AND REUSABLE ERRORS
   async findWithCondition(whereClause: string, values: any[] = []): Promise<T[]> {
     try {
       const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
@@ -33,6 +33,9 @@ export class BaseRepository<T> {
       const whereClause = whereClauses.join(" AND ");
       const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
       const result = await dbClient.query(query, values);
+      if (result.rowCount === 0) {
+        throw new Error(`No record found with conditions: ${whereClauses.join(", ")}`);
+      }
       return result.rows[0] || null;
     } catch (error) {
       console.error(`Error fetching one with conditions from ${this.table}:`, error);
