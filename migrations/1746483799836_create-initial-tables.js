@@ -78,12 +78,47 @@ module.exports.up = (pgm) => {
     created_at: { type: "timestamp", default: pgm.func("now()") },
   });
 
+  pgm.createType("appointment_status", ["pending", "confirmed", "cancelled"]);
+  pgm.createTable("appointments", {
+    id: {
+      type: "uuid",
+      primaryKey: true,
+      default: pgm.func("uuid_generate_v4()"),
+    },
+    user_id: {
+      type: "uuid",
+      notNull: true,
+      references: "users",
+      onDelete: "CASCADE",
+    },
+    service_id: {
+      type: "uuid",
+      notNull: true,
+      references: "services",
+      onDelete: "CASCADE",
+    },
+    status: {
+      type: "appointment_status",
+      notNull: true,
+      default: "pending",
+    },
+    created_at: { type: "timestamp", default: pgm.func("now()") },
+    description: { type: "varchar(3000)" },
+    start_date: { type: "timestamp", notNull: true },
+    end_date: { type: "timestamp", notNull: true },
+  });
+  pgm.addConstraint("appointments", "appointments_start_before_end_chk", "CHECK (start_date < end_date)");
   pgm.createIndex("companies", "name", { unique: true });
   pgm.createIndex("users", "company_id");
   pgm.createIndex("users", "role");
   pgm.createIndex("sessions", "user_id");
   pgm.createIndex("services", "company_id");
   pgm.createIndex("services", "id", { unique: true });
+  pgm.createIndex("appointments", "user_id");
+  pgm.createIndex("appointments", "service_id");
+  pgm.createIndex("appointments", "start_date");
+  pgm.createIndex("appointments", "status");
+  pgm.createIndex("appointments", ["user_id", "start_date"]);
 };
 
 /**
