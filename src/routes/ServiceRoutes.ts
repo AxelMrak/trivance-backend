@@ -1,5 +1,4 @@
 import { Router } from "express";
-
 import authMiddleware from "@middlewares/authmiddleware";
 import { validateServiceCreate } from "@middlewares/validation";
 import { ServicesRepository } from "@/repositories/ServiceRepository";

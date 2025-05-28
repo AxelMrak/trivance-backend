@@ -71,18 +71,26 @@ export class AppointmentController {
   async create(req: AuthRequest, res: Response): Promise<void> {
     try {
       const user = req.user;
-      if (!user || ![UserRole.CLIENT, UserRole.MANAGER, UserRole.STAFF, UserRole.ADMIN].includes(user.role)) {
+      console.log("USER EN REQUEST:", user);
+  
+      if (!user) {
         res.status(403).json({ error: "Only authorized users can create appointments." });
         return;
       }
-
+  
+      if (![UserRole.CLIENT, UserRole.MANAGER, UserRole.STAFF, UserRole.ADMIN].includes(user.role)) {
+        res.status(403).json({ error: "Only authorized users can create appointments." });
+        return;
+      }
+  
       const { service_id, date, time, user_id: userIdFromBody } = req.body;
+  
       if (!service_id || !date || !time) {
         res.status(400).json({ error: "Missing required fields." });
         return;
       }
-
-      let userIdForAppointment = user.role === UserRole.CLIENT ? user.userId : userIdFromBody || user.userId;
+      let userIdForAppointment =
+        user.role === UserRole.CLIENT ? user.userId : userIdFromBody || user.userId;
 
       if (user.role !== UserRole.CLIENT) {
         const userExists = await this.userRepository.findById(userIdForAppointment);
@@ -91,25 +99,35 @@ export class AppointmentController {
           return;
         }
       }
-
+  
       const startTime = new Date(`${date}T${time}:00`);
       const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
-
+  
       const appointmentData = {
-        serviceId: service_id,
-        userId: userIdForAppointment,
-        enumStatus: 2, 
-        startTime,
-        endTime,
+        service_id: service_id,
+        user_id: userIdForAppointment,
+        status: 2,
+        start_time: startTime,
+        end_time: endTime,
         description: req.body.description || "",
       };
-
+  
+      console.log("Datos a crear:", appointmentData);
+  
       const newAppointment = await this.service.create(appointmentData);
+  
+      console.log("Turno creado con éxito:", newAppointment);
+  
       res.status(201).json(newAppointment);
     } catch (error) {
-      res.status(500).json({ error: "Internal server error" });
+      console.error("ERROR EN CREACIÓN DE TURNO:", error);
+      res.status(500).json({
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : error,
+      });
     }
   }
+  
 
 
   async update(req: AuthRequest, res: Response): Promise<void> {
