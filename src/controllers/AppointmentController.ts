@@ -1,62 +1,232 @@
 import { Request, Response } from "express";
 import { AppointmentService } from "@services/AppointmentService";
-import { JwtPayload } from "@/middlewares/authmiddleware";
+import { AuthRequest } from "@/middlewares/authmiddleware";
 import { Appointment } from "@/entities/appointment";
+import { UserRepository } from "@/repositories/UserRepository";
+import { UserRole } from "@/entities/User";
 
 export class AppointmentController {
-  constructor(private service: AppointmentService) {}
+  constructor(
+    private service: AppointmentService,
+    private userRepository: UserRepository
+  ) {}
 
-  async getAll(req: Request, res: Response): Promise<void> {
-    const appointments = await this.service.getAll();
-    res.json(appointments);
+  async getAll(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const user = req.user;
+      if (!user) {
+        res.status(401).json({ error: "Unauthorized." });
+        return;
+      }
+
+      const appointments =
+        user.role === UserRole.CLIENT
+          ? await this.service.getByUserId(user.userId)
+          : await this.service.getAll();
+
+      res.json(appointments);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
 
-  async getById(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
-    const appointment = await this.service.getById(id);
-    res.json(appointment);
+  async getByUserId(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const user = req.user;
+      const { userId } = req.params;
+
+      if (!user) {
+        res.status(401).json({ error: "Unauthorized." });
+        return;
+      }
+
+      if (user.role === UserRole.CLIENT && user.userId !== userId) {
+        res.status(403).json({ error: "Clients can only view their own appointments." });
+        return;
+      }
+
+      const appointments = await this.service.getByUserId(userId);
+      res.json(appointments);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
 
-  async create(req: Request, res: Response): Promise<void> {
-    const appointmentData: Appointment = req.body;
-    const newAppointment = await this.service.create(appointmentData);
-    res.status(201).json(newAppointment);
+  async getUpcomingByUser(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const user = req.user;
+      if (!user) {
+        res.status(401).json({ error: "Unauthorized." });
+        return;
+      }
+
+      const fromDate = new Date(); 
+      const appointments = await this.service.getUpcomingByUserId(user.userId, fromDate);
+      res.json(appointments);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
 
-  async update(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
-    const updatedData: Appointment = req.body;
-    const updatedAppointment = await this.service.update(id, updatedData);
-    res.json(updatedAppointment);
+  async create(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const user = req.user;
+      if (!user || ![UserRole.CLIENT, UserRole.MANAGER, UserRole.STAFF, UserRole.ADMIN].includes(user.role)) {
+        res.status(403).json({ error: "Only authorized users can create appointments." });
+        return;
+      }
+
+      const { service_id, date, time, user_id: userIdFromBody } = req.body;
+      if (!service_id || !date || !time) {
+        res.status(400).json({ error: "Missing required fields." });
+        return;
+      }
+
+      let userIdForAppointment = user.role === UserRole.CLIENT ? user.userId : userIdFromBody || user.userId;
+
+      if (user.role !== UserRole.CLIENT) {
+        const userExists = await this.userRepository.findById(userIdForAppointment);
+        if (!userExists) {
+          res.status(404).json({ error: "User not found." });
+          return;
+        }
+      }
+
+      const startTime = new Date(`${date}T${time}:00`);
+      const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+
+      const appointmentData = {
+        serviceId: service_id,
+        userId: userIdForAppointment,
+        enumStatus: 2, 
+        startTime,
+        endTime,
+        description: req.body.description || "",
+      };
+
+      const newAppointment = await this.service.create(appointmentData);
+      res.status(201).json(newAppointment);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
 
-  async delete(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
-    const result = await this.service.delete(id);
-    res.json(result);
+
+  async update(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const user = req.user;
+      const { id } = req.params;
+      const updateData: Partial<Appointment> = req.body;
+
+      if (!user) {
+        res.status(401).json({ error: "Unauthorized." });
+        return;
+      }
+
+      if (![UserRole.STAFF, UserRole.MANAGER, UserRole.ADMIN].includes(user.role)) {
+        res.status(403).json({ error: "Only staff, manager or admin can update appointments." });
+        return;
+      }
+
+      const appointment = await this.service.getById(id);
+      if (!appointment) {
+        res.status(404).json({ error: "Appointment not found." });
+        return;
+      }
+
+      const updatedAppointment: Appointment = {
+        ...appointment,
+        ...updateData,
+        id: appointment.id,
+      };
+
+      const result = await this.service.update(id, updatedAppointment);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
 
-  async getByUserId(req: Request, res: Response): Promise<void> {
-    const { userId } = req.params;
-    const appointments = await this.service.getByUserId(userId);
-    res.json(appointments);
+  async delete(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const user = req.user;
+      const { id } = req.params;
+
+      if (!user) {
+        res.status(401).json({ error: "Unauthorized." });
+        return;
+      }
+
+      if (![UserRole.STAFF, UserRole.MANAGER, UserRole.ADMIN].includes(user.role)) {
+        res.status(403).json({ error: "Only staff, manager or admin can delete appointments." });
+        return;
+      }
+
+      const deleted = await this.service.delete(id);
+      if (!deleted) {
+        res.status(404).json({ error: "Appointment not found." });
+        return;
+      }
+
+      res.json({ message: "Appointment deleted." });
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
 
-  async getByServiceId(req: Request, res: Response): Promise<void> {
-    const { serviceId } = req.params;
-    const appointments = await this.service.getByServiceId(serviceId);
-    res.json(appointments);
+  async cancel(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const user = req.user;
+      const { id } = req.params;
+
+      if (!user) {
+        res.status(401).json({ error: "Unauthorized." });
+        return;
+      }
+
+      const appointment = await this.service.getById(id);
+      if (!appointment) {
+        res.status(404).json({ error: "Appointment not found." });
+        return;
+      }
+
+      if (user.role === UserRole.CLIENT && appointment.userId !== user.userId) {
+        res.status(403).json({ error: "Clients can only cancel their own appointments." });
+        return;
+      }
+
+      const canceledAppointment = await this.service.cancel(id);
+      res.json(canceledAppointment);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
 
-  async cancel(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
-    const canceledAppointment = await this.service.cancel(id);
-    res.json(canceledAppointment);
-  }
+  async confirm(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const user = req.user;
+      const { id } = req.params;
 
-  async confirm(req: Request, res: Response): Promise<void> {
-    const { id } = req.params;
-    const confirmedAppointment = await this.service.confirm(id);
-    res.json(confirmedAppointment);
+      if (!user) {
+        res.status(401).json({ error: "Unauthorized." });
+        return;
+      }
+
+      const appointment = await this.service.getById(id);
+      if (!appointment) {
+        res.status(404).json({ error: "Appointment not found." });
+        return;
+      }
+
+      if (user.role === UserRole.CLIENT && appointment.userId !== user.userId) {
+        res.status(403).json({ error: "Clients can only confirm their own appointments." });
+        return;
+      }
+
+      const confirmedAppointment = await this.service.confirm(id);
+      res.json(confirmedAppointment);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
-import { Appointment } from "@/entities/appointment";
+import { Appointment, AppointmentCreateDTO } from "@/entities/appointment";
 
 export class AppointmentService {
   constructor(private repository: AppointmentRepository) {}
@@ -11,8 +11,11 @@ export class AppointmentService {
   async getById(id: string): Promise<Appointment | null> {
     return this.repository.findById(id);
   }
+    async getUpcomingByUserId(userId: string, fromDate: Date): Promise<Appointment[]> {
+    return this.repository.findUpcomingByUserId(userId, fromDate);
+  }
 
-  async create(appointment: Appointment): Promise<Appointment> {
+  async create(appointment: AppointmentCreateDTO): Promise<Appointment> {
     return this.repository.create(appointment);
   }
 
