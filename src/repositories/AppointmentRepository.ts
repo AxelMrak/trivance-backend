@@ -11,4 +11,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
   async findByServiceId(serviceId: string): Promise<Appointment[]> {
     return this.findManyByField("service_id", serviceId);
   }
+  async setStatus(id: string, status: number): Promise<Appointment | null> {
+    return this.update(id, { enumStatus: status });
+  }
 }

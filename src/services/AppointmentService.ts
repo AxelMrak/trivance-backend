@@ -31,24 +31,15 @@ export class AppointmentService {
   async getByServiceId(serviceId: string): Promise<Appointment[]> {
     return this.repository.findByServiceId(serviceId);
   }
-
-  async setStatus(id: string, status: number): Promise<Appointment | null> {
-    const appointment = await this.repository.findById(id);
-    if (!appointment) return null;
-
-    appointment.enumStatus = status;
-    return this.repository.update(id, appointment);
-  }
-
   async cancel(id: string): Promise<Appointment | null> {
-    return this.setStatus(id, 0); 
+    return this.repository.setStatus(id, 0); 
   }
 
   async confirm(id: string): Promise<Appointment | null> {
-    return this.setStatus(id, 1); 
+    return this.repository.setStatus(id, 1);
   }
 
   async markPending(id: string): Promise<Appointment | null> {
-    return this.setStatus(id, 2);
+    return this.repository.setStatus(id, 2);
   }
 }
