@@ -42,6 +42,9 @@ export class BaseRepository<T> {
       throw new Error("Database error");
     }
   }
+  async findManyByField(field: string, value: any): Promise<T[]> {
+    return this.findWithCondition(`${field} = $1`, [value]);
+  }
 
   async findAll(): Promise<T[]> {
     try {
