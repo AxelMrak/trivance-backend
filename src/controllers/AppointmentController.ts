@@ -106,9 +106,9 @@ export class AppointmentController {
       const appointmentData = {
         service_id: service_id,
         user_id: userIdForAppointment,
-        status: 2,
-        start_time: startTime,
-        end_time: endTime,
+        status: "pending",
+        start_date: startTime,
+        end_date: endTime,
         description: req.body.description || "",
       };
   

@@ -9,16 +9,16 @@ export enum AppointmentStatus {
     serviceId: string;
     userId: string;
     status: AppointmentStatus;
-    startTime: Date;
-    endTime: Date;
+    startDate: Date;
+    endDate: Date;
     createdAt: Date;
     description?: string;
   }
   export type AppointmentCreateDTO = {
     service_id: string;
     user_id: string;
-    start_time: Date;
-    end_time: Date;
+    start_date: Date;
+    end_date: Date;
     status: AppointmentStatus;
     description?: string;
   };
