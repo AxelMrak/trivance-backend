@@ -14,3 +14,11 @@ export enum AppointmentStatus {
     createdAt: Date;
     description?: string;
   }
+  export type AppointmentCreateDTO = {
+    serviceId: string;
+    userId: string;
+    startTime: Date;
+    endTime: Date;
+    enumStatus: AppointmentStatus;
+    description?: string;
+  };
