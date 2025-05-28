@@ -1,19 +1,20 @@
+import { sanitizeUser } from "@/utils/sanitizeUser";
 import { User, UserRole } from "@entities/User";
 import { ClientRepository } from "@repositories/ClientRepository";
 
 export class ClientService {
   constructor(private clientRepository: ClientRepository) {}
 
-  async getClientsByRole(role: UserRole): Promise<User[]> {
+  async getClientsByRole(role: UserRole): Promise<Omit<User, "password">[]> {
     console.log(`Fetching clients with role: ${role}`);
     const clients = await this.clientRepository.findWithCondition("role = $1", [role]);
     if (clients.length === 0) {
       throw new Error(`No clients found with ${role} role.`);
     }
-    return clients;
+    return clients.map(sanitizeUser);
   }
 
-  async getClientByID(id: string): Promise<User | null> {
+  async getClientByID(id: string): Promise<Omit<User, "password"> | null> {
     const user = await this.clientRepository.findOneWithConditions(
       ["id = $1", "role = $2"],
       [id, UserRole.CLIENT],
@@ -23,10 +24,10 @@ export class ClientService {
       throw new Error(`Client with ID ${id} not found.`);
     }
 
-    return user;
+    return sanitizeUser(user);
   }
 
-  async updateClient(id: string, userData: Partial<User>): Promise<User | null> {
+  async updateClient(id: string, userData: Partial<User>): Promise<Omit<User, "password"> | null> {
     const existingClient = await this.getClientByID(id);
     if (!existingClient) {
       return null;
@@ -36,7 +37,8 @@ export class ClientService {
       throw new Error("Cannot change client role to a non-client role.");
     }
 
-    return this.clientRepository.update(id, userData);
+    const updatedClient = await this.clientRepository.update(id, userData);
+    return updatedClient ? sanitizeUser(updatedClient) : null;
   }
 
   async deleteClient(id: string): Promise<boolean> {
