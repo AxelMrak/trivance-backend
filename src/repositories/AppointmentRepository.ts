@@ -2,6 +2,10 @@ import { Appointment, AppointmentStatus } from "@/entities/appointment";
 import { dbClient } from "@/config/db";
 
 import { BaseRepository } from "./BaseRepository";
+import {
+  generateGetAppointmentByIdWithJoinsQuery,
+  generateGetAppointmentsWithJoinsQuery,
+} from "@/queries/AppointmentQueries";
 
 export class AppointmentRepository extends BaseRepository<Appointment> {
   constructor() {
@@ -9,11 +13,9 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
   }
 
   async getCompanyAppointments(companyId: string): Promise<Appointment[]> {
-    const whereClause = "company_id = $1";
-    const values = [companyId];
     try {
-      const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
-      const result = await dbClient.query(query, values);
+      const query = generateGetAppointmentsWithJoinsQuery();
+      const result = await dbClient.query(query, [companyId]);
       return result.rows;
     } catch (error) {
       console.error("Error fetching company appointments:", error);
@@ -21,29 +23,17 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     }
   }
 
-  async findByUserId(userId: string): Promise<Appointment[]> {
-    return this.findManyByField("user_id", userId);
-  }
-
-  async findByServiceId(serviceId: string): Promise<Appointment[]> {
-    return this.findManyByField("service_id", serviceId);
-  }
-
-  async setStatus(id: string, status: AppointmentStatus): Promise<Appointment | null> {
-    return this.update(id, { status });
-  }
-
-  async findUpcomingByUserId(userId: string, fromDate: Date): Promise<Appointment[]> {
-    const whereClause = "user_id = $1 AND start_time >= $2 ORDER BY start_time ASC";
-    const values = [userId, fromDate];
+  async getAppointmentByIdWithJoins(
+    companyId: string,
+    appointmentId: string,
+  ): Promise<Appointment | null> {
     try {
-      const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
-      const result = await dbClient.query(query, values);
-      return result.rows;
+      const query = generateGetAppointmentByIdWithJoinsQuery();
+      const result = await dbClient.query(query, [companyId, appointmentId]);
+      return result.rows[0] || null;
     } catch (error) {
-      console.error("Error fetching upcoming appointments:", error);
+      console.error("Error fetching appointment by ID with joins:", error);
       throw new Error("Database error");
     }
   }
 }
-

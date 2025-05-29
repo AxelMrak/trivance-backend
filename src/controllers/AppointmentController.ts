@@ -20,11 +20,7 @@ export class AppointmentController {
     try {
       const { id } = req.params;
       const appointment = await this.appointmentService.getById(id);
-      if (appointment) {
-        res.json(appointment);
-      } else {
-        res.status(404).json({ error: "Appointment not found" });
-      }
+      res.json(appointment);
     } catch (error) {
       console.error("Error fetching appointment:", error);
       res.status(500).json({ error: "Internal server error" });

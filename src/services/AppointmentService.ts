@@ -1,16 +1,21 @@
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
 import { Appointment, AppointmentCreateDTO } from "@/entities/appointment";
 
+const companyID = process.env.COMPANY_ID || "";
+
 export class AppointmentService {
   constructor(private repository: AppointmentRepository) {}
 
   async getAll(): Promise<Appointment[]> {
-    const companyID = process.env.COMPANY_ID;
-    return this.repository.getCompanyAppointments(companyID || "");
+    return this.repository.getCompanyAppointments(companyID);
   }
 
   async getById(id: string): Promise<Appointment | null> {
-    return this.repository.findById(id);
+    const appointment = await this.repository.getAppointmentByIdWithJoins(companyID, id);
+    if (!appointment) {
+      throw new Error("Appointment not found");
+    }
+    return appointment;
   }
 
   async updateAppointment(
@@ -39,4 +44,3 @@ export class AppointmentService {
     });
   }
 }
-

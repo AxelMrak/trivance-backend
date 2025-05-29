@@ -109,16 +109,11 @@ module.exports.up = (pgm) => {
       default: "pending",
     },
     created_at: { type: "timestamp", default: pgm.func("now()") },
+    updated_at: { type: "timestamp", default: pgm.func("now()") },
     description: { type: "varchar(3000)" },
     start_date: { type: "timestamp", notNull: true },
-    end_date: { type: "timestamp", notNull: true },
   });
 
-  pgm.addConstraint(
-    "appointments",
-    "appointments_start_before_end_chk",
-    "CHECK (start_date < end_date)",
-  );
   pgm.createIndex("companies", "name", { unique: true });
   pgm.createIndex("users", "company_id");
   pgm.createIndex("users", "role");
@@ -139,9 +134,11 @@ module.exports.up = (pgm) => {
  */
 module.exports.down = (pgm) => {
   pgm.dropIndex("services");
+  pgm.dropTable("appointments");
+  pgm.dropType("appointment_status");
   pgm.dropTable("sessions");
+  pgm.dropTable("services");
   pgm.dropTable("users");
   pgm.dropTable("companies");
-  pgm.sql(`DROP TYPE IF EXISTS user_role`);
   pgm.dropExtension("uuid-ossp");
 };
