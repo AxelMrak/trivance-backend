@@ -1,5 +1,4 @@
 import { Router } from "express";
-
 import { ClientController } from "@controllers/ClientController";
 import { ClientService } from "@services/ClientService";
 import { UserRepository } from "@repositories/UserRepository";

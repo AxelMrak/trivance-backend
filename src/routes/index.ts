@@ -4,6 +4,7 @@ import userRouter from "@routes/UserRoutes";
 import authRouter from "@routes/AuthRoutes";
 import serviceRouter from "@routes/ServiceRoutes";
 import clientRouter from "@routes/ClientRoutes";
+import appointmentRouter from "@routes/AppointmentRoutes";
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use("/users", userRouter);
 router.use("/auth", authRouter);
 router.use("/services", serviceRouter);
 router.use("/clients", clientRouter);
+router.use("/appointments", appointmentRouter);
 
 export default router;

@@ -78,12 +78,54 @@ module.exports.up = (pgm) => {
     created_at: { type: "timestamp", default: pgm.func("now()") },
   });
 
+  pgm.createType("appointment_status", ["pending", "confirmed", "cancelled"]);
+  pgm.createTable("appointments", {
+    id: {
+      type: "uuid",
+      primaryKey: true,
+      default: pgm.func("uuid_generate_v4()"),
+    },
+    user_id: {
+      type: "uuid",
+      notNull: true,
+      references: "users",
+      onDelete: "CASCADE",
+    },
+    company_id: {
+      type: "uuid",
+      notNull: true,
+      references: "companies",
+      onDelete: "CASCADE",
+    },
+    service_id: {
+      type: "uuid",
+      notNull: true,
+      references: "services",
+      onDelete: "CASCADE",
+    },
+    status: {
+      type: "appointment_status",
+      notNull: true,
+      default: "pending",
+    },
+    created_at: { type: "timestamp", default: pgm.func("now()") },
+    updated_at: { type: "timestamp", default: pgm.func("now()") },
+    description: { type: "varchar(3000)" },
+    start_date: { type: "timestamp", notNull: true },
+  });
+
   pgm.createIndex("companies", "name", { unique: true });
   pgm.createIndex("users", "company_id");
   pgm.createIndex("users", "role");
   pgm.createIndex("sessions", "user_id");
   pgm.createIndex("services", "company_id");
   pgm.createIndex("services", "id", { unique: true });
+  pgm.createIndex("appointments", "user_id");
+  pgm.createIndex("appointments", "company_id");
+  pgm.createIndex("appointments", "service_id");
+  pgm.createIndex("appointments", "start_date");
+  pgm.createIndex("appointments", "status");
+  pgm.createIndex("appointments", ["user_id", "start_date", "company_id"]);
 };
 
 /**
@@ -92,9 +134,11 @@ module.exports.up = (pgm) => {
  */
 module.exports.down = (pgm) => {
   pgm.dropIndex("services");
+  pgm.dropTable("appointments");
+  pgm.dropType("appointment_status");
   pgm.dropTable("sessions");
+  pgm.dropTable("services");
   pgm.dropTable("users");
   pgm.dropTable("companies");
-  pgm.sql(`DROP TYPE IF EXISTS user_role`);
   pgm.dropExtension("uuid-ossp");
 };
