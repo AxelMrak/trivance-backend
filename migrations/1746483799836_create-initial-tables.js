@@ -91,6 +91,12 @@ module.exports.up = (pgm) => {
       references: "users",
       onDelete: "CASCADE",
     },
+    company_id: {
+      type: "uuid",
+      notNull: true,
+      references: "companies",
+      onDelete: "CASCADE",
+    },
     service_id: {
       type: "uuid",
       notNull: true,
@@ -107,7 +113,12 @@ module.exports.up = (pgm) => {
     start_date: { type: "timestamp", notNull: true },
     end_date: { type: "timestamp", notNull: true },
   });
-  pgm.addConstraint("appointments", "appointments_start_before_end_chk", "CHECK (start_date < end_date)");
+
+  pgm.addConstraint(
+    "appointments",
+    "appointments_start_before_end_chk",
+    "CHECK (start_date < end_date)",
+  );
   pgm.createIndex("companies", "name", { unique: true });
   pgm.createIndex("users", "company_id");
   pgm.createIndex("users", "role");
@@ -115,10 +126,11 @@ module.exports.up = (pgm) => {
   pgm.createIndex("services", "company_id");
   pgm.createIndex("services", "id", { unique: true });
   pgm.createIndex("appointments", "user_id");
+  pgm.createIndex("appointments", "company_id");
   pgm.createIndex("appointments", "service_id");
   pgm.createIndex("appointments", "start_date");
   pgm.createIndex("appointments", "status");
-  pgm.createIndex("appointments", ["user_id", "start_date"]);
+  pgm.createIndex("appointments", ["user_id", "start_date", "company_id"]);
 };
 
 /**
