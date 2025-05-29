@@ -111,6 +111,15 @@ const services = [
   },
 ];
 
+const statuses = ["pending", "confirmed", "cancelled"];
+
+const getRandomDateRange = () => {
+  const now = new Date();
+  const start = new Date(now.getTime() + Math.random() * 10 * 24 * 60 * 60 * 1000); // within 10 days
+  const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 hour later
+  return { start_date: start.toISOString(), end_date: end.toISOString() };
+};
+
 const seedDb = async () => {
   try {
     await client.connect();
@@ -155,12 +164,15 @@ const seedDb = async () => {
     );
     const existingEmails = new Set(existingUserRows.map((r) => r.email));
 
+    const insertedUserIds = [];
+
     for (const user of users) {
       if (existingEmails.has(user.email)) {
         console.log(`↩️ Skipping existing user: ${user.email}`);
         continue;
       }
 
+      const id = randomUUID();
       const hashed = bcrypt.hashSync(user.password, 10);
       await client.query(
         `INSERT INTO users (
@@ -168,48 +180,70 @@ const seedDb = async () => {
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8
         )`,
-        [
-          randomUUID(),
-          TRIVANCE_ID,
-          user.name,
-          user.email,
-          hashed,
-          user.role,
-          user.phone,
-          user.address,
-        ],
+        [id, TRIVANCE_ID, user.name, user.email, hashed, user.role, user.phone, user.address],
       );
+      insertedUserIds.push(id);
       console.log(`➕ Inserted user: ${user.email}`);
     }
 
-    const { rows: existingServices } = await client.query(
-      `SELECT name FROM services WHERE company_id = $1`,
+    const { rows: serviceRows } = await client.query(
+      `SELECT id, name FROM services WHERE company_id = $1`,
       [TRIVANCE_ID],
     );
-    const existingServiceNames = new Set(existingServices.map((s) => s.name));
+    const serviceMap = new Map(serviceRows.map((s) => [s.name, s.id]));
 
     for (const service of services) {
-      if (existingServiceNames.has(service.name)) {
+      if (serviceMap.has(service.name)) {
         console.log(`↩️ Skipping existing service: ${service.name}`);
         continue;
       }
 
+      const id = randomUUID();
       await client.query(
         `INSERT INTO services (
           id, company_id, name, description, duration, price
         ) VALUES (
           $1, $2, $3, $4, $5, $6
         )`,
+        [id, TRIVANCE_ID, service.name, service.description, service.duration, service.price],
+      );
+      serviceMap.set(service.name, id);
+      console.log(`➕ Inserted service: ${service.name}`);
+    }
+
+    // Insert appointments
+    const userIds = insertedUserIds.length
+      ? insertedUserIds
+      : (await client.query(`SELECT id FROM users WHERE company_id = $1`, [TRIVANCE_ID])).rows.map(
+        (u) => u.id,
+      );
+
+    const serviceIds = Array.from(serviceMap.values());
+
+    for (let i = 0; i < 10; i++) {
+      const userId = userIds[i % userIds.length];
+      const serviceId = serviceIds[i % serviceIds.length];
+      const { start_date, end_date } = getRandomDateRange();
+      const status = statuses[i % statuses.length];
+
+      await client.query(
+        `INSERT INTO appointments (
+          id, user_id, company_id, service_id, status, start_date, end_date, description
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8
+        )`,
         [
           randomUUID(),
+          userId,
           TRIVANCE_ID,
-          service.name,
-          service.description,
-          service.duration,
-          service.price,
+          serviceId,
+          status,
+          start_date,
+          end_date,
+          `Descripción automática ${i + 1}`,
         ],
       );
-      console.log(`➕ Inserted service: ${service.name}`);
+      console.log(`➕ Inserted appointment ${i + 1}`);
     }
 
     await client.query("COMMIT");
