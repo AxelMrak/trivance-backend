@@ -215,8 +215,8 @@ const seedDb = async () => {
     const userIds = insertedUserIds.length
       ? insertedUserIds
       : (await client.query(`SELECT id FROM users WHERE company_id = $1`, [TRIVANCE_ID])).rows.map(
-        (u) => u.id,
-      );
+          (u) => u.id,
+        );
 
     const serviceIds = Array.from(serviceMap.values());
 
@@ -230,7 +230,7 @@ const seedDb = async () => {
         `INSERT INTO appointments (
           id, user_id, company_id, service_id, status, start_date, description
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8
+          $1, $2, $3, $4, $5, $6, $7
         )`,
         [
           randomUUID(),
