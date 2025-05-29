@@ -16,6 +16,9 @@ router.post(
   appointmentController.createAppointment,
 );
 router.get("/getAll", AuthMiddleware, appointmentController.getAll);
+router.get("/get/:id", AuthMiddleware, appointmentController.getById);
+router.put("/update/:id", AuthMiddleware, appointmentController.updateAppointment);
+router.delete("/delete/:id", AuthMiddleware, appointmentController.deleteAppointment);
 
 export default router;
 

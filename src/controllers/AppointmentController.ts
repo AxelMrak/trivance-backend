@@ -37,7 +37,7 @@ export class AppointmentController {
       const updatedData = req.body;
       const updatedAppointment = await this.appointmentService.updateAppointment(id, updatedData);
       if (updatedAppointment) {
-        res.json(updatedAppointment);
+        res.status(206).json(updatedAppointment);
       } else {
         res.status(404).json({ error: "Appointment not found" });
       }
@@ -47,12 +47,12 @@ export class AppointmentController {
     }
   };
 
-  deleteAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
+  deleteAppointment = async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
       const result = await this.appointmentService.deleteAppointment(id);
       if (result) {
-        res.status(204).send();
+        res.status(204).send({ message: "Appointment deleted successfully", id: result });
       } else {
         res.status(404).json({ error: "Appointment not found" });
       }
