@@ -19,7 +19,6 @@ router.use("/users", userRouter);
 router.use("/auth", authRouter);
 router.use("/services", serviceRouter);
 router.use("/clients", clientRouter);
-router.use("/appointment", appointmentRouter);
+router.use("/appointments", appointmentRouter);
 
 export default router;
-

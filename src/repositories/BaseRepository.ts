@@ -16,6 +16,7 @@ export class BaseRepository<T> {
   constructor(table: string) {
     this.table = table;
   }
+
   // TODO: IMPROVE ERROR HANDLING WITH BETTER MESSAGES AND REUSABLE ERRORS
   async findWithCondition(whereClause: string, values: any[] = []): Promise<T[]> {
     try {
@@ -42,6 +43,7 @@ export class BaseRepository<T> {
       throw new Error("Database error");
     }
   }
+
   async findManyByField(field: string, value: any): Promise<T[]> {
     return this.findWithCondition(`${field} = $1`, [value]);
   }

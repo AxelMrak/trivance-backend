@@ -1,10 +1,24 @@
-import { BaseRepository } from "./BaseRepository";
 import { Appointment, AppointmentStatus } from "@/entities/appointment";
 import { dbClient } from "@/config/db";
+
+import { BaseRepository } from "./BaseRepository";
 
 export class AppointmentRepository extends BaseRepository<Appointment> {
   constructor() {
     super("appointments");
+  }
+
+  async getCompanyAppointments(companyId: string): Promise<Appointment[]> {
+    const whereClause = "company_id = $1";
+    const values = [companyId];
+    try {
+      const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
+      const result = await dbClient.query(query, values);
+      return result.rows;
+    } catch (error) {
+      console.error("Error fetching company appointments:", error);
+      throw new Error("Database error");
+    }
   }
 
   async findByUserId(userId: string): Promise<Appointment[]> {
@@ -20,7 +34,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
   }
 
   async findUpcomingByUserId(userId: string, fromDate: Date): Promise<Appointment[]> {
-    const whereClause = `user_id = $1 AND start_time >= $2 ORDER BY start_time ASC`;
+    const whereClause = "user_id = $1 AND start_time >= $2 ORDER BY start_time ASC";
     const values = [userId, fromDate];
     try {
       const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
@@ -32,3 +46,4 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     }
   }
 }
+

@@ -5,44 +5,38 @@ export class AppointmentService {
   constructor(private repository: AppointmentRepository) {}
 
   async getAll(): Promise<Appointment[]> {
-    return this.repository.findAll();
+    const companyID = process.env.COMPANY_ID;
+    return this.repository.getCompanyAppointments(companyID || "");
   }
 
   async getById(id: string): Promise<Appointment | null> {
     return this.repository.findById(id);
   }
-    async getUpcomingByUserId(userId: string, fromDate: Date): Promise<Appointment[]> {
-    return this.repository.findUpcomingByUserId(userId, fromDate);
-  }
 
-  async create(appointment: AppointmentCreateDTO): Promise<Appointment> {
-    return this.repository.create(appointment);
-  }
-
-  async update(id: string, updatedData: Appointment): Promise<Appointment | null> {
+  async updateAppointment(
+    id: string,
+    updatedData: Partial<Appointment>,
+  ): Promise<Appointment | null> {
     return this.repository.update(id, updatedData);
   }
 
-  async delete(id: string): Promise<string | number | null> {
-    return this.repository.delete(id);
+  async deleteAppointment(id: string): Promise<string | number | null> {
+    const deletedAppointment = await this.repository.delete(id);
+    if (!deletedAppointment) {
+      throw new Error("Appointment not found");
+    }
+    return deletedAppointment;
   }
 
-  async getByUserId(userId: string): Promise<Appointment[]> {
-    return this.repository.findByUserId(userId);
-  }
-
-  async getByServiceId(serviceId: string): Promise<Appointment[]> {
-    return this.repository.findByServiceId(serviceId);
-  }
-  async cancel(id: string): Promise<Appointment | null> {
-    return this.repository.setStatus(id, 0); 
-  }
-
-  async confirm(id: string): Promise<Appointment | null> {
-    return this.repository.setStatus(id, 1);
-  }
-
-  async markPending(id: string): Promise<Appointment | null> {
-    return this.repository.setStatus(id, 2);
+  async createAppointment(appointmentData: Partial<AppointmentCreateDTO>): Promise<Appointment> {
+    const companyID = process.env.COMPANY_ID;
+    if (!companyID) {
+      throw new Error("Company ID is not set");
+    }
+    return this.repository.create({
+      ...appointmentData,
+      companyId: companyID,
+    });
   }
 }
+
