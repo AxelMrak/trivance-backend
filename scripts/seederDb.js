@@ -223,12 +223,12 @@ const seedDb = async () => {
     for (let i = 0; i < 10; i++) {
       const userId = userIds[i % userIds.length];
       const serviceId = serviceIds[i % serviceIds.length];
-      const { start_date, end_date } = getRandomDateRange();
+      const { start_date } = getRandomDateRange();
       const status = statuses[i % statuses.length];
 
       await client.query(
         `INSERT INTO appointments (
-          id, user_id, company_id, service_id, status, start_date, end_date, description
+          id, user_id, company_id, service_id, status, start_date, description
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8
         )`,
@@ -239,7 +239,6 @@ const seedDb = async () => {
           serviceId,
           status,
           start_date,
-          end_date,
           `Descripción automática ${i + 1}`,
         ],
       );
