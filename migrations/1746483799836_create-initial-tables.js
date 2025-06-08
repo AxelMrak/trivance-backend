@@ -57,6 +57,7 @@ module.exports.up = (pgm) => {
     description: { type: "text" },
     duration: { type: "interval", notNull: true },
     price: { type: "numeric(10, 2)" },
+    requires_deposit: { type: "boolean", notNull: true, default: false },
     created_at: { type: "timestamp", default: pgm.func("now()") },
   });
 
@@ -112,6 +113,22 @@ module.exports.up = (pgm) => {
     updated_at: { type: "timestamp", default: pgm.func("now()") },
     description: { type: "varchar(3000)" },
     start_date: { type: "timestamp", notNull: true },
+  });
+
+  pgm.createTable("orders", {
+    id: { type: "uuid", primaryKey: true, default: pgm.func("uuid_generate_v4()") },
+    appointment_id: {
+      type: "uuid",
+      references: "appointments",
+      notNull: true,
+      onDelete: "CASCADE",
+    },
+    user_id: { type: "uuid", references: "users", notNull: true, onDelete: "CASCADE" },
+    provider: { type: "text", notNull: true },
+    external_id: { type: "text", notNull: true },
+    payment_link: { type: "text" },
+    status: { type: "text", notNull: true, default: "pending" },
+    created_at: { type: "timestamp", default: pgm.func("now()") },
   });
 
   pgm.createIndex("companies", "name", { unique: true });
