@@ -143,6 +143,11 @@ module.exports.up = (pgm) => {
   pgm.createIndex("appointments", "start_date");
   pgm.createIndex("appointments", "status");
   pgm.createIndex("appointments", ["user_id", "start_date", "company_id"]);
+
+  pgm.createIndex("orders", "appointment_id");
+  pgm.createIndex("orders", "user_id");
+  pgm.createIndex("orders", "provider");
+  pgm.createIndex("orders", "external_id", { unique: true });
 };
 
 /**
@@ -157,5 +162,6 @@ module.exports.down = (pgm) => {
   pgm.dropTable("services");
   pgm.dropTable("users");
   pgm.dropTable("companies");
+  pgm.dropTable("orders");
   pgm.dropExtension("uuid-ossp");
 };
