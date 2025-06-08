@@ -1,7 +1,6 @@
-import { Appointment, AppointmentStatus } from "@/entities/appointment";
+import { Appointment } from "@/entities/appointment";
 import { dbClient } from "@/config/db";
-
-import { BaseRepository } from "./BaseRepository";
+import { BaseRepository } from "@/repositories/BaseRepository";
 import {
   generateGetAppointmentByIdWithJoinsQuery,
   generateGetAppointmentsWithJoinsQuery,
