@@ -6,7 +6,6 @@ export enum UserRole {
   ADMIN = 4,
   SUPER_USER = 5,
 }
-
 export interface User {
   id: string;
   company_id: string;
@@ -16,8 +15,8 @@ export interface User {
   phone: string;
   address: string;
   role: UserRole;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PublicUserDTO {
@@ -28,6 +27,6 @@ export interface PublicUserDTO {
   phone: string;
   address: string;
   role: UserRole;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
 }

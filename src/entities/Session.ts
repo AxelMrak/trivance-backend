@@ -4,7 +4,7 @@ export interface Session {
   token: string;
   user_agent: string;
   ip_address: string;
-  created_at: Date;
+  created_at: string;
 }
 
 export interface PublicSession {

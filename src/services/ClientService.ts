@@ -6,7 +6,6 @@ export class ClientService {
   constructor(private clientRepository: ClientRepository) {}
 
   async getClientsByRole(role: UserRole): Promise<Omit<User, "password">[]> {
-    console.log(`Fetching clients with role: ${role}`);
     const clients = await this.clientRepository.findWithCondition("role = $1", [role]);
     if (clients.length === 0) {
       throw new Error(`No clients found with ${role} role.`);

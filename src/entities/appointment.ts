@@ -1,41 +1,20 @@
-export enum AppointmentStatus {
-  Pending = 2,
-  Confirmed = 1,
-  Cancelled = 0,
-}
-
-export interface AppointmentUser {
-  id: string;
-  name: string;
-}
-
-export interface AppointmentService {
-  id: string;
-  name: string;
-  description: string;
-  duration: number;
-  price: number;
-}
+import { AppointmentStatus } from "@entities/EnumTypes";
 
 export interface Appointment {
-  id: string;
-  serviceId: string;
-  userId: string;
-  companyId: string;
+  id: string; // UUID
+  user_id: string; // UUID FK
+  service_id: string; // UUID FK
   status: AppointmentStatus;
-  startDate: Date;
-  endDate: Date;
-  createdAt: Date;
-  updatedAt: Date;
   description?: string;
-  user: AppointmentUser;
-  service: AppointmentService;
+  start_date: string; // timestamp
+  created_at: string;
+  updated_at: string;
 }
 
 export type AppointmentCreateDTO = {
   service_id: string;
   user_id: string;
-  company_id: string;
-  start_date: Date;
+  start_date: string;
   description?: string;
+  status?: AppointmentStatus;
 };

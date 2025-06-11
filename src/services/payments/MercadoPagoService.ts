@@ -1,13 +1,12 @@
 import { Preference } from "mercadopago";
 
 import { mercadoPagoClient } from "@/config/mercadopago";
+import { PaymentProvider } from "@/entities/PaymentProvider";
 
-export class PaymentService {
-  private mercadopagoClient = mercadoPagoClient;
+export class MercadoPagoService implements PaymentProvider {
+  private preference = new Preference(mercadoPagoClient);
 
   async createPaymentLink(item: { id: string; title: string; price: number }): Promise<string> {
-    const preference = new Preference(this.mercadopagoClient);
-
     const payload = {
       items: [
         {
@@ -26,10 +25,9 @@ export class PaymentService {
       auto_return: "approved",
     };
 
-    const response: any = await preference.create({ body: payload });
-    console.log("Payment link created:", response);
-    if (!response) {
-      console.error("Failed to create payment link:", response);
+    const response: any = await this.preference.create({ body: payload });
+
+    if (!response || !response.init_point) {
       throw new Error("Failed to create payment link");
     }
 

@@ -14,7 +14,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
   async getCompanyAppointments(companyId: string): Promise<Appointment[]> {
     try {
       const query = generateGetAppointmentsWithJoinsQuery();
-      const result = await dbClient.query(query, [companyId]);
+      const result = await dbClient.query(query);
       return result.rows;
     } catch (error) {
       console.error("Error fetching company appointments:", error);
@@ -28,7 +28,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
   ): Promise<Appointment | null> {
     try {
       const query = generateGetAppointmentByIdWithJoinsQuery();
-      const result = await dbClient.query(query, [companyId, appointmentId]);
+      const result = await dbClient.query(query, [appointmentId]);
       return result.rows[0] || null;
     } catch (error) {
       console.error("Error fetching appointment by ID with joins:", error);
