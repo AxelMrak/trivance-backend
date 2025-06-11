@@ -24,6 +24,32 @@ const initialUsers = [
   "axel@test.com",
 ];
 
+const rolesToSeed = [0, 1, 2, 3, 4];
+const femaleNames = [
+  "Valeria",
+  "Camila",
+  "Carolina",
+  "Claudia",
+  "Clara",
+  "Florencia",
+  "Lucía",
+  "María",
+  "Ana",
+  "Sofía",
+  "Valentina",
+  "Victoria",
+  "Gabriela",
+  "Isabella",
+  "Martina",
+  "Juliana",
+  "Renata",
+  "Emilia",
+  "Daniela",
+  "Paula",
+  "Elena",
+  "Marta",
+];
+
 const users = initialUsers.map((email) => {
   const name = email.split("@")[0];
   return {
@@ -36,11 +62,10 @@ const users = initialUsers.map((email) => {
   };
 });
 
-const rolesToSeed = [0, 1, 2, 3, 4];
 for (const role of rolesToSeed) {
   users.push({
-    name: `user_role_${role}`,
-    email: `role${role}_${Math.random().toString(36).substring(2, 8)}@test.com`,
+    name: `${femaleNames[Math.floor(Math.random() * femaleNames.length)]}`,
+    email: ` ${femaleNames[Math.floor(Math.random() * femaleNames.length)].toLowerCase()}@example.com`,
     password: "password",
     role,
     phone: "9876543210",
@@ -50,64 +75,64 @@ for (const role of rolesToSeed) {
 
 const services = [
   {
-    name: "Consultoría Estratégica",
-    description: "Análisis y planificación de negocios personalizados.",
-    duration: "1 hour",
-    price: 150.0,
-  },
-  {
-    name: "Desarrollo Web",
-    description: "Sitios web modernos y escalables.",
-    duration: "2 hours",
-    price: 300.0,
-  },
-  {
-    name: "Mantenimiento Técnico",
-    description: "Soporte técnico mensual.",
+    name: "limpieza facial profunda",
+    description: "tratamiento de limpieza intensiva para todo tipo de piel.",
     duration: "1 hour",
     price: 100.0,
   },
   {
-    name: "Automatización de Procesos",
-    description: "Scripts y bots para mejorar productividad.",
-    duration: "3 hours",
-    price: 450.0,
-  },
-  {
-    name: "Diseño UI/UX",
-    description: "Diseño centrado en el usuario para apps y sitios.",
-    duration: "1.5 hours",
-    price: 200.0,
-  },
-  {
-    name: "Capacitación en Tecnología",
-    description: "Cursos personalizados para equipos.",
-    duration: "2.5 hours",
-    price: 250.0,
-  },
-  {
-    name: "Auditoría de Código",
-    description: "Revisión detallada de buenas prácticas y seguridad.",
-    duration: "2 hours",
-    price: 350.0,
-  },
-  {
-    name: "Integraciones con APIs",
-    description: "Conexión con servicios externos (Stripe, Mailchimp, etc).",
-    duration: "1.5 hours",
-    price: 275.0,
-  },
-  {
-    name: "Optimización de Rendimiento",
-    description: "Mejora de velocidad y eficiencia en aplicaciones.",
+    name: "masaje relajante",
+    description: "masaje corporal para reducir estrés y tensión muscular.",
     duration: "1 hour",
-    price: 180.0,
+    price: 80.0,
   },
   {
-    name: "Soporte Premium",
-    description: "Atención prioritaria y resolución ágil.",
-    duration: "0.5 hour",
+    name: "depilación láser",
+    description: "eliminación de vello con tecnología láser.",
+    duration: "30 mins",
+    price: 120.0,
+  },
+  {
+    name: "tratamiento anticelulítico",
+    description: "mejora la apariencia de la piel con técnicas reafirmantes.",
+    duration: "1.5 hours",
+    price: 150.0,
+  },
+  {
+    name: "microdermoabrasión",
+    description: "exfoliación para regenerar la piel.",
+    duration: "45 mins",
+    price: 110.0,
+  },
+  {
+    name: "radiofrecuencia facial",
+    description: "reafirmación de la piel del rostro.",
+    duration: "1 hour",
+    price: 130.0,
+  },
+  {
+    name: "manicura y pedicura",
+    description: "servicio completo de uñas para manos y pies.",
+    duration: "2 hours",
     price: 90.0,
+  },
+  {
+    name: "spa de pies",
+    description: "hidratación y relajación profunda para los pies.",
+    duration: "1 hour",
+    price: 70.0,
+  },
+  {
+    name: "pestañas 3d",
+    description: "extensiones de pestañas con efecto volumen.",
+    duration: "1.5 hours",
+    price: 140.0,
+  },
+  {
+    name: "perfilado de cejas",
+    description: "diseño y depilación de cejas personalizado.",
+    duration: "30 mins",
+    price: 60.0,
   },
 ];
 
@@ -215,8 +240,8 @@ const seedDb = async () => {
     const userIds = insertedUserIds.length
       ? insertedUserIds
       : (await client.query(`SELECT id FROM users WHERE company_id = $1`, [TRIVANCE_ID])).rows.map(
-          (u) => u.id,
-        );
+        (u) => u.id,
+      );
 
     const serviceIds = Array.from(serviceMap.values());
 
@@ -228,19 +253,11 @@ const seedDb = async () => {
 
       await client.query(
         `INSERT INTO appointments (
-          id, user_id, company_id, service_id, status, start_date, description
+          id, user_id, service_id, status, start_date, description
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7
+          $1, $2, $3, $4, $5, $6
         )`,
-        [
-          randomUUID(),
-          userId,
-          TRIVANCE_ID,
-          serviceId,
-          status,
-          start_date,
-          `Descripción automática ${i + 1}`,
-        ],
+        [randomUUID(), userId, serviceId, status, start_date, `Descripción automática ${i + 1}`],
       );
       console.log(`➕ Inserted appointment ${i + 1}`);
     }
