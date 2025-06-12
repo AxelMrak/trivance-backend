@@ -228,14 +228,13 @@ const seedDb = async () => {
 
       await client.query(
         `INSERT INTO appointments (
-          id, user_id, company_id, service_id, status, start_date, description
+          id, user_id, service_id, status, start_date, description
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7
+          $1, $2, $3, $4, $5, $6
         )`,
         [
           randomUUID(),
           userId,
-          TRIVANCE_ID,
           serviceId,
           status,
           start_date,

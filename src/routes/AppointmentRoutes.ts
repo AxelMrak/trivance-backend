@@ -5,10 +5,12 @@ import { AppointmentService } from "@/services/AppointmentService";
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
 import AuthMiddleware from "@/middlewares/authmiddleware";
 import { validateAppointmentCreate } from "@/middlewares/validateAppointmentCreate";
+import { ServicesRepository } from "@/repositories/ServiceRepository";
 
 const router = Router();
+const serviceRepository = new ServicesRepository();
 const appointmentRepository = new AppointmentRepository();
-const appointmentService = new AppointmentService(appointmentRepository);
+const appointmentService = new AppointmentService(appointmentRepository, serviceRepository);
 const appointmentController = new AppointmentController(appointmentService);
 router.post(
   "/create",

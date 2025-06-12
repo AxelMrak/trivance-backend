@@ -101,15 +101,7 @@ module.exports.up = (pgm) => {
       type: "appointment_status",
       notNull: true,
       default: "pending",
-    },
-    time: {
-      type: "varchar(5)",
-      notNull: true,
-    },
-    end_date: {
-      type: "timestamp",
-      notNull: true,
-    },
+    },  
     created_at: { type: "timestamp", default: pgm.func("now()") },
     updated_at: { type: "timestamp", default: pgm.func("now()") },
     description: { type: "varchar(3000)" },
