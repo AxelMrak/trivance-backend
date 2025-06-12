@@ -25,6 +25,7 @@ export interface Appointment {
   status: AppointmentStatus;
   startDate: Date;
   endDate: Date;
+  time: string; 
   createdAt: Date;
   updatedAt: Date;
   description?: string;
@@ -35,7 +36,7 @@ export interface Appointment {
 export type AppointmentCreateDTO = {
   service_id: string;
   user_id: string;
-  company_id: string;
   start_date: Date;
+  time: string;
   description?: string;
 };

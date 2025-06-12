@@ -91,12 +91,6 @@ module.exports.up = (pgm) => {
       references: "users",
       onDelete: "CASCADE",
     },
-    company_id: {
-      type: "uuid",
-      notNull: true,
-      references: "companies",
-      onDelete: "CASCADE",
-    },
     service_id: {
       type: "uuid",
       notNull: true,
@@ -107,6 +101,14 @@ module.exports.up = (pgm) => {
       type: "appointment_status",
       notNull: true,
       default: "pending",
+    },
+    time: {
+      type: "varchar(5)",
+      notNull: true,
+    },
+    end_date: {
+      type: "timestamp",
+      notNull: true,
     },
     created_at: { type: "timestamp", default: pgm.func("now()") },
     updated_at: { type: "timestamp", default: pgm.func("now()") },
@@ -121,11 +123,10 @@ module.exports.up = (pgm) => {
   pgm.createIndex("services", "company_id");
   pgm.createIndex("services", "id", { unique: true });
   pgm.createIndex("appointments", "user_id");
-  pgm.createIndex("appointments", "company_id");
   pgm.createIndex("appointments", "service_id");
   pgm.createIndex("appointments", "start_date");
   pgm.createIndex("appointments", "status");
-  pgm.createIndex("appointments", ["user_id", "start_date", "company_id"]);
+  pgm.createIndex("appointments", ["user_id", "start_date", "service_id"]);
 };
 
 /**
