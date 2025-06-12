@@ -12,4 +12,5 @@ const userController = new UserController(userService);
 
 router.get("/getAll", userController.getAll);
 router.get("/get/:id", userController.getById);
+
 export default router;

@@ -31,6 +31,6 @@ export class MercadoPagoService implements PaymentProvider {
       throw new Error("Failed to create payment link");
     }
 
-    return response.init_point;
+    return response;
   }
 }

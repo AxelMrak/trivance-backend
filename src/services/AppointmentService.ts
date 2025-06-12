@@ -72,13 +72,12 @@ export class AppointmentService {
     return createdAppointment;
   }
 
-  async createPaymentLink(appointmentId: string): Promise<string> {
+  async createPaymentLink(appointmentId: string): Promise<string | null> {
     const appointment = await this.getById(appointmentId);
     if (!appointment) {
-      console.error("Appointment not found for ID:", appointmentId);
-      console.log("APPOINTMENT Error:", appointment);
       throw new Error("Appointment not found");
     }
+
     const service = await this.serviceHandlerService.getServiceById(appointment.service_id);
     if (!service) {
       throw new Error("Service not found");
@@ -86,13 +85,14 @@ export class AppointmentService {
 
     const formattedTitle = `Turno para ${service.name} - ${formatDate(appointment.start_date)}`;
     const provider = PaymentServiceFactory.getProvider("mercadopago");
-    const paymentLink = await provider.createPaymentLink({
+
+    const paymentResponse = (await provider.createPaymentLink({
       id: appointment.id,
       title: formattedTitle,
       price: Number(service.price),
-    });
-
-    if (!paymentLink) {
+    })) as any;
+    console.log("Payment link response:", paymentResponse);
+    if (!paymentResponse) {
       throw new Error("Failed to create payment link");
     }
 
@@ -100,15 +100,14 @@ export class AppointmentService {
       appointment_id: appointment.id,
       status: "pending",
       provider: "mercadopago",
-      reference_id: paymentLink,
+      reference_id: paymentResponse.id,
     };
 
     const createdOrder = await this.orderService.createOrder(order);
-
     if (!createdOrder) {
       throw new Error("Failed to create order");
     }
 
-    return paymentLink;
+    return paymentResponse.init_point;
   }
 }

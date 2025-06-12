@@ -38,4 +38,12 @@ export class OrderService {
     }
     return deletedOrder;
   }
+
+  async getOrderByReference(reference: string): Promise<Order | null> {
+    const order = await this.repository.findByField("reference_id", reference);
+    if (!order) {
+      throw new Error("Order not found for the given reference");
+    }
+    return order;
+  }
 }

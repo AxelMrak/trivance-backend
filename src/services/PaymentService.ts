@@ -5,7 +5,7 @@ import { mercadoPagoClient } from "@/config/mercadopago";
 export class PaymentService {
   private mercadopagoClient = mercadoPagoClient;
 
-  async createPaymentLink(item: { id: string; title: string; price: number }): Promise<string> {
+  async createPaymentLink(item: { id: string; title: string; price: number }): Promise<any> {
     const preference = new Preference(this.mercadopagoClient);
 
     const payload = {
@@ -33,6 +33,6 @@ export class PaymentService {
       throw new Error("Failed to create payment link");
     }
 
-    return response.init_point;
+    return response;
   }
 }
