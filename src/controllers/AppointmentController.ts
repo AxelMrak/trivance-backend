@@ -58,14 +58,27 @@ export class AppointmentController {
     }
   };
 
+ 
   createAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const appointmentData = req.body;
       const newAppointment = await this.appointmentService.createAppointment(appointmentData);
-      res.status(201).json(newAppointment);
+      res.status(201).json({
+        id: newAppointment.id,
+        userId: newAppointment.userId,
+        serviceId: newAppointment.serviceId,
+        startDate: newAppointment.startDate.toISOString().split("T")[0], 
+        time: newAppointment.time,                                      
+        endDate: newAppointment.endDate.toISOString(),                   
+        description: newAppointment.description,
+        status: newAppointment.status,
+        createdAt: newAppointment.createdAt,
+        updatedAt: newAppointment.updatedAt,
+      });
     } catch (error) {
       console.error("Error creating appointment:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   };
 }
+  
