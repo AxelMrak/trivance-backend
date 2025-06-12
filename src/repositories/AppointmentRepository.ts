@@ -1,4 +1,4 @@
-import { Appointment } from "@/entities/appointment";
+import { Appointment } from "@/entities/Appointment";
 import { dbClient } from "@/config/db";
 import { BaseRepository } from "@/repositories/BaseRepository";
 import {
@@ -11,7 +11,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     super("appointments");
   }
 
-  async getCompanyAppointments(companyId: string): Promise<Appointment[]> {
+  async getCompanyAppointments(): Promise<Appointment[]> {
     try {
       const query = generateGetAppointmentsWithJoinsQuery();
       const result = await dbClient.query(query);
@@ -22,10 +22,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     }
   }
 
-  async getAppointmentByIdWithJoins(
-    companyId: string,
-    appointmentId: string,
-  ): Promise<Appointment | null> {
+  async getAppointmentByIdWithJoins(appointmentId: string): Promise<Appointment | null> {
     try {
       const query = generateGetAppointmentByIdWithJoinsQuery();
       const result = await dbClient.query(query, [appointmentId]);

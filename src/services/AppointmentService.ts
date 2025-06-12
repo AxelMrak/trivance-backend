@@ -1,25 +1,24 @@
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
-import { Appointment, AppointmentCreateDTO } from "@/entities/appointment";
+import { Appointment, AppointmentCreateDTO } from "@/entities/Appointment";
 import { OrderService } from "@/services/OrderService";
 import { CreateOrderDto } from "@/entities/Order";
 import { ServiceHandlerService } from "@services/ServiceHandlerService";
 import { PaymentServiceFactory } from "@services/payments/PaymentServiceFactory";
-
-const companyID = process.env.COMPANY_ID || "";
+import { formatDate } from "@/utils/format";
 
 export class AppointmentService {
   constructor(
     private repository: AppointmentRepository,
     private serviceHandlerService: ServiceHandlerService,
     private orderService: OrderService,
-  ) { }
+  ) {}
 
   async getAll(): Promise<Appointment[]> {
-    return this.repository.getCompanyAppointments(companyID);
+    return this.repository.getCompanyAppointments();
   }
 
   async getById(id: string): Promise<Appointment | null> {
-    const appointment = await this.repository.getAppointmentByIdWithJoins(companyID, id);
+    const appointment = await this.repository.getAppointmentByIdWithJoins(id);
     if (!appointment) {
       throw new Error("Appointment not found");
     }
@@ -85,7 +84,7 @@ export class AppointmentService {
       throw new Error("Service not found");
     }
 
-    const formattedTitle = `Turno para ${service.name} - ${appointment.start_date}`;
+    const formattedTitle = `Turno para ${service.name} - ${formatDate(appointment.start_date)}`;
     const provider = PaymentServiceFactory.getProvider("mercadopago");
     const paymentLink = await provider.createPaymentLink({
       id: appointment.id,
