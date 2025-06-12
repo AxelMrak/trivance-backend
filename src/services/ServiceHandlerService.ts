@@ -3,7 +3,7 @@ import { Service } from "@/entities/Service";
 import { ServiceRequest } from "@/entities/Request";
 
 export class ServiceHandlerService {
-  constructor(private repository: ServicesRepository) {}
+  constructor(private repository: ServicesRepository) { }
 
   async createService(payload: ServiceRequest) {
     const companyID = process.env.COMPANY_ID || "";
@@ -16,7 +16,7 @@ export class ServiceHandlerService {
       company_id: companyID,
       name: payload.name,
       description: payload.description,
-      price: payload.price,
+      price: String(payload.price),
       duration: payload.duration,
     });
 
@@ -49,7 +49,12 @@ export class ServiceHandlerService {
   }
 
   async updateService(id: string, payload: ServiceRequest): Promise<Service | null> {
-    const service = await this.repository.update(id, payload);
+    const service = await this.repository.update(id, {
+      name: payload.name,
+      description: payload.description,
+      price: String(payload.price),
+      duration: payload.duration,
+    });
     if (!service) {
       throw new Error("Service not found");
     }

@@ -13,7 +13,6 @@ export const generateGetAppointmentsWithJoinsQuery = (): string => {
     FROM appointments a
     JOIN users u ON a.user_id = u.id
     JOIN services s ON a.service_id = s.id
-    WHERE a.company_id = $1
     ORDER BY a.start_date DESC
   `;
 };
@@ -33,6 +32,6 @@ export const generateGetAppointmentByIdWithJoinsQuery = (): string => {
     FROM appointments a
     JOIN users u ON a.user_id = u.id
     JOIN services s ON a.service_id = s.id
-    WHERE a.company_id = $1 AND a.id = $2
+    WHERE a.id = $1
   `;
 };

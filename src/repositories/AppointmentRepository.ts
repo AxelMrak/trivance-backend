@@ -1,7 +1,6 @@
-import { Appointment, AppointmentStatus } from "@/entities/appointment";
+import { Appointment } from "@/entities/Appointment";
 import { dbClient } from "@/config/db";
-
-import { BaseRepository } from "./BaseRepository";
+import { BaseRepository } from "@/repositories/BaseRepository";
 import {
   generateGetAppointmentByIdWithJoinsQuery,
   generateGetAppointmentsWithJoinsQuery,
@@ -12,10 +11,10 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     super("appointments");
   }
 
-  async getCompanyAppointments(companyId: string): Promise<Appointment[]> {
+  async getCompanyAppointments(): Promise<Appointment[]> {
     try {
       const query = generateGetAppointmentsWithJoinsQuery();
-      const result = await dbClient.query(query, [companyId]);
+      const result = await dbClient.query(query);
       return result.rows;
     } catch (error) {
       console.error("Error fetching company appointments:", error);
@@ -23,13 +22,10 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     }
   }
 
-  async getAppointmentByIdWithJoins(
-    companyId: string,
-    appointmentId: string,
-  ): Promise<Appointment | null> {
+  async getAppointmentByIdWithJoins(appointmentId: string): Promise<Appointment | null> {
     try {
       const query = generateGetAppointmentByIdWithJoinsQuery();
-      const result = await dbClient.query(query, [companyId, appointmentId]);
+      const result = await dbClient.query(query, [appointmentId]);
       return result.rows[0] || null;
     } catch (error) {
       console.error("Error fetching appointment by ID with joins:", error);

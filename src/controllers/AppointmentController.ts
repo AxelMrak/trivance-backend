@@ -68,4 +68,15 @@ export class AppointmentController {
       res.status(500).json({ error: "Internal server error" });
     }
   };
+
+  createAppointmentPaymentLink = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const paymentLink = await this.appointmentService.createPaymentLink(id);
+      res.status(201).json({ paymentLink });
+    } catch (error) {
+      console.error("Error creating payment link:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
 }
