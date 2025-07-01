@@ -2,7 +2,7 @@ const { Client } = require("pg");
 const bcrypt = require("bcryptjs");
 const dotenv = require("dotenv");
 const { randomUUID } = require("crypto");
-
+// TODO: Clear db before seeding
 dotenv.config();
 
 const client = new Client({
@@ -49,7 +49,6 @@ const femaleNames = [
   "Elena",
   "Marta",
 ];
-
 const users = initialUsers.map((email) => {
   const name = email.split("@")[0];
   return {
@@ -65,7 +64,9 @@ const users = initialUsers.map((email) => {
 for (const role of rolesToSeed) {
   users.push({
     name: `${femaleNames[Math.floor(Math.random() * femaleNames.length)]}`,
-    email: ` ${femaleNames[Math.floor(Math.random() * femaleNames.length)].toLowerCase()}@example.com`,
+    email: ` ${femaleNames[Math.floor(Math.random() * femaleNames.length)].toLowerCase()}@example${Math.floor(
+      Math.random() * 1000 + 1,
+    )}.com`,
     password: "password",
     role,
     phone: "9876543210",

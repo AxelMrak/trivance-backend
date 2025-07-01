@@ -1,4 +1,5 @@
 import { Router } from "express";
+import express from "express";
 
 import { OrderService } from "@/services/OrderService";
 import { AppointmentService } from "@/services/AppointmentService";
@@ -29,6 +30,10 @@ router.get("/", (_req, res) => {
     status: "OK",
   });
 });
-router.post("/mercadopago", mercadoPagoWebhookController.handle);
-
+router.post(
+  "/mercadopago",
+  express.raw({ type: "application/json" }),
+  mercadoPagoWebhookController.handle,
+);
+router.use(express.json()); // Ensure JSON body parsing is enabled for other routes
 export default router;

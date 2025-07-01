@@ -24,6 +24,7 @@ export class PaymentService {
         pending: `${process.env.SITE_URL}/payment/pending`,
       },
       auto_return: "approved",
+      notification_url: "https://3681-179-36-246-106.ngrok-free.app/api/webhooks/mercadopago",
     };
 
     const response: any = await preference.create({ body: payload });
