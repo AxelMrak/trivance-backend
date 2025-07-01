@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+
 import { ErrorResponse } from "@/entities/Response";
 
 export const errorHandler = (err: Error, _req: Request, res: Response, _next: NextFunction) => {
@@ -27,8 +28,8 @@ export const errorHandler = (err: Error, _req: Request, res: Response, _next: Ne
 
     default:
       response.status = 500;
-      response.message = "Internal Server Error";
-      response.details = "An unexpected error occurred";
+      response.message = err.name || "Internal Server Error";
+      response.details = err.message || "An unexpected error occurred";
   }
 
   res.status(response.status).json(response);
