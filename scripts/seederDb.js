@@ -64,7 +64,7 @@ const users = initialUsers.map((email) => {
 for (const role of rolesToSeed) {
   users.push({
     name: `${femaleNames[Math.floor(Math.random() * femaleNames.length)]}`,
-    email: ` ${femaleNames[Math.floor(Math.random() * femaleNames.length)].toLowerCase()}@example${Math.floor(
+    email: `${femaleNames[Math.floor(Math.random() * femaleNames.length)].toLowerCase()}@example${Math.floor(
       Math.random() * 1000 + 1,
     )}.com`,
     password: "password",
