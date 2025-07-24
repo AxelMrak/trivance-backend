@@ -69,7 +69,13 @@ export class AppointmentService {
       throw new Error("Failed to create appointment");
     }
 
-    return createdAppointment;
+    const newAppointment = await this.getById(createdAppointment.id);
+
+    if (!newAppointment) {
+      throw new Error("Failed to fetch new appointment");
+    }
+
+    return newAppointment;
   }
 
   async createPaymentLink(appointmentId: string): Promise<string | null> {
