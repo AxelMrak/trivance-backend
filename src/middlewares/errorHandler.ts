@@ -10,7 +10,7 @@ export const errorHandler = (err: Error, _req: Request, res: Response, _next: Ne
   switch (err.name) {
     case "ValidationError":
       response.status = 400;
-      response.message = "Validation Error";
+      response.message = "Error de validacion";
       response.details = err.message;
       break;
 
@@ -22,14 +22,14 @@ export const errorHandler = (err: Error, _req: Request, res: Response, _next: Ne
 
     case "UnauthorizedError":
       response.status = 401;
-      response.message = "Unauthorized Access";
+      response.message = "Acceso no autorizado";
       response.details = err.message;
       break;
 
     default:
       response.status = 500;
       response.message = err.name || "Internal Server Error";
-      response.details = err.message || "An unexpected error occurred";
+      response.details = err.message || "Se ha producido un error inesperado";
   }
 
   res.status(response.status).json(response);

@@ -12,14 +12,14 @@ export const validateUserCreate: RequestHandler = (req, res, next) => {
       address: z.string().min(5),
     })
     .refine((data) => data.password === data.confirmedPassword, {
-      message: "Passwords do not match",
-      path: ["confirmedPassword"],
+      message: "Las contraseñas no coinciden",
+      path: ["Contraseña confirmada"],
     });
 
   const result = schema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({
-      message: "Validation error",
+      message: "Error de validacion",
       errors: result.error.errors.map((error) => ({
         field: error.path[0],
         message: error.message,
@@ -38,7 +38,7 @@ export const validateUserSignIn: RequestHandler = (req, res, next) => {
   const result = schema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({
-      message: "Validation error",
+      message: "Error de validacion",
       errors: result.error.errors.map((error) => ({
         field: error.path[0],
         message: error.message,
@@ -58,7 +58,7 @@ export const validateServiceCreate: RequestHandler = (req, res, next) => {
   const result = schema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({
-      message: "Validation error",
+      message: "Error de validacion",
       errors: result.error.errors.map((error) => ({
         field: error.path[0],
         message: error.message,
