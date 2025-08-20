@@ -20,7 +20,7 @@ export class AuthController {
       const token = data?.session?.token;
 
       if (!token) {
-        return res.status(500).json({ message: "Error creating user" });
+        return res.status(500).json({ message: "Error al crear usuario" });
       }
 
       res.cookie("token", token, {
@@ -69,7 +69,7 @@ export class AuthController {
       const token = req.cookies.token;
       await this.authService.signOut(token);
       res.clearCookie("token");
-      res.status(200).json({ message: "Logged out successfully" });
+      res.status(200).json({ message: "Se cerró sesión exitosamente" });
     } catch (error) {
       if (error instanceof Error) {
         res.status(401).json({ message: error.message });
@@ -79,7 +79,7 @@ export class AuthController {
 
   getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     if (!req.user?.userId) {
-      res.status(401).json({ message: "Unauthorized" });
+      res.status(401).json({ message: "No autorizado" });
       return;
     }
 

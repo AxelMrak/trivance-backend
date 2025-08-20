@@ -48,12 +48,12 @@ export class AppointmentController {
       const { id } = req.params;
       const result = await this.appointmentService.deleteAppointment(id);
       if (result) {
-        res.status(204).send({ message: "Appointment deleted successfully", id: result });
+        res.status(204).send({ message: "Turno eliminado con exito", id: result });
       } else {
-        res.status(404).json({ error: "Appointment not found" });
+        res.status(404).json({ error: "Turno no encontrado" });
       }
     } catch (error) {
-      console.error("Error deleting appointment:", error);
+      console.error("Error al eliminar el turno:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   };
@@ -64,7 +64,7 @@ export class AppointmentController {
       const newAppointment = await this.appointmentService.createAppointment(appointmentData);
       res.status(201).json(newAppointment);
     } catch (error) {
-      console.error("Error creating appointment:", error);
+      console.error("Error al crear turno:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   };
@@ -75,7 +75,7 @@ export class AppointmentController {
       const paymentLink = await this.appointmentService.createPaymentLink(id);
       res.status(201).json({ paymentLink });
     } catch (error) {
-      console.error("Error creating payment link:", error);
+      console.error("Error al crear Link de pago:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   };
