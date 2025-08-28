@@ -9,7 +9,7 @@ export class PaymentServiceFactory {
       // case "stripe":
       //   return new StripeService();
       default:
-        throw new Error(`Unsupported payment provider: ${provider}`);
+        throw new Error(`Proveedor de pagos no compatible: ${provider}`);
     }
   }
 }

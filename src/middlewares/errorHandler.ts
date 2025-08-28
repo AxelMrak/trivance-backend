@@ -16,7 +16,7 @@ export const errorHandler = (err: Error, _req: Request, res: Response, _next: Ne
 
     case "NotFoundError":
       response.status = 404;
-      response.message = "Resource Not Found";
+      response.message = "Recurso no encontrado";
       response.details = err.message;
       break;
 
@@ -28,7 +28,7 @@ export const errorHandler = (err: Error, _req: Request, res: Response, _next: Ne
 
     default:
       response.status = 500;
-      response.message = err.name || "Internal Server Error";
+      response.message = err.name || "Error Interno del Servidor.Contacte con soporte";
       response.details = err.message || "Se ha producido un error inesperado";
   }
 

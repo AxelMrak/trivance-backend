@@ -31,7 +31,7 @@ export class PaymentService {
     console.log("Payment link created:", response);
     if (!response) {
       console.error("Failed to create payment link:", response);
-      throw new Error("Failed to create payment link");
+      throw new Error("Fallo al crear el link de pago");
     }
 
     return response;

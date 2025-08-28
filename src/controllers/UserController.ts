@@ -10,7 +10,7 @@ export class UserController {
       const users = await this.userService.getUsers();
       res.json(users);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching users", error });
+      res.status(500).json({ message: "Error al recuperar usuarios", error });
     }
   };
 
@@ -23,10 +23,10 @@ export class UserController {
       if (user) {
         res.json(user);
       } else {
-        res.status(404).json({ message: "User not found" });
+        res.status(404).json({ message: "Usuario no encontrado" });
       }
     } catch (error) {
-      res.status(500).json({ message: "Error fetching user", error });
+      res.status(500).json({ message: "Error al recuperar usuario", error });
     }
   };
 }

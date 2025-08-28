@@ -8,7 +8,7 @@ export class ClientService {
   async getClientsByRole(role: UserRole): Promise<Omit<User, "password">[]> {
     const clients = await this.clientRepository.findWithCondition("role = $1", [role]);
     if (clients.length === 0) {
-      throw new Error(`No clients found with ${role} role.`);
+      throw new Error(`No se encontraron clientes con el Rol ${role}.`);
     }
     return clients.map(sanitizeUser);
   }
@@ -20,7 +20,7 @@ export class ClientService {
     );
 
     if (!user) {
-      throw new Error(`Client with ID ${id} not found.`);
+      throw new Error(`Cliente con ID ${id} no encontrado.`);
     }
 
     return sanitizeUser(user);
@@ -33,7 +33,7 @@ export class ClientService {
     }
 
     if (userData.role && userData.role !== UserRole.CLIENT) {
-      throw new Error("Cannot change client role to a non-client role.");
+      throw new Error("No se puede cambiar el rol de cliente a un rol que no sea cliente.");
     }
 
     const updatedClient = await this.clientRepository.update(id, userData);

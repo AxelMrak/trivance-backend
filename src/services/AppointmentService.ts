@@ -20,7 +20,7 @@ export class AppointmentService {
   async getById(id: string): Promise<Appointment | null> {
     const appointment = await this.repository.getAppointmentByIdWithJoins(id);
     if (!appointment) {
-      throw new Error("Appointment not found");
+      throw new Error("Turno no encontrado");
     }
     return appointment;
   }

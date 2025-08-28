@@ -26,7 +26,7 @@ const mercadoPagoWebhookService = new MercadoPagoWebhookService(orderService, ap
 const mercadoPagoWebhookController = new MercadoPagoWebhookController(mercadoPagoWebhookService);
 router.get("/", (_req, res) => {
   res.json({
-    message: "Webhooks API is running",
+    message: "Webhooks API esta corriendo",
     status: "OK",
   });
 });

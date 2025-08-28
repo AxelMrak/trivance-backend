@@ -12,7 +12,7 @@ export class AppointmentController {
       res.json(appointments);
     } catch (error) {
       console.error("Error fetching appointments:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
     }
   };
 
@@ -23,7 +23,7 @@ export class AppointmentController {
       res.json(appointment);
     } catch (error) {
       console.error("Error fetching appointment:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
     }
   };
 
@@ -35,11 +35,11 @@ export class AppointmentController {
       if (updatedAppointment) {
         res.status(206).json(updatedAppointment);
       } else {
-        res.status(404).json({ error: "Appointment not found" });
+        res.status(404).json({ error: "Turno no encontrado" });
       }
     } catch (error) {
       console.error("Error updating appointment:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
     }
   };
 
@@ -53,8 +53,8 @@ export class AppointmentController {
         res.status(404).json({ error: "Turno no encontrado" });
       }
     } catch (error) {
-      console.error("Error al eliminar el turno:", error);
-      res.status(500).json({ error: "Internal server error" });
+      console.error("Error deleting appointment:", error);
+      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
     }
   };
 
@@ -65,7 +65,7 @@ export class AppointmentController {
       res.status(201).json(newAppointment);
     } catch (error) {
       console.error("Error al crear turno:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
     }
   };
 
@@ -76,7 +76,7 @@ export class AppointmentController {
       res.status(201).json({ paymentLink });
     } catch (error) {
       console.error("Error al crear Link de pago:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
     }
   };
 }

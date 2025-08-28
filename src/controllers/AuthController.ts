@@ -86,7 +86,7 @@ export class AuthController {
     const user = await this.authService.getUserById(req.user.userId);
 
     if (!user) {
-      res.status(404).json({ message: "User not found" });
+      res.status(404).json({ message: "Usuario no encontrado" });
       return;
     }
 
