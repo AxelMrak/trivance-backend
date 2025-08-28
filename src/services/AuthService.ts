@@ -20,13 +20,13 @@ export class AuthService {
   ): Promise<SignInResponse | null> {
     const userExists = await this.repository.findByField("email", payload.email);
     if (userExists) {
-      throw new Error("User already exists");
+      throw new Error("Este usuario ya existe");
     }
 
     const hashedPassword = await bcrypt.hash(payload.password, 10);
     const companyId = process.env.COMPANY_ID || "";
     if (!companyId) {
-      throw new Error("Company ID is not set");
+      throw new Error("El ID de la empresa no está configurado");
     }
     const userRole = UserRole.GUEST;
 
@@ -41,7 +41,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error("Error creating user");
+      throw new Error("Error al crear usuario");
     }
 
     const token = this.generateToken(user.id, user.role);
@@ -62,10 +62,10 @@ export class AuthService {
     ipAddress: string,
   ): Promise<SignInResponse> {
     const user = await this.repository.findByField("email", email);
-    if (!user) throw new Error("The user does not exist");
+    if (!user) throw new Error("El usuario no existe");
 
     const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) throw new Error("Invalid password");
+    if (!isValid) throw new Error("Contraseña inválida");
 
     const token = this.generateToken(user.id, user.role);
     await this.sessionRepo.create({
@@ -81,7 +81,7 @@ export class AuthService {
   async signOut(token: string): Promise<void> {
     const session = await this.sessionRepo.findByField("token", token);
     if (!session) {
-      throw new Error("Session not found");
+      throw new Error("Sesión no encontrada");
     }
     await this.sessionRepo.delete(session.id);
   }

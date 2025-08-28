@@ -14,7 +14,7 @@ export class MercadoPagoWebhookController {
       const requestId = req.headers["x-request-id"] as string;
       if (!signatureHeader || !requestId) {
         console.warn("Missing signature or request ID");
-        return res.status(400).send("Missing headers");
+        return res.status(400).send("Encabezados faltantes");
       }
 
       const rawBody = req.body.toString("utf8");
@@ -30,7 +30,7 @@ export class MercadoPagoWebhookController {
       }
 
       if (!ts || !v1) {
-        return res.status(400).send("Invalid signature format");
+        return res.status(400).send("Formato de encabezado inválido");
       }
 
       const bodyJson = JSON.parse(rawBody);
@@ -44,7 +44,7 @@ export class MercadoPagoWebhookController {
 
       if (expectedSignature !== v1) {
         console.warn("Signature verification failed");
-        return res.status(401).send("Unauthorized");
+        return res.status(401).send("No autorizado");
       }
       console.log("JSON body:", bodyJson);
       const response = await this.service.processWebhook(bodyJson);
@@ -52,7 +52,8 @@ export class MercadoPagoWebhookController {
       res.status(200).send(response);
     } catch (error) {
       console.error("Error handling Mercado Pago webhook:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
     }
+    
   };
 }

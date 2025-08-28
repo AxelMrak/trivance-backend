@@ -18,7 +18,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
       return result.rows;
     } catch (error) {
       console.error("Error fetching company appointments:", error);
-      throw new Error("Database error");
+      throw new Error("Error de base de datos");
     }
   }
 
@@ -29,7 +29,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
       return result.rows[0] || null;
     } catch (error) {
       console.error("Error fetching appointment by ID with joins:", error);
-      throw new Error("Database error");
+      throw new Error("Error de base de datos");
     }
   }
 }

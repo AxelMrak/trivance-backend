@@ -11,14 +11,14 @@ export class OrderService {
   async getById(id: string): Promise<Order | null> {
     const order = await this.repository.findById(id);
     if (!order) {
-      throw new Error("Order not found");
+      throw new Error("Orden no encontrada");
     }
     return order;
   }
 
   async createOrder(orderData: Partial<Order>): Promise<Order> {
     if (!orderData) {
-      throw new Error("Order data is required to create an order.");
+      throw new Error("Los datos del pedido son obligatorios para crear un pedido.");
     }
     return this.repository.create(orderData);
   }
@@ -34,7 +34,7 @@ export class OrderService {
   async deleteOrder(id: string): Promise<string | number | null> {
     const deletedOrder = await this.repository.delete(id);
     if (!deletedOrder) {
-      throw new Error("Order not found");
+      throw new Error("Orden no encontrada");
     }
     return deletedOrder;
   }
@@ -42,7 +42,7 @@ export class OrderService {
   async getOrderByReference(reference: string): Promise<Order | null> {
     const order = await this.repository.findByField("reference_id", reference);
     if (!order) {
-      throw new Error("Order not found for the given reference");
+      throw new Error("Orden no encontrada para la referencia dada");
     }
     return order;
   }

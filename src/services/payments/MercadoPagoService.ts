@@ -28,7 +28,7 @@ export class MercadoPagoService implements PaymentProvider {
     const response: any = await this.preference.create({ body: payload });
 
     if (!response || !response.init_point) {
-      throw new Error("Failed to create payment link");
+      throw new Error("Fallo al crear link de pago");
     }
 
     return response;

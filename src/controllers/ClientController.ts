@@ -12,7 +12,7 @@ export class ClientController {
       res.json(clients);
     } catch (error) {
       console.error("Error fetching clients:", error);
-      res.status(500).json({ message: "Error fetching clients", error });
+      res.status(500).json({ message: "Error al recuperar cliente", error });
     }
   };
 
@@ -24,11 +24,11 @@ export class ClientController {
       if (client) {
         res.json(client);
       } else {
-        res.status(404).json({ message: "Client not found" });
+        res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
       console.error("Error fetching client:", error);
-      res.status(500).json({ message: "Error fetching client", error });
+      res.status(500).json({ message: "Error al recuperar cliente", error });
     }
   };
 
@@ -42,11 +42,11 @@ export class ClientController {
       if (updatedClient) {
         res.json(updatedClient);
       } else {
-        res.status(404).json({ message: "Client not found" });
+        res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
       console.error("Error updating client:", error);
-      res.status(500).json({ message: "Error updating client", error });
+      res.status(500).json({ message: "Error al actualizar cliente", error });
     }
   };
 
@@ -58,11 +58,11 @@ export class ClientController {
       if (success) {
         res.status(204).send();
       } else {
-        res.status(404).json({ message: "Client not found" });
+        res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
       console.error("Error deleting client:", error);
-      res.status(500).json({ message: "Error deleting client", error });
+      res.status(500).json({ message: "Error al eliminar cliente", error });
     }
   };
 }

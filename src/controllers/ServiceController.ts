@@ -58,7 +58,7 @@ export class ServiceController {
     try {
       const { id } = req.params;
       const deletedID = await this.serviceHandlerService.deleteService(id);
-      return res.status(200).json({ message: "Service deleted successfully", id: deletedID });
+      return res.status(200).json({ message: "Servicio eliminado exitosamente", id: deletedID });
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });

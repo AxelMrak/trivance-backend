@@ -21,7 +21,7 @@ export class ServiceHandlerService {
     });
 
     if (!service) {
-      throw new Error("Error creating service");
+      throw new Error("Error al crear servicio");
     }
 
     return service;
@@ -30,7 +30,7 @@ export class ServiceHandlerService {
   async getServiceById(id: string): Promise<Service | null> {
     const service = await this.repository.findById(id);
     if (!service) {
-      throw new Error("Service not found");
+      throw new Error("Servicio no encontrado");
     }
 
     return service;
@@ -39,11 +39,11 @@ export class ServiceHandlerService {
   async getAllCompanyServices(): Promise<Service[]> {
     const companyID = process.env.COMPANY_ID || "";
     if (!companyID) {
-      throw new Error("Company ID is not set");
+      throw new Error("El ID de la empresa no está configurado");
     }
     const services = await this.repository.findByCompanyId(companyID);
     if (!services) {
-      throw new Error("No services found for this company");
+      throw new Error("No se encontraron servicios para esta empresa");
     }
     return services;
   }
@@ -56,7 +56,7 @@ export class ServiceHandlerService {
       duration: payload.duration,
     });
     if (!service) {
-      throw new Error("Service not found");
+      throw new Error("Servicio no encontrado");
     }
     return service;
   }
@@ -64,7 +64,7 @@ export class ServiceHandlerService {
   async deleteService(id: string): Promise<string | number | null> {
     const deletedID = await this.repository.delete(id);
     if (!deletedID) {
-      throw new Error("Service not found");
+      throw new Error("Servicio no encontrado");
     }
     return deletedID;
   }

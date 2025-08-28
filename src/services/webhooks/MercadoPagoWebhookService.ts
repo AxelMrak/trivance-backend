@@ -12,13 +12,13 @@ export class MercadoPagoWebhookService {
     const externalReference = body?.data?.external_reference || body?.data?.id;
     console.log("Processing Mercado Pago webhook:", body);
     if (!paymentStatus || !externalReference) {
-      throw new Error("Missing data in webhook body");
+      throw new Error("Faltan datos en el cuerpo del webhook");
     }
 
     const order = await this.orderService.getOrderByReference(externalReference);
     console.log("Order found:", order);
     if (!order) {
-      console.warn("Order not found for reference:", externalReference);
+      console.warn("Pedido no encontrado como referencia:", externalReference);
       return;
     }
 
