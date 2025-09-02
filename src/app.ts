@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/health", (_req, response) => {
   response.json({
-    message: "Corriendo servidor",
+    message: "Server is running",
     status: "OK",
   });
 });
