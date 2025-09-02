@@ -1,9 +1,9 @@
-import { ServicesRepository } from "@/repositories/ServiceRepository";
+import { ServiceRepository } from "@/repositories/ServiceRepository";
 import { Service } from "@/entities/Service";
 import { ServiceRequest } from "@/entities/Request";
 
 export class ServiceHandlerService {
-  constructor(private repository: ServicesRepository) { }
+  constructor(private repository: ServiceRepository) {}
 
   async createService(payload: ServiceRequest) {
     const companyID = process.env.COMPANY_ID || "";
