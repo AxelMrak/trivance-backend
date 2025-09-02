@@ -6,12 +6,12 @@ import { AppointmentService } from "@/services/AppointmentService";
 import { OrderRepository } from "@/repositories/OrderRepository";
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
 import { ServiceHandlerService } from "@/services/ServiceHandlerService";
-import { ServicesRepository } from "@/repositories/ServiceRepository";
+import { ServiceRepository } from "@/repositories/ServiceRepository";
 import { MercadoPagoWebhookService } from "@/services/webhooks/MercadoPagoWebhookService";
 import { MercadoPagoWebhookController } from "@/controllers/webhooks/MercadoPagoWebhookController";
 
 const router = Router();
-const serviceRepository = new ServicesRepository();
+const serviceRepository = new ServiceRepository();
 const serviceHandlerService = new ServiceHandlerService(serviceRepository);
 const orderRepository = new OrderRepository();
 const orderService = new OrderService(orderRepository);
@@ -35,5 +35,7 @@ router.post(
   express.raw({ type: "application/json" }),
   mercadoPagoWebhookController.handle,
 );
+
 router.use(express.json()); // Ensure JSON body parsing is enabled for other routes
+
 export default router;
