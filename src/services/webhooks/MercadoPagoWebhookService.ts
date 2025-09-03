@@ -10,13 +10,11 @@ export class MercadoPagoWebhookService {
   async processWebhook(body: any): Promise<any> {
     const paymentStatus = body?.data?.status;
     const externalReference = body?.data?.external_reference || body?.data?.id;
-    console.log("Processing Mercado Pago webhook:", body);
     if (!paymentStatus || !externalReference) {
       throw new Error("Faltan datos en el cuerpo del webhook");
     }
 
     const order = await this.orderService.getOrderByReference(externalReference);
-    console.log("Order found:", order);
     if (!order) {
       console.warn("Pedido no encontrado como referencia:", externalReference);
       return;
@@ -37,11 +35,9 @@ export class MercadoPagoWebhookService {
         : updatedStatus === "cancelled"
           ? "cancelled"
           : "pending";
-    console.log("Updating appointment status to:", appointmentStatus);
     const response = await this.appointmentService.updateAppointment(order.appointment_id, {
       status: appointmentStatus,
     });
-    console.log("Appointment updated successfully:", response);
     return {
       orderId: order.id,
       appointmentId: order.appointment_id,
