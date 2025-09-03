@@ -5,6 +5,12 @@ import { CreateOrderDto } from "@/entities/Order";
 import { ServiceHandlerService } from "@services/ServiceHandlerService";
 import { PaymentServiceFactory } from "@services/payments/PaymentServiceFactory";
 import { formatDate } from "@/utils/format";
+import {
+  BadRequestError,
+  ForbiddenError,
+  InternalServerError,
+  NotFoundError,
+} from "@/errors/httpErrors";
 
 export class AppointmentService {
   constructor(
@@ -18,9 +24,15 @@ export class AppointmentService {
   }
 
   async getById(id: string): Promise<Appointment | null> {
-    const appointment = await this.repository.getAppointmentByIdWithJoins(id);
+    let appointment;
+    try {
+      appointment = await this.repository.getAppointmentByIdWithJoins(id);
+    } catch (error: any) {
+      throw new InternalServerError("Error en la base de datos al buscar el turno");
+    }
+
     if (!appointment) {
-      throw new Error("Turno no encontrado");
+      throw new NotFoundError("Turno no encontrado");
     }
     return appointment;
   }
@@ -78,15 +90,23 @@ export class AppointmentService {
     return newAppointment;
   }
 
-  async createPaymentLink(appointmentId: string): Promise<string | null> {
+  async createPaymentLink(appointmentId: string, userId: string): Promise<string | null> {
+    if (!appointmentId) {
+      throw new BadRequestError("Falta el ID del turno");
+    }
+
     const appointment = await this.getById(appointmentId);
     if (!appointment) {
-      throw new Error("Appointment not found");
+      throw new NotFoundError("Turno no encontrado");
+    }
+
+    if (appointment.user_id !== userId) {
+      throw new ForbiddenError("No tienes permiso para acceder a este turno");
     }
 
     const service = await this.serviceHandlerService.getServiceById(appointment.service_id);
     if (!service) {
-      throw new Error("Service not found");
+      throw new NotFoundError("Servicio no encontrado");
     }
 
     const formattedTitle = `Turno para ${service.name} - ${formatDate(appointment.start_date)}`;
@@ -97,9 +117,9 @@ export class AppointmentService {
       title: formattedTitle,
       price: Number(service.price),
     })) as any;
-    console.log("Payment link response:", paymentResponse);
+
     if (!paymentResponse) {
-      throw new Error("Failed to create payment link");
+      throw new InternalServerError("Fallo al crear link de pago");
     }
 
     const order: CreateOrderDto = {
@@ -111,7 +131,7 @@ export class AppointmentService {
 
     const createdOrder = await this.orderService.createOrder(order);
     if (!createdOrder) {
-      throw new Error("Failed to create order");
+      throw new InternalServerError("Fallo al crear el pedido asociado al turno");
     }
 
     return paymentResponse.init_point;

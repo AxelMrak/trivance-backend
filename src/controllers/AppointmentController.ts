@@ -1,5 +1,5 @@
 import { Response } from "express";
-
+import { AppError } from "@/errors/httpErrors";
 import { AuthRequest } from "@/middlewares/authmiddleware";
 import { AppointmentService } from "@/services/AppointmentService";
 
@@ -72,11 +72,15 @@ export class AppointmentController {
   createAppointmentPaymentLink = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      const paymentLink = await this.appointmentService.createPaymentLink(id);
+      const userId = req.user!.userId;
+      const paymentLink = await this.appointmentService.createPaymentLink(id, userId);
       res.status(201).json({ paymentLink });
     } catch (error) {
-      console.error("Error al crear Link de pago:", error);
-      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
+      }
     }
   };
 }
