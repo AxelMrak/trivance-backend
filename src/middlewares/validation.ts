@@ -67,3 +67,25 @@ export const validateServiceCreate: RequestHandler = (req, res, next) => {
   }
   next();
 };
+
+export const validateAppointmentCreate: RequestHandler = (req, res, next) => {
+  const createSchema = z.object({
+    service_id: z.string().min(1, "Servicio obligatorio"),
+    user_id: z.string().optional(),
+    description: z.string().max(3000).optional(),
+    start_date: z.string().min(1, "Fecha y hora obligatoria"),
+  });
+
+  const result = createSchema.safeParse(req.body);
+
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Error de validacion",
+      errors: result.error.errors.map((error) => ({
+        field: error.path[0],
+        message: error.message,
+      })),
+    });
+  }
+  next();
+};
