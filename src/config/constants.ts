@@ -2,8 +2,10 @@ import dotenv from "dotenv";
 
 if (process.env.NODE_ENV === "test") {
   dotenv.config({ path: ".env.test" });
-} else {
+} else if (process.env.NODE_ENV === "production") {
   dotenv.config();
+} else {
+  dotenv.config({ path: ".env.development" });
 }
 
 export const config: {
