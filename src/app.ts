@@ -24,7 +24,9 @@ app.get("/health", (_req, response) => {
   });
 });
 
+// Mount router on both root and /api for health check compatibility
 app.use("/api", mainRouter);
+app.use("/", mainRouter);
 
 app.use(errorHandler);
 
