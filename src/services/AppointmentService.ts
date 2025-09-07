@@ -11,6 +11,7 @@ import {
   InternalServerError,
   NotFoundError,
 } from "@/errors/httpErrors";
+import { CreatePaymentLinkResponse } from "@/entities/Response";
 
 export class AppointmentService {
   constructor(
@@ -90,7 +91,10 @@ export class AppointmentService {
     return newAppointment;
   }
 
-  async createPaymentLink(appointmentId: string, userId: string): Promise<string | null> {
+  async createPaymentLink(
+    appointmentId: string,
+    userId: string,
+  ): Promise<CreatePaymentLinkResponse> {
     if (!appointmentId) {
       throw new BadRequestError("Falta el ID del turno");
     }
@@ -134,6 +138,12 @@ export class AppointmentService {
       throw new InternalServerError("Fallo al crear el pedido asociado al turno");
     }
 
-    return paymentResponse.init_point;
+    const response = {
+      orderId: createdOrder.id,
+      paymentLink: paymentResponse.init_point,
+      paymentDetails: paymentResponse,
+    };
+
+    return response;
   }
 }
