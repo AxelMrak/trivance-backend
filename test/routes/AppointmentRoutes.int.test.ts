@@ -23,7 +23,7 @@ describe("POST /api/appointments/payment/:id/link - Integration Tests", () => {
    * We also log in the user to get an authentication token.
    */
   beforeEach(async () => {
-    user = await createUser({ email: "axel@test.com" });
+    user = await createUser({ email: `axel+${randomUUID()}@test.com` });
     service = await createService({
       company_id: user.company_id,
       requires_deposit: true,
@@ -41,7 +41,8 @@ describe("POST /api/appointments/payment/:id/link - Integration Tests", () => {
         email: user.email,
         password: (user as any).plainPassword,
       });
-    token = res?.body?.session?.token;
+    const setCookie = res.headers["set-cookie"]?.[0] || "";
+    token = /token=([^;]+)/.exec(setCookie)?.[1] || "";
   });
 
   /**
@@ -54,14 +55,10 @@ describe("POST /api/appointments/payment/:id/link - Integration Tests", () => {
       .set("Authorization", `Bearer ${token}`);
 
     expect(res.status).toBe(201);
+
+    expect(res.body).toHaveProperty("orderId");
     expect(res.body).toHaveProperty("paymentLink");
-
-    expect(res.body.paymentLink).toMatch(
-      /^https:\/\/(www\.)?mercadopago\.com\.ar\/checkout\/v1\/redirect/,
-    );
-
-    expect(res.body).toHaveProperty("paymentLink");
-
+    expect(res.body).toHaveProperty("paymentDetails");
     expect(res.body.paymentLink).toMatch(
       /^https:\/\/(www\.)?mercadopago\.com\.ar\/checkout\/v1\/redirect/,
     );
@@ -80,12 +77,11 @@ describe("POST /api/appointments/payment/:id/link - Integration Tests", () => {
 
     if (res.body.paymentDetails) {
       expect(res.body.paymentDetails.items).toHaveLength(1);
-      expect(res.body.paymentDetails.items[0]).toMatchObject({
-        title: service.name,
-        unit_price: service.price,
-        quantity: 1,
-        currency_id: "ARS",
-      });
+      const item = res.body.paymentDetails.items[0];
+      expect(item.title).toContain(service.name);
+      expect(item.unit_price).toBe(Number(service.price));
+      expect(item.quantity).toBe(1);
+      expect(item.currency_id).toBe("ARS");
     }
   });
 
@@ -120,7 +116,7 @@ describe("POST /api/appointments/payment/:id/link - Integration Tests", () => {
    * It checks if the endpoint returns a 403 status code when user tries to access another user's appointment.
    */
   it("returns 403 when user tries to access another user's appointment", async () => {
-    const otherUser = await createUser({ email: "other@test.com" });
+    const otherUser = await createUser({ email: `other+${randomUUID()}@test.com` });
     const otherAppointment = await createAppointment({
       user_id: otherUser.id,
       service_id: service.id,
