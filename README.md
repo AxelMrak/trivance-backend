@@ -52,6 +52,19 @@ npm run lint
 npm run test
 ```
 
+### Test layout
+
+- Unit tests: `test/unit/**` (no DB required)
+- Integration tests: `test/integration/**` (hits API + DB)
+- Shared helpers: `test/setup.ts` and `test/utils/*`
+
+### Database in tests
+
+Tests now prefer the root `.env` `DATABASE_URL` so you can reuse your dev DB. When `NODE_ENV=test`:
+
+- Loads `../.env` first; if `DATABASE_URL` is missing, falls back to `backend/.env.test`.
+- If the URL host is `trivance-db`, it is rewritten to `localhost` to work from the host machine while Docker is running.
+
 ### Integration tests with Docker Postgres
 
 Tests use the same database defined by `DATABASE_URL` but, when running on host, they automatically map the Docker hostname `trivance-db` to `localhost` so they can connect through the published port `5432`.

@@ -16,7 +16,7 @@ beforeAll(() => {
   );
 });
 
-describe.skip("MercadoPagoWebhookService", () => {
+describe("MercadoPagoWebhookService", () => {
   const makeSvc = () => {
     const orderService = {
       getOrderByReference: jest.fn(async (ref: string) => {
@@ -74,3 +74,4 @@ describe.skip("MercadoPagoWebhookService", () => {
     );
   });
 });
+

@@ -145,3 +145,4 @@ export const createAppointment = async (overrides: Partial<Appointment> = {}): P
 
   return rows[0];
 };
+
