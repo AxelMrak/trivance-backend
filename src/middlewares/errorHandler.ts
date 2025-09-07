@@ -1,13 +1,8 @@
-import { Request, Response, NextFunction } from "express";
+import { Response } from "express";
+
 import { AppError } from "@/errors/httpErrors";
 
-export const errorHandler = (
-  err: Error,
-  req: Request,
-  res: Response,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  next: NextFunction,
-) => {
+export const errorHandler = (err: Error, res: Response) => {
   console.error(err);
 
   if (err instanceof AppError) {
@@ -22,4 +17,3 @@ export const errorHandler = (
     message: "Internal Server Error",
   });
 };
-
