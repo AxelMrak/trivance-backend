@@ -52,6 +52,18 @@ npm run lint
 npm run test
 ```
 
+### Integration tests with Docker Postgres
+
+Tests use the same database defined by `DATABASE_URL` but, when running on host, they automatically map the Docker hostname `trivance-db` to `localhost` so they can connect through the published port `5432`.
+
+- Ensure the stack is running: `docker compose up --build` (root of repo).
+- Optionally, set `backend/.env.test` with `DATABASE_URL=postgres://postgres:postgres@localhost:5432/trivance_db` to be explicit.
+- Run only integration tests:
+
+```
+npm run test:int
+```
+
 ## Development
 
 ```

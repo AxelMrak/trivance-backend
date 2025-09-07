@@ -6,9 +6,6 @@ import serviceRouter from "@routes/ServiceRoutes";
 import clientRouter from "@routes/ClientRoutes";
 import appointmentRouter from "@routes/AppointmentRoutes";
 import webhookRouter from "@routes/WebhooksRoutes";
-console.log("Loading main API routes...");
-console.log("API routes loaded successfully");
-console.log("Initializing WEBHOOK ROUTER... " + webhookRouter);
 const router = Router();
 
 router.get("/", (_req, res) => {

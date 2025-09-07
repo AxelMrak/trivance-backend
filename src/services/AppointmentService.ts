@@ -42,7 +42,17 @@ export class AppointmentService {
     id: string,
     updatedData: Partial<Appointment>,
   ): Promise<Appointment | null> {
-    return this.repository.update(id, updatedData);
+    const dataToUpdate: Partial<Appointment> = { ...updatedData };
+    const maybeStart: unknown = (updatedData as any).start_date;
+    if (typeof maybeStart === "string") {
+      const parsed = new Date(maybeStart);
+      if (isNaN(parsed.getTime())) {
+        throw new BadRequestError("Fecha de turno inválida");
+      }
+      (dataToUpdate as any).start_date = parsed;
+    }
+
+    return this.repository.update(id, dataToUpdate);
   }
 
   async deleteAppointment(id: string): Promise<string | number | null> {
@@ -63,20 +73,21 @@ export class AppointmentService {
 
     const appointmentRequiresDeposit = service.requires_deposit;
 
-    const appointment: AppointmentCreateDTO = {
-      service_id: serviceId,
-      user_id: appointmentData.user_id,
-      start_date: appointmentData.start_date,
-      description: appointmentData.description || "",
-    };
-
-    if (appointmentRequiresDeposit) {
-      appointment.status = "pending";
-    } else {
-      appointment.status = "confirmed";
+    // Normalize start_date to Date, since repository expects Partial<Appointment>
+    const startDate = new Date(appointmentData.start_date);
+    if (isNaN(startDate.getTime())) {
+      throw new BadRequestError("Fecha de turno inválida");
     }
 
-    const createdAppointment = await this.repository.create(appointment);
+    const appointmentToCreate: Partial<Appointment> = {
+      service_id: serviceId,
+      user_id: appointmentData.user_id,
+      start_date: startDate,
+      description: appointmentData.description || "",
+      status: appointmentRequiresDeposit ? "pending" : "confirmed",
+    };
+
+    const createdAppointment = await this.repository.create(appointmentToCreate);
 
     if (!createdAppointment) {
       throw new Error("Failed to create appointment");

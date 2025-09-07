@@ -4,7 +4,8 @@ import { AppointmentController } from "@controllers/AppointmentController";
 import { AppointmentService } from "@/services/AppointmentService";
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
 import AuthMiddleware from "@/middlewares/authmiddleware";
-import { validateAppointmentCreate } from "@/middlewares/validateAppointmentCreate";
+import { validateAppointmentCreate } from "@/middlewares/validation";
+import { attachUserIdFromToken } from "@/middlewares/attachUserId";
 import { ServiceHandlerService } from "@/services/ServiceHandlerService";
 import { OrderService } from "@/services/OrderService";
 import { OrderRepository } from "@/repositories/OrderRepository";
@@ -23,11 +24,7 @@ const appointmentService = new AppointmentService(
 );
 const appointmentController = new AppointmentController(appointmentService);
 
-router.post(
-  "/create",
-  [validateAppointmentCreate, AuthMiddleware],
-  appointmentController.createAppointment,
-);
+router.post("/create", AuthMiddleware, attachUserIdFromToken, validateAppointmentCreate, appointmentController.createAppointment);
 router.get("/getAll", AuthMiddleware, appointmentController.getAll);
 router.get("/get/:id", AuthMiddleware, appointmentController.getById);
 router.put("/update/:id", AuthMiddleware, appointmentController.updateAppointment);

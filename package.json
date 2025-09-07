@@ -19,10 +19,6 @@
   },
   "keywords": [],
   "author": "Trifecta",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/w3cj/express-api-starter.git"
-  },
   "license": "MIT",
   "dependencies": {
     "bcrypt": "^5.1.1",

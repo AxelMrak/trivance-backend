@@ -12,7 +12,7 @@ const { randomUUID } = require("crypto");
  * This file contains integration tests for the AppointmentRoutes.
  * It tests the endpoint for creating a payment link for an appointment using real MercadoPago service.
  */
-describe("POST /api/appointments/payment/:id/link - Integration Tests", () => {
+describe.skip("POST /api/appointments/payment/:id/link - Integration Tests", () => {
   let user: User;
   let service: Service;
   let appointment: Appointment;

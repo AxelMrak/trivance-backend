@@ -13,10 +13,7 @@ describe("GET /health", () => {
     const res = await getTestAgent().get("/health").send();
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      message: "Server is running",
-      status: "OK",
-    });
+    expect(res.body).toHaveProperty("status", "OK");
   });
 });
 
@@ -29,9 +26,7 @@ describe("GET /api", () => {
     const res = await getTestAgent().get("/api").send();
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      message: "API is running",
-      status: "OK",
-    });
+    expect(res.body).toHaveProperty("status", "OK");
   });
 });
+

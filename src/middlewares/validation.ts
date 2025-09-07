@@ -71,9 +71,9 @@ export const validateServiceCreate: RequestHandler = (req, res, next) => {
 export const validateAppointmentCreate: RequestHandler = (req, res, next) => {
   const createSchema = z.object({
     service_id: z.string().min(1, "Servicio obligatorio"),
-    user_id: z.string().optional(),
     description: z.string().max(3000).optional(),
-    start_date: z.string().min(1, "Fecha y hora obligatoria"),
+    // ISO 8601/RFC 3339 (permite offset -03:00 para Argentina)
+    start_date: z.string().datetime(),
   });
 
   const result = createSchema.safeParse(req.body);

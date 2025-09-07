@@ -1,6 +1,13 @@
 import supertest from "supertest";
+
 import app from "@/app";
 import { dbClient } from "@config/db";
+
+if (process.env.NODE_ENV === "test") {
+  console.log = (() => {}) as typeof console.log;
+  console.info = (() => {}) as typeof console.info;
+  console.warn = (() => {}) as typeof console.warn;
+}
 
 /**
  * A test helper to create a supertest agent.
