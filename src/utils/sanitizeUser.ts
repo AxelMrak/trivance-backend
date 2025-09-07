@@ -1,8 +1,7 @@
-
 import { User } from "@entities/User";
 
 export function sanitizeUser(user: User): Omit<User, "password"> {
-  const { password, ...sanitized } = user;
+  const { ...sanitized } = user;
   return sanitized;
 }
 
