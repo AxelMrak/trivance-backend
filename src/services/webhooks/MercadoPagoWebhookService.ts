@@ -1,5 +1,6 @@
 import { OrderService } from "@/services/OrderService";
 import { AppointmentService } from "@/services/AppointmentService";
+import { getPaymentResource } from "@/services/payments/mercadopagoClient";
 
 export class MercadoPagoWebhookService {
   constructor(
@@ -8,17 +9,41 @@ export class MercadoPagoWebhookService {
   ) {}
 
   async processWebhook(body: any): Promise<any> {
-    const paymentStatus = body?.data?.status;
-    const externalReference = body?.data?.external_reference || body?.data?.id;
-    console.log("Processing Mercado Pago webhook:", body);
-    if (!paymentStatus || !externalReference) {
+    // Mercado Pago webhooks often only include { type: 'payment', data: { id } }.
+    // If status is missing, fetch the payment details to get status and reference.
+    let paymentStatus: string | undefined = body?.data?.status;
+    let reference: string | undefined = body?.data?.external_reference || body?.data?.preference_id;
+    console.log("Processing Mercado Pago webhook with body:", body);
+    if ((!paymentStatus || !reference) && body?.type === "payment" && body?.data?.id) {
+      try {
+        const paymentResource = getPaymentResource();
+        const paymentData: any = await paymentResource.get({ id: body.data.id });
+        paymentStatus = paymentStatus || paymentData?.status;
+        reference = reference || paymentData?.external_reference || paymentData?.preference_id;
+      } catch (err) {
+        console.error("Error fetching payment details from Mercado Pago:", err);
+        throw new Error("No se pudo obtener el estado del pago desde Mercado Pago");
+      }
+    }
+
+    if (!reference && body?.data?.id) {
+      reference = body.data.id;
+    }
+
+    if (!paymentStatus || !reference) {
       throw new Error("Faltan datos en el cuerpo del webhook");
     }
 
-    const order = await this.orderService.getOrderByReference(externalReference);
-    console.log("Order found:", order);
+    let order = null as any;
+    try {
+      order = await this.orderService.getOrderByReference(reference);
+    } catch (e) {
+      // Align with existing OrderService.getOrderByReference behavior which throws when not found
+      console.warn("Pedido no encontrado como referencia:", reference);
+      return;
+    }
     if (!order) {
-      console.warn("Pedido no encontrado como referencia:", externalReference);
+      console.warn("Pedido no encontrado como referencia:", reference);
       return;
     }
 
@@ -37,11 +62,11 @@ export class MercadoPagoWebhookService {
         : updatedStatus === "cancelled"
           ? "cancelled"
           : "pending";
-    console.log("Updating appointment status to:", appointmentStatus);
-    const response = await this.appointmentService.updateAppointment(order.appointment_id, {
+
+    await this.appointmentService.updateAppointment(order.appointment_id, {
       status: appointmentStatus,
     });
-    console.log("Appointment updated successfully:", response);
+
     return {
       orderId: order.id,
       appointmentId: order.appointment_id,

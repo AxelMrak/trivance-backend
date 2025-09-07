@@ -1,67 +1,66 @@
-import bcrypt from "bcryptjs";
-
 import { AuthService } from "@services/AuthService";
 import { AuthRepository } from "@repositories/AuthRepository";
-import { dbClient } from "@config/db";
 import { SessionRepository } from "@repositories/SessionRepository";
+import { createUser } from "../factories";
+import { User } from "@/entities/User";
 
-const repository = new AuthRepository();
-const sessionRepository = new SessionRepository();
-const service = new AuthService(repository, sessionRepository);
-const testUser = {
-  company_id: "22222222-2222-2222-2222-222222222222",
-  name: "Test User",
-  email: "test@example.com",
-  password: bcrypt.hashSync("testpass123", 10),
-  phone: "1234567890",
-  address: "123 Street",
-  role: "CLIENT",
-};
-
+/**
+ * This file contains integration tests for the AuthService.
+ * It tests the signIn method of the AuthService.
+ */
 describe("AuthService - signIn", () => {
+  const repository = new AuthRepository();
+  const sessionRepository = new SessionRepository();
+  const service = new AuthService(repository, sessionRepository);
+
+  const USER_AGENT = "jest-agent";
+  const IP = "127.0.0.1";
+
+  let user: User;
+  let plainPassword: any;
+
+  /**
+   * Before each test, we create a new user using the createUser factory.
+   * This ensures that each test starts with a clean slate.
+   */
   beforeEach(async () => {
-    await dbClient.query(
-      `
-      INSERT INTO users (
-        company_id, name, email, password, phone, address, role
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8
-      )
-    `,
-      [
-        testUser.company_id,
-        testUser.name,
-        testUser.email,
-        testUser.password,
-        testUser.phone,
-        testUser.address,
-        testUser.role,
-      ],
-    );
+    user = await createUser();
+    plainPassword = (user as any).plainPassword;
   });
 
-  it("should authenticate a valid user", async () => {
-    const result = await service.signIn(
-      "test@example.com",
-      "testpass123",
-      "user-agent",
-      "19234224",
-    );
+  /**
+   * Test case for authenticating a valid user.
+   * It checks if the signIn method returns the correct user and session information.
+   */
+  it("authenticates a valid user", async () => {
+    const result = await service.signIn(user.email, plainPassword, USER_AGENT, IP);
 
-    expect(result).toHaveProperty("user.email", "test@example.com");
-    expect(result.session.token).toBeDefined();
+    expect(result).toBeDefined();
+    expect(result.user).toBeDefined();
+    expect(result.user.email).toBe(user.email);
+    expect(result.session).toBeDefined();
+    expect(result.session.token).toBeTruthy();
     expect(result.session.expiresIn).toBeGreaterThan(0);
   });
 
-  it("should throw if password is incorrect", async () => {
-    await expect(
-      service.signIn("test@example.com", "wrongpassword", "user-agent", "19234224"),
-    ).rejects.toThrow("Invalid password");
+  /**
+   * Test case for rejecting a user with an incorrect password.
+   * It checks if the signIn method throws an error when the password is incorrect.
+   */
+  it("rejects when password is incorrect", async () => {
+    await expect(service.signIn(user.email, "wrongpassword", USER_AGENT, IP)).rejects.toThrow(
+      "Contraseña inválida",
+    );
   });
 
-  it("should throw if user does not exist", async () => {
+  /**
+   * Test case for rejecting a user that does not exist.
+   * It checks if the signIn method throws an error when the user does not exist.
+   */
+  it("rejects when user does not exist", async () => {
     await expect(
-      service.signIn("nonexistent@example.com", "testpass123", "user-agent", "19234224"),
-    ).rejects.toThrow("The user does not exist");
+      service.signIn("nonexistent@example.com", "somepassword", USER_AGENT, IP),
+    ).rejects.toThrow("El usuario no existe");
   });
 });
+

@@ -19,12 +19,14 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get("/health", (_req, response) => {
   response.json({
-    message: "Corriendo servidor",
+    message: "Server is running",
     status: "OK",
   });
 });
 
+// Mount router on both root and /api for health check compatibility
 app.use("/api", mainRouter);
+app.use("/", mainRouter);
 
 app.use(errorHandler);
 

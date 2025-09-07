@@ -11,3 +11,9 @@ export interface ErrorResponse {
   message: string;
   details?: any;
 }
+
+export interface CreatePaymentLinkResponse {
+  orderId: string;
+  paymentLink: string;
+  paymentDetails: any;
+}

@@ -1,7 +1,7 @@
 import { Preference } from "mercadopago";
-
 import { mercadoPagoClient } from "@/config/mercadopago";
 import { PaymentProvider } from "@/entities/PaymentProvider";
+import { InternalServerError } from "@/errors/httpErrors";
 
 export class MercadoPagoService implements PaymentProvider {
   private preference = new Preference(mercadoPagoClient);
@@ -28,7 +28,7 @@ export class MercadoPagoService implements PaymentProvider {
     const response: any = await this.preference.create({ body: payload });
 
     if (!response || !response.init_point) {
-      throw new Error("Fallo al crear link de pago");
+      throw new InternalServerError("Fallo al crear el link de pago en Mercado Pago");
     }
 
     return response;

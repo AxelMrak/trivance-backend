@@ -4,7 +4,7 @@
   "description": "Trivance API is a simple Express API starter template with TypeScript, PostgreSQL, and Zod for validation.",
   "main": "src/index.ts",
   "scripts": {
-    "migrate": "node-pg-migrate",
+    "migrate": "node-pg-migrate up",
     "seed": "node scripts/seederDb.js",
     "start": "ts-node -r tsconfig-paths/register src/index.ts",
     "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/index.ts",
@@ -12,6 +12,9 @@
     "start:dist": "node dist/src/index.js",
     "lint": "eslint --fix src test",
     "test": "jest",
+    "test:int": "jest --testMatch '**/test/**/*.int.test.ts'",
+    "migrate:test": "node-pg-migrate --database-url postgres://postgres:postgres@localhost:5432/trivance_db_test",
+    "db:create:test": "createdb trivance_db_test",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
@@ -51,6 +54,7 @@
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
+    "dotenv-cli": "^10.0.0",
     "eslint": "^8.57.1",
     "eslint-config-airbnb-typescript": "^18.0.0",
     "eslint-config-prettier": "^10.1.2",

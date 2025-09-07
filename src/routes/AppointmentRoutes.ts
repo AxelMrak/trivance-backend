@@ -8,11 +8,11 @@ import { validateAppointmentCreate } from "@/middlewares/validateAppointmentCrea
 import { ServiceHandlerService } from "@/services/ServiceHandlerService";
 import { OrderService } from "@/services/OrderService";
 import { OrderRepository } from "@/repositories/OrderRepository";
-import { ServicesRepository } from "@/repositories/ServiceRepository";
+import { ServiceRepository } from "@/repositories/ServiceRepository";
 
 const router = Router();
 const appointmentRepository = new AppointmentRepository();
-const serviceRepository = new ServicesRepository();
+const serviceRepository = new ServiceRepository();
 const serviceHandlerService = new ServiceHandlerService(serviceRepository);
 const orderRepository = new OrderRepository();
 const orderService = new OrderService(orderRepository);

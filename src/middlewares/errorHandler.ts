@@ -1,36 +1,25 @@
 import { Request, Response, NextFunction } from "express";
+import { AppError } from "@/errors/httpErrors";
 
-import { ErrorResponse } from "@/entities/Response";
+export const errorHandler = (
+  err: Error,
+  req: Request,
+  res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  next: NextFunction,
+) => {
+  console.error(err);
 
-export const errorHandler = (err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error("[ERROR]", err.stack || err.message);
-
-  const response: Partial<ErrorResponse> = {};
-
-  switch (err.name) {
-    case "ValidationError":
-      response.status = 400;
-      response.message = "Error de validacion";
-      response.details = err.message;
-      break;
-
-    case "NotFoundError":
-      response.status = 404;
-      response.message = "Recurso no encontrado";
-      response.details = err.message;
-      break;
-
-    case "UnauthorizedError":
-      response.status = 401;
-      response.message = "Acceso no autorizado";
-      response.details = err.message;
-      break;
-
-    default:
-      response.status = 500;
-      response.message = err.name || "Error Interno del Servidor.Contacte con soporte";
-      response.details = err.message || "Se ha producido un error inesperado";
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({
+      status: "error",
+      message: err.message,
+    });
   }
 
-  res.status(response.status).json(response);
+  return res.status(500).json({
+    status: "error",
+    message: "Internal Server Error",
+  });
 };
+
