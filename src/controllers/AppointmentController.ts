@@ -74,7 +74,7 @@ export class AppointmentController {
       const { id } = req.params;
       const userId = req.user!.userId;
       const paymentLink = await this.appointmentService.createPaymentLink(id, userId);
-      res.status(201).json({ paymentLink });
+      res.status(201).json(paymentLink);
     } catch (error) {
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
