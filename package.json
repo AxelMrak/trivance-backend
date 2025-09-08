@@ -11,18 +11,14 @@
     "build": "tsc",
     "start:dist": "node dist/src/index.js",
     "lint": "eslint --fix src test",
-    "test": "jest",
-    "test:int": "jest --testMatch '**/test/**/*.int.test.ts'",
+    "test": "NODE_ENV=test dotenv -e .env.test -- jest",
+    "test:int": "NODE_ENV=test dotenv -e .env.test -- jest --testMatch '**/test/**/*.int.test.ts'",
     "migrate:test": "node-pg-migrate --database-url postgres://postgres:postgres@localhost:5432/trivance_db_test",
     "db:create:test": "createdb trivance_db_test",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "Trifecta",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/w3cj/express-api-starter.git"
-  },
   "license": "MIT",
   "dependencies": {
     "bcrypt": "^5.1.1",

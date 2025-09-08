@@ -2,11 +2,35 @@ import dotenv from "dotenv";
 
 if (process.env.NODE_ENV === "test") {
   dotenv.config({ path: ".env.test" });
+  if (!process.env.DATABASE_URL) {
+    dotenv.config({ path: "../.env" });
+  }
 } else if (process.env.NODE_ENV === "production") {
   dotenv.config();
 } else {
   dotenv.config({ path: ".env.development" });
 }
+
+const isTest = process.env.NODE_ENV === "test";
+
+const buildDbUrl = () => {
+  const envUrl = process.env.DATABASE_URL;
+  if (isTest) {
+    if (envUrl) {
+      try {
+        const u = new URL(envUrl);
+        if (u.hostname === "trivance-db") {
+          u.hostname = "localhost";
+        }
+        return u.toString();
+      } catch {
+        return "postgres://postgres:postgres@localhost:5432/trivance_db";
+      }
+    }
+    return "postgres://postgres:postgres@localhost:5432/trivance_db";
+  }
+  return envUrl || "postgres://postgres:postgres@trivance-db:5432/trivance_db";
+};
 
 export const config: {
   PORT: number | string;
@@ -18,7 +42,7 @@ export const config: {
 } = {
   PORT: process.env.PORT || 3001,
   NODE_ENV: process.env.NODE_ENV || "development",
-  DB_URL: process.env.DATABASE_URL || "postgres://postgres:postgres@trivance-db:5432/trivance_db",
+  DB_URL: buildDbUrl(),
   DB_USER: process.env.DB_USER || "postgres",
   DB_PASSWORD: process.env.DB_PASSWORD || "postgres",
   DB_NAME: process.env.DB_NAME || "trivance_db",

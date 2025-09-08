@@ -1,5 +1,5 @@
 export function randomName(): string {
-  const names = ["Axel", "Bruno", "Carla", "Diana", "Ezequiel", "Flor", "Gonzalo", "Helena"];
+  const names = ["Bruno", "Carla", "Diana", "Ezequiel", "Flor", "Gonzalo", "Helena"];
   return names[Math.floor(Math.random() * names.length)];
 }
 

@@ -9,6 +9,8 @@ import { ServiceHandlerService } from "@/services/ServiceHandlerService";
 import { ServiceRepository } from "@/repositories/ServiceRepository";
 import { MercadoPagoWebhookService } from "@/services/webhooks/MercadoPagoWebhookService";
 import { MercadoPagoWebhookController } from "@/controllers/webhooks/MercadoPagoWebhookController";
+import { UserRepository } from "@/repositories/UserRepository";
+import { ClientsPivotRepository } from "@/repositories/ClientsPivotRepository";
 
 const router = Router();
 const serviceRepository = new ServiceRepository();
@@ -16,10 +18,14 @@ const serviceHandlerService = new ServiceHandlerService(serviceRepository);
 const orderRepository = new OrderRepository();
 const orderService = new OrderService(orderRepository);
 const appointmentRepository = new AppointmentRepository();
+const userRepository = new UserRepository();
+const clientsPivotRepository = new ClientsPivotRepository();
 const appointmentService = new AppointmentService(
   appointmentRepository,
   serviceHandlerService,
   orderService,
+  userRepository,
+  clientsPivotRepository,
 );
 
 const mercadoPagoWebhookService = new MercadoPagoWebhookService(orderService, appointmentService);

@@ -24,7 +24,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, values);
       return result.rows;
     } catch (error) {
-      console.error(`Error fetching with condition from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -39,7 +38,6 @@ export class BaseRepository<T> {
       }
       return result.rows[0] || null;
     } catch (error) {
-      console.error(`Error fetching one with conditions from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -48,13 +46,32 @@ export class BaseRepository<T> {
     return this.findWithCondition(`${field} = $1`, [value]);
   }
 
+  async existsById(id: string): Promise<boolean> {
+    try {
+      const query = `SELECT 1 FROM ${this.table} WHERE id = $1 LIMIT 1`;
+      const result = await dbClient.query(query, [id]);
+      return (result.rowCount ?? 0) > 0;
+    } catch (_error) {
+      throw new Error("Error de base de datos");
+    }
+  }
+
+  async existsByField(field: string, value: any): Promise<boolean> {
+    try {
+      const query = `SELECT 1 FROM ${this.table} WHERE ${field} = $1 LIMIT 1`;
+      const result = await dbClient.query(query, [value]);
+      return (result.rowCount ?? 0) > 0;
+    } catch (_error) {
+      throw new Error("Error de base de datos");
+    }
+  }
+
   async findAll(): Promise<T[]> {
     try {
       const query = generateGetAllQuery(this.table);
       const result = await dbClient.query(query);
       return result.rows;
     } catch (error) {
-      console.error(`Error fetching all from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -65,7 +82,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [id]);
       return result.rows[0] || null;
     } catch (error) {
-      console.error(`Error fetching by ID from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -76,7 +92,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [companyId]);
       return result.rows;
     } catch (error) {
-      console.error(`Error fetching by company ID from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -89,7 +104,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, values);
       return result.rows[0];
     } catch (error) {
-      console.error(`Error creating in ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -102,7 +116,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, values);
       return result.rows[0] || null;
     } catch (error) {
-      console.error(`Error updating in ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -113,7 +126,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [id]);
       return result.rows[0]?.id || null;
     } catch (error) {
-      console.error(`Error deleting from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -124,7 +136,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [value]);
       return result.rows[0] || null;
     } catch (error) {
-      console.error(`Error fetching by field from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -135,7 +146,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [value]);
       return result.rows[0]?.id || null;
     } catch (error) {
-      console.error(`Error deleting by field from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -146,7 +156,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [value]);
       return result.rows[0]?.id || null;
     } catch (error) {
-      console.error(`Failed to delete all by ${field} in ${this.table}:`, error);
       throw new Error("Error al eliminar registros");
     }
   }

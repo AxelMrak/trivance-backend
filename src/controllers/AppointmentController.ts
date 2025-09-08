@@ -1,86 +1,119 @@
-import { Response } from "express";
-import { AppError } from "@/errors/httpErrors";
+import { Response, NextFunction } from "express";
 import { AuthRequest } from "@/middlewares/authmiddleware";
 import { AppointmentService } from "@/services/AppointmentService";
 
 export class AppointmentController {
   constructor(private appointmentService: AppointmentService) {}
 
-  getAll = async (_req: AuthRequest, res: Response): Promise<void> => {
+  getAll = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const appointments = await this.appointmentService.getAll();
+      const includeParam = (req.query.include as string) || "";
+      const includeParts = includeParam
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+      const include = {
+        service: includeParts.includes("service"),
+        user: includeParts.includes("user"),
+        client: includeParts.includes("client"),
+      };
+
+      const appointments = await this.appointmentService.getAll(req.user as any, include);
       res.json(appointments);
     } catch (error) {
-      console.error("Error fetching appointments:", error);
-      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
+      next(error);
     }
   };
 
-  getById = async (req: AuthRequest, res: Response): Promise<void> => {
+  getById = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-      const appointment = await this.appointmentService.getById(id);
+      const includeParam = (req.query.include as string) || "";
+      const includeParts = includeParam
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+      const include = {
+        service: includeParts.includes("service"),
+        user: includeParts.includes("user"),
+        client: includeParts.includes("client"),
+      };
+
+      const appointment = await this.appointmentService.getById(id, req.user as any, include);
       res.json(appointment);
     } catch (error) {
-      console.error("Error fetching appointment:", error);
-      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
+      next(error);
     }
   };
 
-  updateAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
+  updateAppointment = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
       const updatedData = req.body;
-      const updatedAppointment = await this.appointmentService.updateAppointment(id, updatedData);
+      const updatedAppointment = await this.appointmentService.updateAppointment(id, updatedData, req.user);
       if (updatedAppointment) {
-        res.status(206).json(updatedAppointment);
+        res.status(200).json(updatedAppointment);
       } else {
         res.status(404).json({ error: "Turno no encontrado" });
       }
     } catch (error) {
-      console.error("Error updating appointment:", error);
-      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
+      next(error);
     }
   };
 
-  deleteAppointment = async (req: AuthRequest, res: Response) => {
+  deleteAppointment = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
       const result = await this.appointmentService.deleteAppointment(id);
       if (result) {
-        res.status(204).send({ message: "Turno eliminado con exito", id: result });
+        res.status(204).send();
       } else {
         res.status(404).json({ error: "Turno no encontrado" });
       }
     } catch (error) {
-      console.error("Error deleting appointment:", error);
-      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
+      next(error);
     }
   };
 
-  createAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
+  createAppointment = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const appointmentData = req.body;
-      const newAppointment = await this.appointmentService.createAppointment(appointmentData);
+      const userId = req.user!.userId;
+      const newAppointment = await this.appointmentService.createAppointment(appointmentData, userId, req.user as any);
       res.status(201).json(newAppointment);
     } catch (error) {
-      console.error("Error al crear turno:", error);
-      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
+      next(error);
     }
   };
 
-  createAppointmentPaymentLink = async (req: AuthRequest, res: Response): Promise<void> => {
+  createAppointmentPaymentLink = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
       const userId = req.user!.userId;
       const paymentLink = await this.appointmentService.createPaymentLink(id, userId);
-      res.status(201).json(paymentLink);
+      res.status(200).json(paymentLink);
     } catch (error) {
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
-      }
+      next(error);
+    }
+  };
+
+  sendReminder = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const result = await this.appointmentService.sendReminder(id, req.user);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getOccupiedSlots = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const month = (req.query.month as string) || ""; // format YYYY-MM
+      const data = await this.appointmentService.getOccupiedSlots(month, req.user!);
+      res.status(200).json(data);
+    } catch (error) {
+      next(error);
     }
   };
 }

@@ -1,22 +1,20 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 
 import { ClientService } from "@services/ClientService";
-import { UserRole } from "@/entities/User";
 
 export class ClientController {
   constructor(private clientService: ClientService) {}
 
-  getAllClients = async (_req: Request, res: Response) => {
+  getAllClients = async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const clients = await this.clientService.getClientsByRole(UserRole.CLIENT);
+      const clients = await this.clientService.getAllClients();
       res.json(clients);
     } catch (error) {
-      console.error("Error fetching clients:", error);
-      res.status(500).json({ message: "Error al recuperar cliente", error });
+      next(error as any);
     }
   };
 
-  getClientById = async (req: Request, res: Response) => {
+  getClientById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const clientId = req.params.id;
       const client = await this.clientService.getClientByID(clientId);
@@ -27,16 +25,14 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      console.error("Error fetching client:", error);
-      res.status(500).json({ message: "Error al recuperar cliente", error });
+      next(error as any);
     }
   };
 
-  updateClient = async (req: Request, res: Response) => {
+  updateClient = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const clientId = req.params.id;
       const clientData = req.body;
-
       const updatedClient = await this.clientService.updateClient(clientId, clientData);
 
       if (updatedClient) {
@@ -45,12 +41,11 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      console.error("Error updating client:", error);
-      res.status(500).json({ message: "Error al actualizar cliente", error });
+      next(error as any);
     }
   };
 
-  deleteClient = async (req: Request, res: Response) => {
+  deleteClient = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const clientId = req.params.id;
       const success = await this.clientService.deleteClient(clientId);
@@ -61,8 +56,16 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      console.error("Error deleting client:", error);
-      res.status(500).json({ message: "Error al eliminar cliente", error });
+      next(error as any);
+    }
+  };
+
+  createClient = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const created = await this.clientService.createClient(req.body);
+      res.status(201).json(created);
+    } catch (error) {
+      next(error as any);
     }
   };
 }
