@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 
 import { AuthService } from "@services/AuthService";
 import { JwtPayload } from "@/middlewares/authmiddleware";
@@ -10,7 +10,7 @@ interface AuthRequest extends Request {
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  signUp = async (req: Request, res: Response) => {
+  signUp = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const payload = req.body;
       const userAgent = req.headers["user-agent"] || "unknown";
@@ -33,13 +33,11 @@ export class AuthController {
 
       res.status(201).json({ user: data?.user });
     } catch (error) {
-      if (error instanceof Error) {
-        res.status(500).json({ message: error.message });
-      }
+      next(error as any);
     }
   };
 
-  signIn = async (req: Request, res: Response) => {
+  signIn = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { email, password } = req.body;
       const userAgent = req.headers["user-agent"] || "unknown";
@@ -58,38 +56,38 @@ export class AuthController {
 
       res.status(200).json({ user: data.user });
     } catch (error) {
-      if (error instanceof Error) {
-        res.status(401).json({ message: error.message });
-      }
+      next(error as any);
     }
   };
 
-  signOut = async (req: Request, res: Response) => {
+  signOut = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const token = req.cookies.token;
       await this.authService.signOut(token);
       res.clearCookie("token");
       res.status(200).json({ message: "Se cerró sesión exitosamente" });
     } catch (error) {
-      if (error instanceof Error) {
-        res.status(401).json({ message: error.message });
-      }
+      next(error as any);
     }
   };
 
-  getMe = async (req: AuthRequest, res: Response): Promise<void> => {
-    if (!req.user?.userId) {
-      res.status(401).json({ message: "No autorizado" });
-      return;
+  getMe = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user?.userId) {
+        res.status(401).json({ message: "No autorizado" });
+        return;
+      }
+
+      const user = await this.authService.getUserById(req.user.userId);
+
+      if (!user) {
+        res.status(404).json({ message: "Usuario no encontrado" });
+        return;
+      }
+
+      res.status(200).json({ user });
+    } catch (error) {
+      next(error as any);
     }
-
-    const user = await this.authService.getUserById(req.user.userId);
-
-    if (!user) {
-      res.status(404).json({ message: "Usuario no encontrado" });
-      return;
-    }
-
-    res.status(200).json({ user });
   };
 }

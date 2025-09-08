@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 
 import { ClientService } from "@services/ClientService";
 import { UserRole } from "@/entities/User";
@@ -6,16 +6,16 @@ import { UserRole } from "@/entities/User";
 export class ClientController {
   constructor(private clientService: ClientService) {}
 
-  getAllClients = async (_req: Request, res: Response) => {
+  getAllClients = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const clients = await this.clientService.getClientsByRole(UserRole.CLIENT);
       res.json(clients);
     } catch (error) {
-      res.status(500).json({ message: "Error al recuperar cliente", error });
+      next(error as any);
     }
   };
 
-  getClientById = async (req: Request, res: Response) => {
+  getClientById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const clientId = req.params.id;
       const client = await this.clientService.getClientByID(clientId);
@@ -26,11 +26,11 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      res.status(500).json({ message: "Error al recuperar cliente", error });
+      next(error as any);
     }
   };
 
-  updateClient = async (req: Request, res: Response) => {
+  updateClient = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const clientId = req.params.id;
       const clientData = req.body;
@@ -43,11 +43,11 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      res.status(500).json({ message: "Error al actualizar cliente", error });
+      next(error as any);
     }
   };
 
-  deleteClient = async (req: Request, res: Response) => {
+  deleteClient = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const clientId = req.params.id;
       const success = await this.clientService.deleteClient(clientId);
@@ -58,7 +58,7 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      res.status(500).json({ message: "Error al eliminar cliente", error });
+      next(error as any);
     }
   };
 }

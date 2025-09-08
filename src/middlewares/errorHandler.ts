@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
+import { AppError } from "@/errors/httpErrors";
 
 export const errorHandler: ErrorRequestHandler = (
   err: Error,
@@ -14,61 +15,52 @@ export const errorHandler: ErrorRequestHandler = (
     ip: req.ip,
   });
 
+  // Default fallback
   let statusCode = 500;
   let message = "Internal Server Error";
 
-  switch (err.name) {
-    case "SyntaxError":
-      // Commonly thrown by body-parser when JSON is malformed
-      statusCode = 400;
-      message = "Bad Request - Malformed JSON";
-      // Log raw body sample to help debug malformed inputs
-      try {
-        const anyReq = req as any;
-        const raw = anyReq?.rawBody;
-        const rawSample = Buffer.isBuffer(raw)
-          ? raw.toString("utf8").slice(0, 500)
-          : typeof raw === "string"
-          ? raw.slice(0, 500)
-          : undefined;
-        console.error("Malformed JSON payload details:", {
-          contentType: req.headers["content-type"],
-          rawSample,
-        });
-      } catch {}
-      break;
-    case "ValidationError":
-      statusCode = 400;
-      message = "Bad Request - Validation Error";
-      break;
-    case "UnauthorizedError":
-      statusCode = 401;
-      message = "Unauthorized - Invalid Token";
-      break;
-    case "ForbiddenError":
-      statusCode = 403;
-      message = "Forbidden - Access Denied";
-      break;
-    case "NotFoundError":
-      statusCode = 404;
-      message = "Not Found - Resource does not exist";
-      break;
-    case "ConflictError":
-      statusCode = 409;
-      message = "Conflict - Resource already exists";
-      break;
-    case "TooManyRequestsError":
-      statusCode = 429;
-      message = "Too Many Requests - Rate limit exceeded";
-      break;
-    default:
-      if (err.message) {
-        message = err.message;
-      }
-      break;
+  // First, respect our domain errors
+  if (err instanceof AppError) {
+    statusCode = err.statusCode;
+    message = err.message;
+  } else {
+    // Then, map common framework/runtime errors
+    switch (err.name) {
+      case "SyntaxError":
+        statusCode = 400;
+        message = "Bad Request - Malformed JSON";
+        try {
+          const anyReq = req as any;
+          const raw = anyReq?.rawBody;
+          const rawSample = Buffer.isBuffer(raw)
+            ? raw.toString("utf8").slice(0, 500)
+            : typeof raw === "string"
+              ? raw.slice(0, 500)
+              : undefined;
+          console.error("Malformed JSON payload details:", {
+            contentType: req.headers["content-type"],
+            rawSample,
+          });
+        } catch {}
+        break;
+      case "ValidationError":
+        statusCode = 400;
+        message = "Bad Request - Validation Error";
+        break;
+      case "UnauthorizedError":
+        statusCode = 401;
+        message = "Unauthorized - Invalid Token";
+        break;
+      default:
+        if (err.message) {
+          message = err.message;
+        }
+        break;
+    }
   }
 
   const errorResponse = {
+    message,
     error: {
       message,
       ...(process.env.NODE_ENV === "development" && {

@@ -1,39 +1,30 @@
-import { Response } from "express";
-import { AppError } from "@/errors/httpErrors";
+import { Response, NextFunction } from "express";
 import { AuthRequest } from "@/middlewares/authmiddleware";
 import { AppointmentService } from "@/services/AppointmentService";
 
 export class AppointmentController {
   constructor(private appointmentService: AppointmentService) {}
 
-  getAll = async (_req: AuthRequest, res: Response): Promise<void> => {
+  getAll = async (_req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const appointments = await this.appointmentService.getAll();
       res.json(appointments);
     } catch (error) {
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ message: error.message });
-      } else {
-        res.status(500).json({ message: "Error de servidor.Contacte a soporte" });
-      }
+      next(error);
     }
   };
 
-  getById = async (req: AuthRequest, res: Response): Promise<void> => {
+  getById = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
       const appointment = await this.appointmentService.getById(id);
       res.json(appointment);
     } catch (error) {
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ message: error.message });
-      } else {
-        res.status(500).json({ message: "Error de servidor.Contacte a soporte" });
-      }
+      next(error);
     }
   };
 
-  updateAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
+  updateAppointment = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
       const updatedData = req.body;
@@ -44,15 +35,11 @@ export class AppointmentController {
         res.status(404).json({ error: "Turno no encontrado" });
       }
     } catch (error) {
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ message: error.message });
-      } else {
-        res.status(500).json({ message: "Error de servidor.Contacte a soporte" });
-      }
+      next(error);
     }
   };
 
-  deleteAppointment = async (req: AuthRequest, res: Response) => {
+  deleteAppointment = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
       const result = await this.appointmentService.deleteAppointment(id);
@@ -62,41 +49,29 @@ export class AppointmentController {
         res.status(404).json({ error: "Turno no encontrado" });
       }
     } catch (error) {
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ message: error.message });
-      } else {
-        res.status(500).json({ message: "Error de servidor.Contacte a soporte" });
-      }
+      next(error);
     }
   };
 
-  createAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
+  createAppointment = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const appointmentData = req.body;
       const userId = req.user!.userId;
       const newAppointment = await this.appointmentService.createAppointment(appointmentData, userId);
       res.status(201).json(newAppointment);
     } catch (error) {
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ message: error.message });
-      } else {
-        res.status(500).json({ message: "Error de servidor.Contacte a soporte" });
-      }
+      next(error);
     }
   };
 
-  createAppointmentPaymentLink = async (req: AuthRequest, res: Response): Promise<void> => {
+  createAppointmentPaymentLink = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
       const userId = req.user!.userId;
       const paymentLink = await this.appointmentService.createPaymentLink(id, userId);
       res.status(200).json(paymentLink);
     } catch (error) {
-      if (error instanceof AppError) {
-        res.status(error.statusCode).json({ message: error.message });
-      } else {
-        res.status(500).json({ message: "Error de servidor.Contacte a soporte" });
-      }
+      next(error);
     }
   };
 }

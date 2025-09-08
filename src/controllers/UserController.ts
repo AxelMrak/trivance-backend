@@ -1,20 +1,20 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 
 import { UserService } from "@services/UserService";
 
 export class UserController {
   constructor(private userService: UserService) {}
 
-  getAll = async (_req: Request, res: Response) => {
+  getAll = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const users = await this.userService.getUsers();
       res.json(users);
     } catch (error) {
-      res.status(500).json({ message: "Error al recuperar usuarios", error });
+      next(error as any);
     }
   };
 
-  getById = async (req: Request, res: Response) => {
+  getById = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.params.id;
 
@@ -26,7 +26,7 @@ export class UserController {
         res.status(404).json({ message: "Usuario no encontrado" });
       }
     } catch (error) {
-      res.status(500).json({ message: "Error al recuperar usuario", error });
+      next(error as any);
     }
   };
 }
