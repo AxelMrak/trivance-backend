@@ -6,6 +6,8 @@ import serviceRouter from "@routes/ServiceRoutes";
 import clientRouter from "@routes/ClientRoutes";
 import appointmentRouter from "@routes/AppointmentRoutes";
 import webhookRouter from "@routes/WebhooksRoutes";
+import statsRouter from "@routes/StatsRoutes";
+import searchRouter from "@routes/SearchRoutes";
 const router = Router();
 
 router.get("/", (_req, res) => {
@@ -21,5 +23,7 @@ router.use("/services", serviceRouter);
 router.use("/clients", clientRouter);
 router.use("/appointments", appointmentRouter);
 router.use("/webhooks", webhookRouter);
+router.use("/stats", statsRouter);
+router.use("/search", searchRouter);
 
 export default router;
