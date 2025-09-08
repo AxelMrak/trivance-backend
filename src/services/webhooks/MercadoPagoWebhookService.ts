@@ -13,15 +13,13 @@ export class MercadoPagoWebhookService {
     // If status is missing, fetch the payment details to get status and reference.
     let paymentStatus: string | undefined = body?.data?.status;
     let reference: string | undefined = body?.data?.external_reference || body?.data?.preference_id;
-    console.log("Processing Mercado Pago webhook with body:", body);
     if ((!paymentStatus || !reference) && body?.type === "payment" && body?.data?.id) {
       try {
         const paymentResource = getPaymentResource();
         const paymentData: any = await paymentResource.get({ id: body.data.id });
         paymentStatus = paymentStatus || paymentData?.status;
         reference = reference || paymentData?.external_reference || paymentData?.preference_id;
-      } catch (err) {
-        console.error("Error fetching payment details from Mercado Pago:", err);
+      } catch (_err) {
         throw new Error("No se pudo obtener el estado del pago desde Mercado Pago");
       }
     }
@@ -38,12 +36,9 @@ export class MercadoPagoWebhookService {
     try {
       order = await this.orderService.getOrderByReference(reference);
     } catch (e) {
-      // Align with existing OrderService.getOrderByReference behavior which throws when not found
-      console.warn("Pedido no encontrado como referencia:", reference);
       return;
     }
     if (!order) {
-      console.warn("Pedido no encontrado como referencia:", reference);
       return;
     }
 

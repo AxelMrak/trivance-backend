@@ -12,7 +12,6 @@ export class ServiceController {
       return res.status(201).json(service);
     } catch (error) {
       if (error instanceof Error) {
-        console.error("Error creating service", error);
         return res.status(400).json({ message: error.message });
       }
     }
@@ -46,7 +45,7 @@ export class ServiceController {
       const { id } = req.params;
       const payload = req.body;
       const service = await this.serviceHandlerService.updateService(id, payload);
-      return res.status(206).json(service);
+      return res.status(200).json(service);
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
@@ -58,7 +57,10 @@ export class ServiceController {
     try {
       const { id } = req.params;
       const deletedID = await this.serviceHandlerService.deleteService(id);
-      return res.status(200).json({ message: "Servicio eliminado exitosamente", id: deletedID });
+      if (deletedID) {
+        return res.status(204).send();
+      }
+      return res.status(404).json({ message: "Servicio no encontrado" });
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });

@@ -11,7 +11,6 @@ export class ClientController {
       const clients = await this.clientService.getClientsByRole(UserRole.CLIENT);
       res.json(clients);
     } catch (error) {
-      console.error("Error fetching clients:", error);
       res.status(500).json({ message: "Error al recuperar cliente", error });
     }
   };
@@ -27,7 +26,6 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      console.error("Error fetching client:", error);
       res.status(500).json({ message: "Error al recuperar cliente", error });
     }
   };
@@ -45,7 +43,6 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      console.error("Error updating client:", error);
       res.status(500).json({ message: "Error al actualizar cliente", error });
     }
   };
@@ -61,7 +58,6 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      console.error("Error deleting client:", error);
       res.status(500).json({ message: "Error al eliminar cliente", error });
     }
   };

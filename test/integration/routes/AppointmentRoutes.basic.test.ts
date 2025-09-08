@@ -78,7 +78,7 @@ describe("Appointments Endpoints - Basic", () => {
     expect(res.body).toHaveProperty("id", appt.id);
   });
 
-  it("PUT  /appointments/update/:id • valid changes • returns 206 with updated fields", async () => {
+  it("PUT  /appointments/update/:id • valid changes • returns 200 with updated fields", async () => {
     const appt = await createAppointment({ user_id: user.id, service_id: service.id });
     const newDate = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
 
@@ -87,7 +87,7 @@ describe("Appointments Endpoints - Basic", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({ description: "Updated", start_date: newDate });
 
-    expect(res.status).toBe(206);
+    expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("description", "Updated");
   });
 

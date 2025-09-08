@@ -39,7 +39,7 @@ export class AppointmentController {
       const updatedData = req.body;
       const updatedAppointment = await this.appointmentService.updateAppointment(id, updatedData);
       if (updatedAppointment) {
-        res.status(206).json(updatedAppointment);
+        res.status(200).json(updatedAppointment);
       } else {
         res.status(404).json({ error: "Turno no encontrado" });
       }
@@ -57,7 +57,7 @@ export class AppointmentController {
       const { id } = req.params;
       const result = await this.appointmentService.deleteAppointment(id);
       if (result) {
-        res.status(204).send({ message: "Turno eliminado con exito", id: result });
+        res.status(204).send();
       } else {
         res.status(404).json({ error: "Turno no encontrado" });
       }

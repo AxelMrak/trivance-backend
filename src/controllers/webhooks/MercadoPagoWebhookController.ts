@@ -10,11 +10,9 @@ export class MercadoPagoWebhookController {
 
   handle = async (req: Request, res: Response): Promise<any> => {
     try {
-      console.log("Received Mercado Pago webhook:", req.body);
       const signatureHeader = req.headers["x-signature"] as string;
       const requestId = req.headers["x-request-id"] as string;
       if (!signatureHeader || !requestId) {
-        console.warn("Missing signature or request ID");
         return res.status(400).send("Encabezados faltantes");
       }
 
@@ -36,7 +34,6 @@ export class MercadoPagoWebhookController {
         ? (JSON.parse(req.body.toString("utf8")) as any)
         : (req.body as any);
       const dataID = bodyJson?.data?.id;
-      console.log("Parsed body JSON:", bodyJson);
       const manifest = `id:${dataID};request-id:${requestId};ts:${ts};`;
 
       const hmac = crypto.createHmac("sha256", SHARED_SECRET);
@@ -44,16 +41,11 @@ export class MercadoPagoWebhookController {
       const expectedSignature = hmac.digest("hex");
 
       if (expectedSignature !== v1) {
-        console.warn("Signature verification failed");
-        console.log("Manifest:", manifest);
-        console.log("Expected Signature:", expectedSignature);
-        console.log("Received Signature (v1):", v1);
         return res.status(401).send("No autorizado");
       }
       const response = await this.service.processWebhook(bodyJson);
       res.status(200).send(response);
     } catch (error) {
-      console.error("Error handling Mercado Pago webhook:", error);
       res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
     }
   };
