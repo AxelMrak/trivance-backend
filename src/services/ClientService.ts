@@ -6,18 +6,12 @@ export class ClientService {
   constructor(private clientRepository: ClientRepository) {}
 
   async getClientsByRole(role: UserRole): Promise<Omit<User, "password">[]> {
-    const clients = await this.clientRepository.findWithCondition("role = $1", [role]);
-    if (clients.length === 0) {
-      throw new Error(`No se encontraron clientes con el Rol ${role}.`);
-    }
+    const clients = await this.clientRepository.findClientsByRole(role);
     return clients.map(sanitizeUser);
   }
 
   async getClientByID(id: string): Promise<Omit<User, "password"> | null> {
-    const user = await this.clientRepository.findOneWithConditions(
-      ["id = $1", "role = $2"],
-      [id, UserRole.CLIENT],
-    );
+    const user = await this.clientRepository.findClientByIdAndRole(id, UserRole.CLIENT);
 
     if (!user) {
       throw new Error(`Cliente con ID ${id} no encontrado.`);

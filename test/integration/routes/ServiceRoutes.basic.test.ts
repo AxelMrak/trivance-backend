@@ -1,6 +1,6 @@
 import { createUser, createService } from "@test/utils/factories";
 import { getTestAgent } from "@test/setup";
-import { signInAndGetToken } from "@test/utils/helpers";
+import { generateToken } from "@test/utils/helpers";
 
 describe("Services Endpoints - Basic", () => {
   let token: string;
@@ -8,18 +8,18 @@ describe("Services Endpoints - Basic", () => {
 
   beforeEach(async () => {
     user = await createUser();
-    token = await signInAndGetToken(user.email, (user as any).plainPassword);
+    token = generateToken(user.id, user.role as any);
   });
 
-  it.skip("POST  /services/create • valid payload • returns 201 with entity", async () => {
+  it("POST  /services/create • valid payload • returns 201 with entity", async () => {
     const res = await getTestAgent()
       .post("/services/create")
       .set("Authorization", `Bearer ${token}`)
-      .send({ name: "S1", description: "Descripcion larga", price: 10, duration: "01:00:00" });
+      .send({ name: "Srv1", description: "Descripcion larga", price: 10, duration: "01:00:00" });
 
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("id");
-    expect(res.body).toHaveProperty("name", "S1");
+    expect(res.body).toHaveProperty("name", "Srv1");
   });
 
   it("GET  /services/getAll • returns 200 and array", async () => {
@@ -44,15 +44,15 @@ describe("Services Endpoints - Basic", () => {
     expect(res.body).toHaveProperty("id", svc.id);
   });
 
-  it.skip("PUT  /services/update/:id • valid changes • returns 200 with updated fields", async () => {
+  it("PUT  /services/update/:id • valid changes • returns 200 with updated fields", async () => {
     const svc = await createService({ company_id: user.company_id });
     const res = await getTestAgent()
       .put(`/services/update/${svc.id}`)
       .set("Authorization", `Bearer ${token}`)
-      .send({ name: "S2", description: "Descripcion actualizada", price: 15, duration: "02:00:00" });
+      .send({ name: "Srv2", description: "Descripcion actualizada", price: 15, duration: "02:00:00" });
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("name", "S2");
+    expect(res.body).toHaveProperty("name", "Srv2");
   });
 
   it("DELETE /services/delete/:id • existing service • returns 204 (no content)", async () => {

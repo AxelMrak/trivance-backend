@@ -78,61 +78,61 @@ const services = [
   {
     name: "limpieza facial profunda",
     description: "tratamiento de limpieza intensiva para todo tipo de piel.",
-    duration: "1 hour",
+    duration: "01:00:00",
     price: 100.0,
   },
   {
     name: "masaje relajante",
     description: "masaje corporal para reducir estrés y tensión muscular.",
-    duration: "1 hour",
+    duration: "01:00:00",
     price: 80.0,
   },
   {
     name: "depilación láser",
     description: "eliminación de vello con tecnología láser.",
-    duration: "30 mins",
+    duration: "00:30:00",
     price: 120.0,
   },
   {
     name: "tratamiento anticelulítico",
     description: "mejora la apariencia de la piel con técnicas reafirmantes.",
-    duration: "1.5 hours",
+    duration: "01:30:00",
     price: 150.0,
   },
   {
     name: "microdermoabrasión",
     description: "exfoliación para regenerar la piel.",
-    duration: "45 mins",
+    duration: "00:45:00",
     price: 110.0,
   },
   {
     name: "radiofrecuencia facial",
     description: "reafirmación de la piel del rostro.",
-    duration: "1 hour",
+    duration: "01:00:00",
     price: 130.0,
   },
   {
     name: "manicura y pedicura",
     description: "servicio completo de uñas para manos y pies.",
-    duration: "2 hours",
+    duration: "02:00:00",
     price: 90.0,
   },
   {
     name: "spa de pies",
     description: "hidratación y relajación profunda para los pies.",
-    duration: "1 hour",
+    duration: "01:00:00",
     price: 70.0,
   },
   {
     name: "pestañas 3d",
     description: "extensiones de pestañas con efecto volumen.",
-    duration: "1.5 hours",
+    duration: "01:30:00",
     price: 140.0,
   },
   {
     name: "perfilado de cejas",
     description: "diseño y depilación de cejas personalizado.",
-    duration: "30 mins",
+    duration: "00:30:00",
     price: 60.0,
   },
 ];
@@ -184,6 +184,15 @@ const seedDb = async () => {
       }
     }
 
+    // Ensure base roles exist (ignore if roles table is missing)
+    try {
+      await client.query(
+        `INSERT INTO roles (level, name) VALUES
+          (0, 'GUEST'), (1, 'CLIENT'), (2, 'STAFF'), (3, 'MANAGER'), (4, 'ADMIN'), (5, 'SUPER_USER')
+         ON CONFLICT (level) DO NOTHING`,
+      );
+    } catch {}
+
     const { rows: existingUserRows } = await client.query(
       `SELECT email FROM users WHERE email = ANY($1)`,
       [users.map((u) => u.email)],
@@ -209,6 +218,12 @@ const seedDb = async () => {
         [id, TRIVANCE_ID, user.name, user.email, hashed, user.role, user.phone, user.address],
       );
       insertedUserIds.push(id);
+      try {
+        await client.query(
+          `INSERT INTO user_roles (user_id, role_level) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING`,
+          [id, user.role],
+        );
+      } catch {}
       console.log(`➕ Inserted user: ${user.email}`);
     }
 

@@ -4,6 +4,7 @@ import { AppointmentController } from "@controllers/AppointmentController";
 import { AppointmentService } from "@/services/AppointmentService";
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
 import AuthMiddleware from "@/middlewares/authmiddleware";
+import { attachUserRole, requireMinRole } from "@/middlewares/roleMiddleware";
 import { validateAppointmentCreate, validateAppointmentUpdate } from "@/middlewares/validation";
 import { ServiceHandlerService } from "@/services/ServiceHandlerService";
 import { OrderService } from "@/services/OrderService";
@@ -29,16 +30,30 @@ const appointmentController = new AppointmentController(appointmentService);
 router.post(
   "/create",
   AuthMiddleware,
+  attachUserRole(),
   validateAppointmentCreate,
   appointmentController.createAppointment,
 );
-router.get("/getAll", AuthMiddleware, appointmentController.getAll);
-router.get("/get/:id", AuthMiddleware, appointmentController.getById);
-router.put("/update/:id", AuthMiddleware, validateAppointmentUpdate, appointmentController.updateAppointment);
-router.delete("/delete/:id", AuthMiddleware, appointmentController.deleteAppointment);
+router.get("/getAll", AuthMiddleware, attachUserRole(), appointmentController.getAll);
+router.get("/get/:id", AuthMiddleware, attachUserRole(), appointmentController.getById);
+router.put(
+  "/update/:id",
+  AuthMiddleware,
+  attachUserRole(),
+  validateAppointmentUpdate,
+  appointmentController.updateAppointment,
+);
+router.delete(
+  "/delete/:id",
+  AuthMiddleware,
+  attachUserRole(),
+  requireMinRole(2),
+  appointmentController.deleteAppointment,
+);
 router.post(
   "/payment/:id/link",
   AuthMiddleware,
+  attachUserRole(),
   appointmentController.createAppointmentPaymentLink,
 );
 

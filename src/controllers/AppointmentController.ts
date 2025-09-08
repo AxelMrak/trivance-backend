@@ -5,9 +5,9 @@ import { AppointmentService } from "@/services/AppointmentService";
 export class AppointmentController {
   constructor(private appointmentService: AppointmentService) {}
 
-  getAll = async (_req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  getAll = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const appointments = await this.appointmentService.getAll();
+      const appointments = await this.appointmentService.getAll(req.user as any);
       res.json(appointments);
     } catch (error) {
       next(error);
@@ -17,7 +17,7 @@ export class AppointmentController {
   getById = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-      const appointment = await this.appointmentService.getById(id);
+      const appointment = await this.appointmentService.getById(id, req.user as any);
       res.json(appointment);
     } catch (error) {
       next(error);
@@ -57,7 +57,7 @@ export class AppointmentController {
     try {
       const appointmentData = req.body;
       const userId = req.user!.userId;
-      const newAppointment = await this.appointmentService.createAppointment(appointmentData, userId);
+      const newAppointment = await this.appointmentService.createAppointment(appointmentData, userId, req.user as any);
       res.status(201).json(newAppointment);
     } catch (error) {
       next(error);

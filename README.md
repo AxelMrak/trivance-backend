@@ -82,3 +82,121 @@ npm run test:int
 ```
 npm run dev
 ```
+
+## API Guide (for Frontend)
+
+Below is a practical, easy-to-scan list of endpoints, request bodies, and requirements. Authentication uses either an `Authorization: Bearer <token>` header or the `token` cookie set by the auth endpoints.
+
+Roles (numeric levels)
+- 0: GUEST
+- 1: CLIENT
+- 2: STAFF
+- 3: MANAGER
+- 4: ADMIN
+- 5: SUPER_USER
+
+Health & Root
+- GET `/health`
+  - Auth: none
+  - Returns simple health info
+- GET `/`
+  - Auth: none
+  - Returns `{ status: "OK" }`
+
+Auth
+- POST `/auth/sign-up`
+  - Auth: none
+  - Body: `{ name, email, password, confirmedPassword, phone, address }`
+  - Sets `token` cookie and returns `{ user }`
+- POST `/auth/sign-in`
+  - Auth: none
+  - Body: `{ email, password }`
+  - Sets `token` cookie and returns `{ user }`
+- POST `/auth/sign-out`
+  - Auth: required
+  - Clears `token` cookie
+- GET `/auth/me`
+  - Auth: required
+  - Returns `{ user }`
+
+Services
+- POST `/services/create`
+  - Auth: required
+  - Role: STAFF+
+  - Body: `{ name: string, description: string, price: number, duration: "HH:MM:SS" }`
+  - Returns created service
+- GET `/services/get/:id`
+  - Auth: required
+  - Returns service by id
+- GET `/services/getAll`
+  - Auth: required
+  - Returns array of services for the company
+- PUT `/services/update/:id`
+  - Auth: required
+  - Role: STAFF+
+  - Body (partial allowed): `{ name?, description?, price?, duration? }`
+  - Returns updated service
+- DELETE `/services/delete/:id`
+  - Auth: required
+  - Role: STAFF+
+  - Returns 204 (no content)
+
+Appointments
+- POST `/appointments/create`
+  - Auth: required
+  - Body: `{ service_id: string, start_date: ISOString, description?: string }`
+  - Default status behavior for roles below STAFF:
+    - `confirmed` only if the time slot is available AND the service does not require deposit
+    - otherwise `pending`
+  - Returns created appointment (normalized fields only)
+- GET `/appointments/getAll`
+  - Auth: required
+  - CLIENT sees own appointments; STAFF+ sees all
+- GET `/appointments/get/:id`
+  - Auth: required
+  - CLIENT can only access own appointment
+- PUT `/appointments/update/:id`
+  - Auth: required
+  - Body (partial allowed): `{ description?, start_date?, status? }`
+  - Status updates are restricted:
+    - Only STAFF+ can change `status`
+    - STAFF+ can only change `status` of their own appointments
+  - Returns updated appointment
+- DELETE `/appointments/delete/:id`
+  - Auth: required
+  - Role: STAFF+
+  - Returns 204 (no content)
+- POST `/appointments/payment/:id/link`
+  - Auth: required
+  - Only appointment owner can request a payment link
+  - Returns `{ orderId, paymentLink, paymentDetails }`
+
+Clients (managed by staff)
+- GET `/clients/getAll`
+  - Auth: required
+  - Role: STAFF+
+  - Returns array of client users
+- GET `/clients/get/:id`
+  - Auth: required
+  - Role: STAFF+
+  - Returns client by id
+- PUT `/clients/update/:id`
+  - Auth: required
+  - Role: STAFF+
+  - Body (partial allowed): `{ name?, email?, phone?, address? }`
+  - Returns updated client
+- DELETE `/clients/delete/:id`
+  - Auth: required
+  - Role: STAFF+
+  - Returns 204 (no content)
+
+Users (basic demo endpoints)
+- GET `/users/getAll`
+  - Auth: none (consider protecting in production)
+- GET `/users/get/:id`
+  - Auth: none (consider protecting in production)
+
+Webhooks (FYI — not for frontend consumption)
+- POST `/webhooks/mercadopago`
+  - Expects raw JSON body and Mercado Pago signature headers
+  - Used to process payment notifications

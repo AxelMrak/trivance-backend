@@ -21,7 +21,7 @@ let userCounter = 0;
  */
 export const createCompany = async (overrides: Partial<Company> = {}): Promise<Company> => {
   const companyData = {
-    name: `Test Company ${Date.now()}`,
+    name: `Test Company ${Date.now()}_${Math.floor(Math.random() * 100000)}`,
     ...overrides,
   };
 
@@ -45,7 +45,7 @@ export const createUser = async (overrides: Partial<User> = {}): Promise<User> =
 
   const userData = {
     name: "Test User",
-    email: `test${userCounter}@example.com`,
+    email: `test${Date.now()}_${userCounter}@example.com`,
     password: hashedPassword,
     phone: "1234567890",
     address: "123 Test St",
@@ -72,6 +72,13 @@ export const createUser = async (overrides: Partial<User> = {}): Promise<User> =
   );
 
   const user = rows[0];
+  // try to attach role in pivot if table exists
+  try {
+    await dbClient.query(
+      `INSERT INTO user_roles (user_id, role_level) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING`,
+      [user.id, user.role],
+    );
+  } catch {}
   // We attach the plain password to the user object so that we can use it in tests for logging in.
   (user as any).plainPassword = password;
 
@@ -145,4 +152,3 @@ export const createAppointment = async (overrides: Partial<Appointment> = {}): P
 
   return rows[0];
 };
-

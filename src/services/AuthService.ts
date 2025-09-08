@@ -6,6 +6,7 @@ import { PublicUserDTO, UserRole } from "@entities/User";
 import { SessionRepository } from "@/repositories/SessionRepository";
 import { SignInResponse } from "@entities/Response";
 import { SignupRequest } from "@entities/Request";
+import { RoleService } from "@/services/RoleService";
 
 export class AuthService {
   constructor(
@@ -44,7 +45,11 @@ export class AuthService {
       throw new Error("Error al crear usuario");
     }
 
-    const token = this.generateToken(user.id, user.role);
+    // attach role in pivot
+    const roleSvc = new RoleService();
+    await roleSvc.assignRole(user.id, Number(userRole));
+    const level = (await roleSvc.getRoleLevelForUser(user.id)) ?? Number(userRole);
+    const token = this.generateToken(user.id, level);
     await this.sessionRepo.create({
       user_id: user.id,
       token,
@@ -67,7 +72,9 @@ export class AuthService {
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) throw new Error("Contraseña inválida");
 
-    const token = this.generateToken(user.id, user.role);
+    const roleSvc = new RoleService();
+    const level = (await roleSvc.getRoleLevelForUser(user.id)) ?? user.role;
+    const token = this.generateToken(user.id, level);
     await this.sessionRepo.create({
       user_id: user.id,
       token,
@@ -75,7 +82,7 @@ export class AuthService {
       ip_address: ipAddress,
     });
 
-    return this.buildResponse(user, token);
+    return this.buildResponse({ ...user, role: level } as any, token);
   }
 
   async signOut(token: string): Promise<void> {

@@ -7,6 +7,7 @@ if (process.env.NODE_ENV === "test") {
   console.log = (() => {}) as typeof console.log;
   console.info = (() => {}) as typeof console.info;
   console.warn = (() => {}) as typeof console.warn;
+  console.error = (() => {}) as typeof console.error;
 }
 
 /**
@@ -17,32 +18,9 @@ export const getTestAgent = () => {
   return supertest(app);
 };
 
-/**
- * Before each test, we start a transaction.
- */
-beforeEach(async () => {
-  try {
-    await dbClient.query("BEGIN");
-  } catch (err) {
-    // If database is not reachable in the current environment, skip transaction handling.
-    // This keeps unit/in-memory tests runnable without a DB.
-    // eslint-disable-next-line no-console
-    console.warn("DB not available for tests: skipping BEGIN");
-  }
-});
-
-/**
- * After each test, we roll back the transaction.
- * This ensures that each test is isolated from the others.
- */
-afterEach(async () => {
-  try {
-    await dbClient.query("ROLLBACK");
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.warn("DB not available for tests: skipping ROLLBACK");
-  }
-});
+// Note: We avoid wrapping tests in transactions because Jest runs tests in parallel
+// across workers, which can interleave transactions on a single connection.
+// The factories generate unique data to prevent conflicts.
 
 /**
  * After all tests are done, we close the database connection.

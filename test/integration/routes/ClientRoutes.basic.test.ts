@@ -1,6 +1,6 @@
 import { createUser } from "@test/utils/factories";
 import { getTestAgent } from "@test/setup";
-import { signInAndGetToken } from "@test/utils/helpers";
+import { generateToken } from "@test/utils/helpers";
 import { UserRole } from "@/entities/User";
 
 describe("Clients Endpoints - Basic", () => {
@@ -9,7 +9,7 @@ describe("Clients Endpoints - Basic", () => {
 
   beforeEach(async () => {
     authUser = await createUser();
-    token = await signInAndGetToken(authUser.email, (authUser as any).plainPassword);
+    token = generateToken(authUser.id, authUser.role as any);
   });
 
   it("GET  /clients/getAll • returns 200 and array", async () => {
@@ -56,4 +56,3 @@ describe("Clients Endpoints - Basic", () => {
     expect(res.body).toEqual({});
   });
 });
-

@@ -1,14 +1,23 @@
 import { Request, Response, NextFunction } from "express";
 
 import { ServiceHandlerService } from "@/services/ServiceHandlerService";
+import { UserRepository } from "@/repositories/UserRepository";
 
 export class ServiceController {
-  constructor(private serviceHandlerService: ServiceHandlerService) {}
+  constructor(
+    private serviceHandlerService: ServiceHandlerService,
+    private userRepository: UserRepository,
+  ) {}
 
   createService = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const payload = req.body;
-      const service = await this.serviceHandlerService.createService(payload);
+      const userId = (req as any).user?.userId as string | undefined;
+      const user = userId ? await this.userRepository.findById(userId) : null;
+      const service = await this.serviceHandlerService.createService(
+        payload,
+        (user as any)?.company_id,
+      );
       return res.status(201).json(service);
     } catch (error) {
       next(error);

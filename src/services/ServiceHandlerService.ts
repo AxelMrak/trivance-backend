@@ -5,15 +5,15 @@ import { ServiceRequest } from "@/entities/Request";
 export class ServiceHandlerService {
   constructor(private repository: ServiceRepository) {}
 
-  async createService(payload: ServiceRequest) {
-    const companyID = process.env.COMPANY_ID || "";
+  async createService(payload: ServiceRequest, companyID?: string) {
+    const resolvedCompany = companyID || process.env.COMPANY_ID || "";
 
-    if (!companyID) {
+    if (!resolvedCompany) {
       throw new Error("Company ID is not set");
     }
 
     const service = await this.repository.create({
-      company_id: companyID,
+      company_id: resolvedCompany,
       name: payload.name,
       description: payload.description,
       price: String(payload.price),

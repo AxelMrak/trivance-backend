@@ -14,6 +14,7 @@ import {
 import { CreatePaymentLinkResponse } from "@/entities/Response";
 import { UserRepository } from "@/repositories/UserRepository";
 import { JwtPayload } from "@/middlewares/authmiddleware";
+import { canEditAppointmentStatus } from "@/utils/permissions";
 
 export class AppointmentService {
   constructor(
@@ -23,11 +24,14 @@ export class AppointmentService {
     private userRepository: UserRepository,
   ) {}
 
-  async getAll(): Promise<Appointment[]> {
+  async getAll(currentUser?: { userId: string; role: number }): Promise<Appointment[]> {
+    if (currentUser && currentUser.role < 2) {
+      return this.repository.getUserAppointments(currentUser.userId);
+    }
     return this.repository.getCompanyAppointments();
   }
 
-  async getById(id: string): Promise<Appointment | null> {
+  async getById(id: string, currentUser?: { userId: string; role: number }): Promise<Appointment | null> {
     let appointment;
     try {
       appointment = await this.repository.getAppointmentByIdWithJoins(id);
@@ -37,6 +41,9 @@ export class AppointmentService {
 
     if (!appointment) {
       throw new NotFoundError("Turno no encontrado");
+    }
+    if (currentUser && currentUser.role < 2 && appointment.user_id !== currentUser.userId) {
+      throw new ForbiddenError("No tienes permiso para acceder a este turno");
     }
     return appointment;
   }
@@ -58,21 +65,12 @@ export class AppointmentService {
 
     const maybeStatus = (updatedData as any).status as unknown;
     if (typeof maybeStatus !== "undefined") {
-      if (!currentUser) {
-        // internal/system flows (e.g., webhooks) are allowed to update status
-      } else {
-        // only STAFF or higher and only for own appointment
-        const isStaffOrHigher = currentUser.role >= 2; // UserRole.STAFF
-        if (!isStaffOrHigher) {
-          throw new ForbiddenError("No tienes permiso para cambiar el estado del turno");
-        }
-        const existing = await this.repository.findById(id);
-        if (!existing) {
-          throw new NotFoundError("Turno no encontrado");
-        }
-        if (existing.user_id !== currentUser.userId) {
-          throw new ForbiddenError("No puedes modificar este turno");
-        }
+      const existing = await this.repository.findById(id);
+      if (!existing) {
+        throw new NotFoundError("Turno no encontrado");
+      }
+      if (!canEditAppointmentStatus(currentUser as any, existing.user_id)) {
+        throw new ForbiddenError("No tienes permiso para cambiar el estado del turno");
       }
     }
 
@@ -90,6 +88,7 @@ export class AppointmentService {
   async createAppointment(
     appointmentData: AppointmentCreateDTO,
     userId: string,
+    currentUser?: { userId: string; role: number },
   ): Promise<Appointment> {
     const serviceId = appointmentData.service_id as unknown as string;
     if (!serviceId || typeof serviceId !== "string" || serviceId.trim() === "") {
@@ -117,12 +116,19 @@ export class AppointmentService {
       throw new BadRequestError("Usuario inválido");
     }
 
+    // Determine default status based on role and availability
+    let defaultStatus: "pending" | "confirmed" = appointmentRequiresDeposit ? "pending" : "confirmed";
+    if (currentUser && currentUser.role < 2) {
+      const available = await this.repository.isSlotAvailable(serviceId, startDate);
+      defaultStatus = !appointmentRequiresDeposit && available ? "confirmed" : "pending";
+    }
+
     const appointmentToCreate: Partial<Appointment> = {
       service_id: serviceId,
       user_id: userId,
       start_date: startDate,
       description: appointmentData.description || "",
-      status: appointmentRequiresDeposit ? "pending" : "confirmed",
+      status: defaultStatus,
     };
 
     const createdAppointment = await this.repository.create(appointmentToCreate);
@@ -130,7 +136,7 @@ export class AppointmentService {
       throw new Error("Failed to create appointment");
     }
 
-    const newAppointment = await this.getById(createdAppointment.id);
+    const newAppointment = await this.getById(createdAppointment.id, currentUser);
 
     if (!newAppointment) {
       throw new Error("Failed to fetch new appointment");
