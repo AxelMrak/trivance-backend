@@ -1,6 +1,7 @@
 import { createUser, createService, createAppointment } from "@test/utils/factories";
 import { getTestAgent } from "@test/setup";
 import { signInAndGetToken } from "@test/utils/helpers";
+import { UserRole } from "@/entities/User";
 
 describe("Appointments Endpoints - Basic", () => {
   let token: string;
@@ -89,6 +90,44 @@ describe("Appointments Endpoints - Basic", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("description", "Updated");
+  });
+
+  it("PUT  /appointments/update/:id • client cannot change status • returns 403", async () => {
+    const client = await createUser({ role: UserRole.CLIENT, company_id: user.company_id });
+    const clientToken = await signInAndGetToken(client.email, (client as any).plainPassword);
+    const appt = await createAppointment({ user_id: client.id, service_id: service.id });
+    const res = await getTestAgent()
+      .put(`/appointments/update/${appt.id}`)
+      .set("Authorization", `Bearer ${clientToken}`)
+      .send({ status: "confirmed" });
+    expect(res.status).toBe(403);
+  });
+
+  it("PUT  /appointments/update/:id • staff can change status for own appointment • returns 200", async () => {
+    const staff = await createUser({ role: UserRole.STAFF, company_id: user.company_id });
+    const staffToken = await signInAndGetToken(staff.email, (staff as any).plainPassword);
+    const appt = await createAppointment({ user_id: staff.id, service_id: service.id });
+
+    const res = await getTestAgent()
+      .put(`/appointments/update/${appt.id}`)
+      .set("Authorization", `Bearer ${staffToken}`)
+      .send({ status: "confirmed" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("status", "confirmed");
+  });
+
+  it("PUT  /appointments/update/:id • staff cannot change status for others' appointment • returns 403", async () => {
+    const staff = await createUser({ role: UserRole.STAFF, company_id: user.company_id });
+    const staffToken = await signInAndGetToken(staff.email, (staff as any).plainPassword);
+    const appt = await createAppointment({ user_id: user.id, service_id: service.id });
+
+    const res = await getTestAgent()
+      .put(`/appointments/update/${appt.id}`)
+      .set("Authorization", `Bearer ${staffToken}`)
+      .send({ status: "cancelled" });
+
+    expect(res.status).toBe(403);
   });
 
   it("DELETE  /appointments/delete/:id • existing appointment • returns 204 (no content)", async () => {

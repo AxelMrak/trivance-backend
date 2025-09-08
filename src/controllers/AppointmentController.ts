@@ -28,7 +28,7 @@ export class AppointmentController {
     try {
       const { id } = req.params;
       const updatedData = req.body;
-      const updatedAppointment = await this.appointmentService.updateAppointment(id, updatedData);
+      const updatedAppointment = await this.appointmentService.updateAppointment(id, updatedData, req.user);
       if (updatedAppointment) {
         res.status(200).json(updatedAppointment);
       } else {

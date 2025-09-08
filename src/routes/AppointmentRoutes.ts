@@ -4,7 +4,7 @@ import { AppointmentController } from "@controllers/AppointmentController";
 import { AppointmentService } from "@/services/AppointmentService";
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
 import AuthMiddleware from "@/middlewares/authmiddleware";
-import { validateAppointmentCreate } from "@/middlewares/validation";
+import { validateAppointmentCreate, validateAppointmentUpdate } from "@/middlewares/validation";
 import { ServiceHandlerService } from "@/services/ServiceHandlerService";
 import { OrderService } from "@/services/OrderService";
 import { OrderRepository } from "@/repositories/OrderRepository";
@@ -34,7 +34,7 @@ router.post(
 );
 router.get("/getAll", AuthMiddleware, appointmentController.getAll);
 router.get("/get/:id", AuthMiddleware, appointmentController.getById);
-router.put("/update/:id", AuthMiddleware, appointmentController.updateAppointment);
+router.put("/update/:id", AuthMiddleware, validateAppointmentUpdate, appointmentController.updateAppointment);
 router.delete("/delete/:id", AuthMiddleware, appointmentController.deleteAppointment);
 router.post(
   "/payment/:id/link",

@@ -13,6 +13,7 @@ import {
 } from "@/errors/httpErrors";
 import { CreatePaymentLinkResponse } from "@/entities/Response";
 import { UserRepository } from "@/repositories/UserRepository";
+import { JwtPayload } from "@/middlewares/authmiddleware";
 
 export class AppointmentService {
   constructor(
@@ -43,6 +44,7 @@ export class AppointmentService {
   async updateAppointment(
     id: string,
     updatedData: Partial<Appointment>,
+    currentUser?: JwtPayload,
   ): Promise<Appointment | null> {
     const dataToUpdate: Partial<Appointment> = { ...updatedData };
     const maybeStart: unknown = (updatedData as any).start_date;
@@ -52,6 +54,26 @@ export class AppointmentService {
         throw new BadRequestError("Fecha de turno inválida");
       }
       (dataToUpdate as any).start_date = parsed;
+    }
+
+    const maybeStatus = (updatedData as any).status as unknown;
+    if (typeof maybeStatus !== "undefined") {
+      if (!currentUser) {
+        // internal/system flows (e.g., webhooks) are allowed to update status
+      } else {
+        // only STAFF or higher and only for own appointment
+        const isStaffOrHigher = currentUser.role >= 2; // UserRole.STAFF
+        if (!isStaffOrHigher) {
+          throw new ForbiddenError("No tienes permiso para cambiar el estado del turno");
+        }
+        const existing = await this.repository.findById(id);
+        if (!existing) {
+          throw new NotFoundError("Turno no encontrado");
+        }
+        if (existing.user_id !== currentUser.userId) {
+          throw new ForbiddenError("No puedes modificar este turno");
+        }
+      }
     }
 
     return this.repository.update(id, dataToUpdate);
