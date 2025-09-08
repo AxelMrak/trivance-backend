@@ -7,6 +7,13 @@ export class MercadoPagoService implements PaymentProvider {
   private preference = new Preference(mercadoPagoClient);
 
   async createPaymentLink(item: { id: string; title: string; price: number }): Promise<string> {
+    // In tests, avoid external network calls and return a deterministic stub
+    if (process.env.NODE_ENV === "test") {
+      return {
+        id: `test-pref-${item.id}`,
+        init_point: `https://payments.example.test/pay/${item.id}`,
+      } as any;
+    }
     const payload = {
       items: [
         {

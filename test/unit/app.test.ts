@@ -23,7 +23,7 @@ describe("GET /api #cold", () => {
    * It checks if the API is running and returns a 200 status code.
    */
   it("API root • when called • returns 200 and status OK", async () => {
-    const res = await getTestAgent().get("/api").send();
+    const res = await getTestAgent().get("/").send();
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("status", "OK");

@@ -9,14 +9,55 @@ import mainRouter from "@routes/index";
 const app = express();
 
 // CORS configuration
+const parseOrigins = (value?: string): string[] => {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+};
+
+const isOriginAllowed = (origin: string, allowed: string[]): boolean => {
+  if (allowed.includes("*")) return true; // allow all explicitly
+  const normalizedOrigin = origin.replace(/\/$/, "");
+  for (const entry of allowed) {
+    const allowedEntry = entry.replace(/\/$/, "");
+    if (allowedEntry === normalizedOrigin) return true;
+
+    // Match by hostname ignoring port (useful for localhost:3000/5173, etc.)
+    try {
+      const o = new URL(normalizedOrigin);
+      const a = new URL(allowedEntry);
+      if (o.hostname === a.hostname) return true;
+    } catch {
+      // If parsing fails, fall back to startsWith/contains checks
+      if (normalizedOrigin.startsWith(allowedEntry)) return true;
+    }
+
+    // Support basic wildcard subdomains like *.example.com
+    if (allowedEntry.startsWith("*.") && normalizedOrigin.includes(".")) {
+      const domain = allowedEntry.slice(2);
+      try {
+        const o = new URL(normalizedOrigin);
+        if (o.hostname === domain || o.hostname.endsWith(`.${domain}`)) return true;
+      } catch {
+        // ignore
+      }
+    }
+  }
+  return false;
+};
+
 const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    const allowedOrigins = process.env.CORS_ORIGIN?.split(",") || ["http://localhost:3000"];
-
-    // Allow requests with no origin (mobile apps, Postman, etc.)
+    // Accept no-origin requests (mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
+    const envOrigins = parseOrigins(process.env.CORS_ORIGIN);
+    const defaults = ["http://localhost:3000", "http://localhost:5173"];
+    const allowed = envOrigins.length ? envOrigins : defaults;
+
+    if (isOriginAllowed(origin, allowed)) {
       return callback(null, true);
     }
 
@@ -40,6 +81,16 @@ app.use(cors(corsOptions));
 app.use(
   express.json({
     limit: process.env.JSON_LIMIT || "10mb",
+    // Accept JSON even if Content-Type is missing or text/plain
+    // (useful when clients don't set headers explicitly)
+    type: (req) => {
+      const ct = (req.headers["content-type"] || "").toString().toLowerCase();
+      if (!ct) return true; // no header: try to parse as JSON
+      if (ct.includes("application/json")) return true;
+      if (ct.includes("+json")) return true; // e.g., application/ld+json
+      if (ct.startsWith("text/plain")) return true; // allow plain text JSON
+      return false;
+    },
     verify: (req, res, buf) => {
       // Store raw body for webhook verification if needed
       (req as any).rawBody = buf;
@@ -77,7 +128,7 @@ app.get("/health", (_req, res) => {
 });
 
 // API routes
-app.use("/api", mainRouter);
+app.use("/", mainRouter);
 
 // 404 handler for undefined routes
 app.use("*", (_req, res) => {

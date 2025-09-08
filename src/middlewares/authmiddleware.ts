@@ -10,7 +10,13 @@ export type JwtPayload = {
 };
 
 const AuthMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+  const authHeader = (req.headers["authorization"] || "") as string;
+  let token = req.cookies?.token as string | undefined;
+
+  if (!token && authHeader) {
+    const parts = authHeader.trim().split(" ");
+    token = parts.length === 2 ? parts[1] : parts[0];
+  }
 
   if (!token) {
     return res.status(401).json({ message: "No token provided" });

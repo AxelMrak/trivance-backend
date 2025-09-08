@@ -29,11 +29,7 @@ export class ServiceHandlerService {
 
   async getServiceById(id: string): Promise<Service | null> {
     const service = await this.repository.findById(id);
-    if (!service) {
-      throw new Error("Servicio no encontrado");
-    }
-
-    return service;
+    return service || null;
   }
 
   async getAllCompanyServices(): Promise<Service[]> {

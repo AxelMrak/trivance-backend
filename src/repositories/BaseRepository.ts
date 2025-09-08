@@ -24,7 +24,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, values);
       return result.rows;
     } catch (error) {
-      console.error(`Error fetching with condition from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -39,7 +38,6 @@ export class BaseRepository<T> {
       }
       return result.rows[0] || null;
     } catch (error) {
-      console.error(`Error fetching one with conditions from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -54,7 +52,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query);
       return result.rows;
     } catch (error) {
-      console.error(`Error fetching all from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -65,7 +62,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [id]);
       return result.rows[0] || null;
     } catch (error) {
-      console.error(`Error fetching by ID from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -76,7 +72,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [companyId]);
       return result.rows;
     } catch (error) {
-      console.error(`Error fetching by company ID from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -89,7 +84,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, values);
       return result.rows[0];
     } catch (error) {
-      console.error(`Error creating in ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -102,7 +96,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, values);
       return result.rows[0] || null;
     } catch (error) {
-      console.error(`Error updating in ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -113,7 +106,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [id]);
       return result.rows[0]?.id || null;
     } catch (error) {
-      console.error(`Error deleting from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -124,7 +116,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [value]);
       return result.rows[0] || null;
     } catch (error) {
-      console.error(`Error fetching by field from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -135,7 +126,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [value]);
       return result.rows[0]?.id || null;
     } catch (error) {
-      console.error(`Error deleting by field from ${this.table}:`, error);
       throw new Error("Error de base de datos");
     }
   }
@@ -146,7 +136,6 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [value]);
       return result.rows[0]?.id || null;
     } catch (error) {
-      console.error(`Failed to delete all by ${field} in ${this.table}:`, error);
       throw new Error("Error al eliminar registros");
     }
   }

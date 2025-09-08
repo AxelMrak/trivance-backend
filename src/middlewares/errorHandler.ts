@@ -18,6 +18,25 @@ export const errorHandler: ErrorRequestHandler = (
   let message = "Internal Server Error";
 
   switch (err.name) {
+    case "SyntaxError":
+      // Commonly thrown by body-parser when JSON is malformed
+      statusCode = 400;
+      message = "Bad Request - Malformed JSON";
+      // Log raw body sample to help debug malformed inputs
+      try {
+        const anyReq = req as any;
+        const raw = anyReq?.rawBody;
+        const rawSample = Buffer.isBuffer(raw)
+          ? raw.toString("utf8").slice(0, 500)
+          : typeof raw === "string"
+          ? raw.slice(0, 500)
+          : undefined;
+        console.error("Malformed JSON payload details:", {
+          contentType: req.headers["content-type"],
+          rawSample,
+        });
+      } catch {}
+      break;
     case "ValidationError":
       statusCode = 400;
       message = "Bad Request - Validation Error";

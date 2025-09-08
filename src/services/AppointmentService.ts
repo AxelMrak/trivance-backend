@@ -12,12 +12,14 @@ import {
   NotFoundError,
 } from "@/errors/httpErrors";
 import { CreatePaymentLinkResponse } from "@/entities/Response";
+import { UserRepository } from "@/repositories/UserRepository";
 
 export class AppointmentService {
   constructor(
     private repository: AppointmentRepository,
     private serviceHandlerService: ServiceHandlerService,
     private orderService: OrderService,
+    private userRepository: UserRepository,
   ) {}
 
   async getAll(): Promise<Appointment[]> {
@@ -63,32 +65,45 @@ export class AppointmentService {
     return deletedAppointment;
   }
 
-  async createAppointment(appointmentData: AppointmentCreateDTO): Promise<Appointment> {
-    const serviceId = appointmentData.service_id;
-    const service = await this.serviceHandlerService.getServiceById(serviceId);
+  async createAppointment(
+    appointmentData: AppointmentCreateDTO,
+    userId: string,
+  ): Promise<Appointment> {
+    const serviceId = appointmentData.service_id as unknown as string;
+    if (!serviceId || typeof serviceId !== "string" || serviceId.trim() === "") {
+      throw new BadRequestError("Servicio inválido");
+    }
 
+    let service: any = null;
+    try {
+      service = await this.serviceHandlerService.getServiceById(serviceId);
+    } catch (_e) {
+      throw new BadRequestError("Servicio inválido");
+    }
     if (!service) {
-      throw new Error("Service not found");
+      throw new BadRequestError("Servicio inválido");
     }
 
     const appointmentRequiresDeposit = service.requires_deposit;
-
-    // Normalize start_date to Date, since repository expects Partial<Appointment>
     const startDate = new Date(appointmentData.start_date);
     if (isNaN(startDate.getTime())) {
       throw new BadRequestError("Fecha de turno inválida");
     }
+    // Ensure the user exists to avoid FK errors
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new BadRequestError("Usuario inválido");
+    }
 
     const appointmentToCreate: Partial<Appointment> = {
       service_id: serviceId,
-      user_id: appointmentData.user_id,
+      user_id: userId,
       start_date: startDate,
       description: appointmentData.description || "",
       status: appointmentRequiresDeposit ? "pending" : "confirmed",
     };
 
     const createdAppointment = await this.repository.create(appointmentToCreate);
-
     if (!createdAppointment) {
       throw new Error("Failed to create appointment");
     }

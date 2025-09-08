@@ -11,8 +11,11 @@ export class AppointmentController {
       const appointments = await this.appointmentService.getAll();
       res.json(appointments);
     } catch (error) {
-      console.error("Error fetching appointments:", error);
-      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Error de servidor.Contacte a soporte" });
+      }
     }
   };
 
@@ -22,8 +25,11 @@ export class AppointmentController {
       const appointment = await this.appointmentService.getById(id);
       res.json(appointment);
     } catch (error) {
-      console.error("Error fetching appointment:", error);
-      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Error de servidor.Contacte a soporte" });
+      }
     }
   };
 
@@ -38,8 +44,11 @@ export class AppointmentController {
         res.status(404).json({ error: "Turno no encontrado" });
       }
     } catch (error) {
-      console.error("Error updating appointment:", error);
-      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Error de servidor.Contacte a soporte" });
+      }
     }
   };
 
@@ -53,19 +62,26 @@ export class AppointmentController {
         res.status(404).json({ error: "Turno no encontrado" });
       }
     } catch (error) {
-      console.error("Error deleting appointment:", error);
-      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Error de servidor.Contacte a soporte" });
+      }
     }
   };
 
   createAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const appointmentData = req.body;
-      const newAppointment = await this.appointmentService.createAppointment(appointmentData);
+      const userId = req.user!.userId;
+      const newAppointment = await this.appointmentService.createAppointment(appointmentData, userId);
       res.status(201).json(newAppointment);
     } catch (error) {
-      console.error("Error al crear turno:", error);
-      res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Error de servidor.Contacte a soporte" });
+      }
     }
   };
 
@@ -74,12 +90,12 @@ export class AppointmentController {
       const { id } = req.params;
       const userId = req.user!.userId;
       const paymentLink = await this.appointmentService.createPaymentLink(id, userId);
-      res.status(201).json(paymentLink);
+      res.status(200).json(paymentLink);
     } catch (error) {
       if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
+        res.status(error.statusCode).json({ message: error.message });
       } else {
-        res.status(500).json({ error: "Error de servidor.Contacte a soporte" });
+        res.status(500).json({ message: "Error de servidor.Contacte a soporte" });
       }
     }
   };
