@@ -1,4 +1,3 @@
-import { AppointmentRepository } from "@/repositories/AppointmentRepository";
 import { Appointment, AppointmentCreateDTO } from "@/entities/Appointment";
 import { OrderService } from "@/services/OrderService";
 import { CreateOrderDto } from "@/entities/Order";
@@ -14,9 +13,14 @@ import {
 import { CreatePaymentLinkResponse } from "@/entities/Response";
 import { UserRepository } from "@/repositories/UserRepository";
 import { JwtPayload } from "@/middlewares/authmiddleware";
-import { canEditAppointmentDate, canEditAppointmentDetails, canEditAppointmentStatus } from "@/utils/permissions";
+import {
+  canEditAppointmentDate,
+  canEditAppointmentDetails,
+  canEditAppointmentStatus,
+} from "@/utils/permissions";
 import { EmailNotificationService } from "@/services/notifications/EmailNotificationService";
 import { ClientsPivotRepository } from "@/repositories/ClientsPivotRepository";
+import { AppointmentRepository } from "@/repositories/AppointmentRepository";
 
 export class AppointmentService {
   constructor(
@@ -48,9 +52,10 @@ export class AppointmentService {
     currentUser?: { userId: string; role: number },
     include?: { service?: boolean; user?: boolean; client?: boolean },
   ): Promise<Array<Appointment & { service?: any; user?: any; client?: any }>> {
-    const list = currentUser && currentUser.role < 2
-      ? await this.repository.getUserAppointments(currentUser.userId)
-      : await this.repository.getCompanyAppointments();
+    const list =
+      currentUser && currentUser.role < 2
+        ? await this.repository.getUserAppointments(currentUser.userId)
+        : await this.repository.getCompanyAppointments();
 
     if (!include || (!include.service && !include.user && !include.client)) {
       return list as any;
@@ -142,7 +147,10 @@ export class AppointmentService {
         if (appointment.user_id === currentUser.userId) {
           // ok
         } else {
-          const linked = await this.isUserLinkedClientForAppointment(appointment, currentUser.userId);
+          const linked = await this.isUserLinkedClientForAppointment(
+            appointment,
+            currentUser.userId,
+          );
           if (!linked) {
             throw new ForbiddenError("No tienes permiso para acceder a este turno");
           }
@@ -258,7 +266,9 @@ export class AppointmentService {
       typeof (dataToUpdate as any).service_id !== "undefined";
     if (changingDetails) {
       if (!canEditAppointmentDetails(currentUser as any, existing.user_id)) {
-        throw new ForbiddenError("Solo el creador del turno puede editar el servicio o la descripción");
+        throw new ForbiddenError(
+          "Solo el creador del turno puede editar el servicio o la descripción",
+        );
       }
     }
 
@@ -268,7 +278,11 @@ export class AppointmentService {
     // Fire-and-forget email notifications (TODO: integrate mailer endpoint)
     try {
       if (typeof maybeStatus !== "undefined") {
-        await EmailNotificationService.notifyStatusChanged(id, existing.user_id, String(maybeStatus));
+        await EmailNotificationService.notifyStatusChanged(
+          id,
+          existing.user_id,
+          String(maybeStatus),
+        );
       }
       if (typeof (dataToUpdate as any).start_date !== "undefined") {
         const startISO = new Date((dataToUpdate as any).start_date).toISOString();
@@ -328,7 +342,9 @@ export class AppointmentService {
       // Fallback: if creator not found but a client was provided, try to use the linked user of that client
       try {
         const { dbClient } = await import("@/config/db");
-        const { rows } = await dbClient.query(`SELECT user_id FROM clients WHERE id = $1`, [clientId]);
+        const { rows } = await dbClient.query(`SELECT user_id FROM clients WHERE id = $1`, [
+          clientId,
+        ]);
         const linkedUserId = rows[0]?.user_id as string | undefined;
         if (linkedUserId) {
           const linkedExists = await this.userRepository.existsById(linkedUserId);
@@ -347,28 +363,27 @@ export class AppointmentService {
     if (appointmentData.client_id) {
       // Accept either clients.id or users.id
       try {
-        const { rows } = await (await import("@/config/db")).dbClient.query(
-          `SELECT id FROM clients WHERE id = $1`,
-          [appointmentData.client_id],
-        );
+        const { rows } = await (
+          await import("@/config/db")
+        ).dbClient.query(`SELECT id FROM clients WHERE id = $1`, [appointmentData.client_id]);
         if (rows[0]?.id) clientId = rows[0].id;
       } catch {}
       if (!clientId) {
         try {
-          const { rows } = await (await import("@/config/db")).dbClient.query(
-            `SELECT id FROM clients WHERE user_id = $1`,
-            [appointmentData.client_id],
-          );
+          const { rows } = await (
+            await import("@/config/db")
+          ).dbClient.query(`SELECT id FROM clients WHERE user_id = $1`, [
+            appointmentData.client_id,
+          ]);
           if (rows[0]?.id) clientId = rows[0].id;
         } catch {}
       }
     }
     if (!clientId) {
       try {
-        const { rows } = await (await import("@/config/db")).dbClient.query(
-          `SELECT id FROM clients WHERE user_id = $1`,
-          [userId],
-        );
+        const { rows } = await (
+          await import("@/config/db")
+        ).dbClient.query(`SELECT id FROM clients WHERE user_id = $1`, [userId]);
         if (rows[0]?.id) clientId = rows[0].id;
       } catch {}
     }
@@ -390,7 +405,9 @@ export class AppointmentService {
     }
 
     // Determine default status based on role and availability
-    let defaultStatus: "pending" | "confirmed" = appointmentRequiresDeposit ? "pending" : "confirmed";
+    let defaultStatus: "pending" | "confirmed" = appointmentRequiresDeposit
+      ? "pending"
+      : "confirmed";
     if (currentUser && currentUser.role < 2) {
       const available = await this.repository.isSlotAvailable(serviceId, startDate);
       defaultStatus = !appointmentRequiresDeposit && available ? "confirmed" : "pending";
