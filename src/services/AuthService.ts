@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 
 import { AuthRepository } from "@repositories/AuthRepository";
 import { PublicUserDTO, UserRole } from "@entities/User";
+import { ClientsRepository } from "@/repositories/ClientsRepository";
 import { SessionRepository } from "@/repositories/SessionRepository";
 import { SignInResponse } from "@entities/Response";
 import { SignupRequest } from "@entities/Request";
@@ -29,7 +30,7 @@ export class AuthService {
     if (!companyId) {
       throw new Error("El ID de la empresa no está configurado");
     }
-    const userRole = UserRole.GUEST;
+    const userRole = UserRole.CLIENT;
 
     const user = await this.repository.create({
       company_id: companyId,
@@ -37,7 +38,6 @@ export class AuthService {
       email: payload.email,
       phone: payload.phone,
       address: payload.address,
-      role: Number(userRole),
       password: hashedPassword,
     });
 
@@ -57,7 +57,24 @@ export class AuthService {
       ip_address: ipAddress,
     });
 
-    return this.buildResponse(user, token);
+    // Link existing client by email (if present and not linked)
+    try {
+      const clientsRepo = new ClientsRepository();
+      const client = await clientsRepo.findByEmail(payload.email, companyId);
+      if (client) {
+        const updates: any = { user_id: client.user_id ?? user.id };
+        // Fill missing profile fields and contacts from user
+        if (!client.name) updates.name = payload.name;
+        if (!client.email) updates.email = payload.email;
+        if (!client.phone) updates.phone = payload.phone;
+        if (!client.address) updates.address = payload.address;
+        updates.contact_email = payload.email;
+        updates.contact_phone = payload.phone;
+        await clientsRepo.update(client.id, updates);
+      }
+    } catch {}
+
+    return this.buildResponse({ ...user, role: level } as any, token);
   }
 
   async signIn(
@@ -73,7 +90,7 @@ export class AuthService {
     if (!isValid) throw new Error("Contraseña inválida");
 
     const roleSvc = new RoleService();
-    const level = (await roleSvc.getRoleLevelForUser(user.id)) ?? user.role;
+    const level = (await roleSvc.getRoleLevelForUser(user.id)) ?? UserRole.GUEST;
     const token = this.generateToken(user.id, level);
     await this.sessionRepo.create({
       user_id: user.id,
@@ -95,7 +112,7 @@ export class AuthService {
   async getUserById(id: string): Promise<PublicUserDTO | null> {
     const user = await this.repository.findByField("id", id);
     if (!user) return null;
-  
+
     return {
       id: user.id,
       name: user.name,
@@ -108,7 +125,7 @@ export class AuthService {
       updated_at: user.updated_at,
     };
   }
-  
+
   private generateToken(userId: string, role: number): string {
     return jwt.sign({ userId, role }, process.env.JWT_SECRET!, { expiresIn: "24h" });
   }
