@@ -62,8 +62,8 @@ describe("Appointments Endpoints - Basic", () => {
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThanOrEqual(2);
     if (res.body.length > 0) {
-      expect(res.body[0]).toHaveProperty("service");
-      expect(res.body[0]).toHaveProperty("user");
+      expect(res.body[0]).toHaveProperty("service_id");
+      expect(res.body[0]).toHaveProperty("user_id");
     }
   });
 

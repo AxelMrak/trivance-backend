@@ -1,37 +1,33 @@
 export const generateGetAppointmentsWithJoinsQuery = (): string => {
+  // Normalized response: only appointment fields, no nested user/service objects
   return `
     SELECT
-      a.*,
-      json_build_object('id', u.id, 'name', u.name) AS user,
-      json_build_object(
-        'id', s.id,
-        'name', s.name,
-        'description', s.description,
-        'duration', s.duration,
-        'price', s.price
-      ) AS service
+      a.id,
+      a.user_id,
+      a.service_id,
+      a.status,
+      a.description,
+      a.start_date,
+      a.created_at,
+      a.updated_at
     FROM appointments a
-    JOIN users u ON a.user_id = u.id
-    JOIN services s ON a.service_id = s.id
     ORDER BY a.start_date DESC
   `;
 };
 
 export const generateGetAppointmentByIdWithJoinsQuery = (): string => {
+  // Normalized response: only appointment fields, no nested user/service objects
   return `
     SELECT
-      a.*,
-      json_build_object('id', u.id, 'name', u.name) AS user,
-      json_build_object(
-        'id', s.id,
-        'name', s.name,
-        'description', s.description,
-        'duration', s.duration,
-        'price', s.price
-      ) AS service
+      a.id,
+      a.user_id,
+      a.service_id,
+      a.status,
+      a.description,
+      a.start_date,
+      a.created_at,
+      a.updated_at
     FROM appointments a
-    JOIN users u ON a.user_id = u.id
-    JOIN services s ON a.service_id = s.id
     WHERE a.id = $1
   `;
 };

@@ -89,9 +89,9 @@ export class AppointmentService {
     if (isNaN(startDate.getTime())) {
       throw new BadRequestError("Fecha de turno inválida");
     }
-    // Ensure the user exists to avoid FK errors
-    const user = await this.userRepository.findById(userId);
-    if (!user) {
+    // Ensure the user exists to avoid FK errors (cheap existence check)
+    const userExists = await this.userRepository.existsById(userId);
+    if (!userExists) {
       throw new BadRequestError("Usuario inválido");
     }
 

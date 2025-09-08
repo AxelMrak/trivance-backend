@@ -46,6 +46,26 @@ export class BaseRepository<T> {
     return this.findWithCondition(`${field} = $1`, [value]);
   }
 
+  async existsById(id: string): Promise<boolean> {
+    try {
+      const query = `SELECT 1 FROM ${this.table} WHERE id = $1 LIMIT 1`;
+      const result = await dbClient.query(query, [id]);
+      return (result.rowCount ?? 0) > 0;
+    } catch (_error) {
+      throw new Error("Error de base de datos");
+    }
+  }
+
+  async existsByField(field: string, value: any): Promise<boolean> {
+    try {
+      const query = `SELECT 1 FROM ${this.table} WHERE ${field} = $1 LIMIT 1`;
+      const result = await dbClient.query(query, [value]);
+      return (result.rowCount ?? 0) > 0;
+    } catch (_error) {
+      throw new Error("Error de base de datos");
+    }
+  }
+
   async findAll(): Promise<T[]> {
     try {
       const query = generateGetAllQuery(this.table);
