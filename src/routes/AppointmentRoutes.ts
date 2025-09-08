@@ -11,6 +11,7 @@ import { OrderService } from "@/services/OrderService";
 import { OrderRepository } from "@/repositories/OrderRepository";
 import { ServiceRepository } from "@/repositories/ServiceRepository";
 import { UserRepository } from "@/repositories/UserRepository";
+import { ClientsPivotRepository } from "@/repositories/ClientsPivotRepository";
 
 const router = Router();
 const appointmentRepository = new AppointmentRepository();
@@ -19,11 +20,13 @@ const serviceHandlerService = new ServiceHandlerService(serviceRepository);
 const orderRepository = new OrderRepository();
 const orderService = new OrderService(orderRepository);
 const userRepository = new UserRepository();
+const clientsPivotRepository = new ClientsPivotRepository();
 const appointmentService = new AppointmentService(
   appointmentRepository,
   serviceHandlerService,
   orderService,
   userRepository,
+  clientsPivotRepository,
 );
 const appointmentController = new AppointmentController(appointmentService);
 
@@ -57,7 +60,26 @@ router.post(
   appointmentController.createAppointmentPaymentLink,
 );
 
-// RESTful alias for get by id. Keep after specific routes to avoid conflicts.
-router.get("/:id", AuthMiddleware, attachUserRole(), appointmentController.getById);
+router.post(
+  "/:id/remind",
+  AuthMiddleware,
+  attachUserRole(),
+  appointmentController.sendReminder,
+);
+
+router.get(
+  "/occupiedSlots",
+  AuthMiddleware,
+  attachUserRole(),
+  appointmentController.getOccupiedSlots,
+);
+
+// RESTful alias for get by id (UUID). Keep after specific routes to avoid conflicts.
+router.get(
+  "/:id([0-9a-fA-F-]{8}-[0-9a-fA-F-]{4}-[1-5][0-9a-fA-F-]{3}-[89abAB][0-9a-fA-F-]{3}-[0-9a-fA-F-]{12})",
+  AuthMiddleware,
+  attachUserRole(),
+  appointmentController.getById,
+);
 
 export default router;

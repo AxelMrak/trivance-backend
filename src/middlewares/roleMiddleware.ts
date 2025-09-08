@@ -21,4 +21,3 @@ export const requireMinRole = (minLevel: number) => {
     return res.status(403).json({ message: "No autorizado" });
   };
 };
-

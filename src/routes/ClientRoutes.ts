@@ -1,15 +1,15 @@
 import { Router } from "express";
 import { ClientController } from "@controllers/ClientController";
 import { ClientService } from "@services/ClientService";
-import { ClientRepository } from "@repositories/ClientRepository";
+import { ClientsRepository } from "@/repositories/ClientsRepository";
 import AuthMiddleware from "@/middlewares/authmiddleware";
 import { attachUserRole, requireMinRole } from "@/middlewares/roleMiddleware";
-import { validateClientUpdate } from "@/middlewares/validation";
+import { validateClientCreate, validateClientUpdate } from "@/middlewares/validation";
 
 const router = Router();
 
-const userRepository = new ClientRepository();
-const clientService = new ClientService(userRepository);
+const clientsRepository = new ClientsRepository();
+const clientService = new ClientService(clientsRepository);
 const clientController = new ClientController(clientService);
 
 router.get(
@@ -40,6 +40,15 @@ router.delete(
   attachUserRole(),
   requireMinRole(2),
   clientController.deleteClient,
+);
+
+router.post(
+  "/create",
+  AuthMiddleware,
+  attachUserRole(),
+  requireMinRole(2),
+  validateClientCreate,
+  clientController.createClient,
 );
 
 export default router;

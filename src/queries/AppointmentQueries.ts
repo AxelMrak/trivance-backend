@@ -4,6 +4,7 @@ export const generateGetAppointmentsWithJoinsQuery = (): string => {
     SELECT
       a.id,
       a.user_id,
+      a.client_id,
       a.service_id,
       a.status,
       a.description,
@@ -21,6 +22,7 @@ export const generateGetAppointmentByIdWithJoinsQuery = (): string => {
     SELECT
       a.id,
       a.user_id,
+      a.client_id,
       a.service_id,
       a.status,
       a.description,

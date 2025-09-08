@@ -11,13 +11,15 @@ export class ClientRepository extends BaseRepository<User> {
     try {
       const query = `
         SELECT u.*
-        FROM users u
+        FROM clients c
+        JOIN users u ON u.id = c.user_id
         JOIN user_roles ur ON ur.user_id = u.id
         WHERE ur.role_level = $1
       `;
       const result = await dbClient.query(query, [roleLevel]);
       return result.rows;
     } catch (_e) {
+      // Fallback to users table when pivots are not available
       const fallback = await this.findWithCondition("role = $1", [roleLevel]);
       return fallback as any;
     }
@@ -27,7 +29,8 @@ export class ClientRepository extends BaseRepository<User> {
     try {
       const query = `
         SELECT u.*
-        FROM users u
+        FROM clients c
+        JOIN users u ON u.id = c.user_id
         JOIN user_roles ur ON ur.user_id = u.id
         WHERE u.id = $1 AND ur.role_level = $2
       `;

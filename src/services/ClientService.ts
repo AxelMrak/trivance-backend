@@ -1,45 +1,132 @@
-import { sanitizeUser } from "@/utils/sanitizeUser";
-import { User, UserRole } from "@entities/User";
-import { ClientRepository } from "@repositories/ClientRepository";
+import { ClientsRepository, ClientEntity } from "@/repositories/ClientsRepository";
+
+type ClientDTO = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  user_id: string | null;
+  company_id: string | null;
+  created_at?: string | Date;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+};
+
+const toDTO = (c: ClientEntity): ClientDTO => ({
+  id: c.id,
+  name: c.name,
+  email: c.email,
+  phone: c.phone,
+  address: c.address,
+  user_id: c.user_id,
+  company_id: c.company_id,
+  created_at: c.created_at,
+  contact_email: c.contact_email,
+  contact_phone: c.contact_phone,
+});
 
 export class ClientService {
-  constructor(private clientRepository: ClientRepository) {}
+  constructor(private clientsRepository: ClientsRepository) {}
 
-  async getClientsByRole(role: UserRole): Promise<Omit<User, "password">[]> {
-    const clients = await this.clientRepository.findClientsByRole(role);
-    return clients.map(sanitizeUser);
+  async getAllClients(): Promise<ClientDTO[]> {
+    const list = await this.clientsRepository.findAll();
+    const userIds = list.filter((c) => c.user_id).map((c) => c.user_id) as string[];
+    let usersById = new Map<string, any>();
+    let rolesByUserId = new Map<string, number>();
+    if (userIds.length) {
+      const { dbClient } = await import("@/config/db");
+      const { rows: users } = await dbClient.query(
+        `SELECT id, name, email, phone, address FROM users WHERE id = ANY($1::uuid[])`,
+        [userIds],
+      );
+      usersById = new Map(users.map((u: any) => [u.id, u]));
+      const { rows: roles } = await dbClient.query(
+        `SELECT user_id, role_level FROM user_roles WHERE user_id = ANY($1::uuid[])`,
+        [userIds],
+      );
+      rolesByUserId = new Map(roles.map((r: any) => [r.user_id, r.role_level]));
+    }
+    // Filter: only standalone clients (user_id IS NULL) or user linked with CLIENT role (1)
+    const filtered = list.filter((c) => !c.user_id || rolesByUserId.get(c.user_id) === 1);
+
+    return filtered.map((c) => {
+      const user = c.user_id ? usersById.get(c.user_id) : null;
+      const dto = toDTO(c);
+      dto.name = dto.name ?? user?.name ?? null;
+      dto.email = dto.email ?? dto.contact_email ?? user?.email ?? null;
+      dto.phone = dto.phone ?? dto.contact_phone ?? user?.phone ?? null;
+      dto.address = dto.address ?? user?.address ?? null;
+      dto.contact_email = dto.contact_email ?? user?.email ?? null;
+      dto.contact_phone = dto.contact_phone ?? user?.phone ?? null;
+      return dto;
+    });
   }
 
-  async getClientByID(id: string): Promise<Omit<User, "password"> | null> {
-    const user = await this.clientRepository.findClientByIdAndRole(id, UserRole.CLIENT);
-
-    if (!user) {
-      throw new Error(`Cliente con ID ${id} no encontrado.`);
+  async getClientByID(id: string): Promise<ClientDTO | null> {
+    const client = await this.clientsRepository.findById(id);
+    if (!client) return null;
+    const dto = toDTO(client);
+    if (client.user_id) {
+      const { dbClient } = await import("@/config/db");
+      const { rows } = await dbClient.query(
+        `SELECT id, name, email, phone, address FROM users WHERE id = $1`,
+        [client.user_id],
+      );
+      const user = rows[0];
+      dto.name = dto.name ?? user?.name ?? null;
+      dto.email = dto.email ?? dto.contact_email ?? user?.email ?? null;
+      dto.phone = dto.phone ?? dto.contact_phone ?? user?.phone ?? null;
+      dto.address = dto.address ?? user?.address ?? null;
+      dto.contact_email = dto.contact_email ?? user?.email ?? null;
+      dto.contact_phone = dto.contact_phone ?? user?.phone ?? null;
     }
-
-    return sanitizeUser(user);
+    return dto;
   }
 
-  async updateClient(id: string, userData: Partial<User>): Promise<Omit<User, "password"> | null> {
-    const existingClient = await this.getClientByID(id);
-    if (!existingClient) {
-      return null;
+  async updateClient(id: string, data: Partial<ClientDTO>): Promise<ClientDTO | null> {
+    const allowed: Partial<ClientEntity> = {};
+    if (typeof data.name !== "undefined") allowed.name = data.name as any;
+    if (typeof data.email !== "undefined") allowed.email = data.email as any;
+    if (typeof data.phone !== "undefined") allowed.phone = data.phone as any;
+    if (typeof data.address !== "undefined") allowed.address = data.address as any;
+    if (typeof data.contact_email !== "undefined") allowed.contact_email = data.contact_email as any;
+    if (typeof data.contact_phone !== "undefined") allowed.contact_phone = data.contact_phone as any;
+    const updated = await this.clientsRepository.update(id, allowed);
+    if (!updated) return null;
+    // enrich like getClientByID
+    const dto = toDTO(updated);
+    if (updated.user_id) {
+      const { dbClient } = await import("@/config/db");
+      const { rows } = await dbClient.query(
+        `SELECT id, name, email, phone, address FROM users WHERE id = $1`,
+        [updated.user_id],
+      );
+      const user = rows[0];
+      dto.name = dto.name ?? user?.name ?? null;
+      dto.email = dto.email ?? dto.contact_email ?? user?.email ?? null;
+      dto.phone = dto.phone ?? dto.contact_phone ?? user?.phone ?? null;
+      dto.address = dto.address ?? user?.address ?? null;
+      dto.contact_email = dto.contact_email ?? user?.email ?? null;
+      dto.contact_phone = dto.contact_phone ?? user?.phone ?? null;
     }
-
-    if (userData.role && userData.role !== UserRole.CLIENT) {
-      throw new Error("No se puede cambiar el rol de cliente a un rol que no sea cliente.");
-    }
-
-    const updatedClient = await this.clientRepository.update(id, userData);
-    return updatedClient ? sanitizeUser(updatedClient) : null;
+    return dto;
   }
 
   async deleteClient(id: string): Promise<boolean> {
-    const existingClient = await this.getClientByID(id);
-    if (!existingClient) {
-      return false;
-    }
-    await this.clientRepository.delete(id);
-    return true;
+    return this.clientsRepository.delete(id);
+  }
+
+  async createClient(data: Pick<ClientDTO, "name" | "email" | "phone" | "address">): Promise<ClientDTO> {
+    const companyId = process.env.COMPANY_ID || null;
+    const created = await this.clientsRepository.create({
+      company_id: companyId,
+      name: data.name || null,
+      email: data.email || null,
+      phone: data.phone || null,
+      address: data.address || null,
+      user_id: null,
+    });
+    return toDTO(created);
   }
 }

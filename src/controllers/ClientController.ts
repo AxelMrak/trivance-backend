@@ -1,14 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 
 import { ClientService } from "@services/ClientService";
-import { UserRole } from "@/entities/User";
 
 export class ClientController {
   constructor(private clientService: ClientService) {}
 
   getAllClients = async (_req: Request, res: Response, next: NextFunction) => {
     try {
-      const clients = await this.clientService.getClientsByRole(UserRole.CLIENT);
+      const clients = await this.clientService.getAllClients();
       res.json(clients);
     } catch (error) {
       next(error as any);
@@ -34,7 +33,6 @@ export class ClientController {
     try {
       const clientId = req.params.id;
       const clientData = req.body;
-
       const updatedClient = await this.clientService.updateClient(clientId, clientData);
 
       if (updatedClient) {
@@ -57,6 +55,15 @@ export class ClientController {
       } else {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
+    } catch (error) {
+      next(error as any);
+    }
+  };
+
+  createClient = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const created = await this.clientService.createClient(req.body);
+      res.status(201).json(created);
     } catch (error) {
       next(error as any);
     }

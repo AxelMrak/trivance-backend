@@ -15,6 +15,7 @@ export class AppointmentController {
       const include = {
         service: includeParts.includes("service"),
         user: includeParts.includes("user"),
+        client: includeParts.includes("client"),
       };
 
       const appointments = await this.appointmentService.getAll(req.user as any, include);
@@ -35,6 +36,7 @@ export class AppointmentController {
       const include = {
         service: includeParts.includes("service"),
         user: includeParts.includes("user"),
+        client: includeParts.includes("client"),
       };
 
       const appointment = await this.appointmentService.getById(id, req.user as any, include);
@@ -90,6 +92,26 @@ export class AppointmentController {
       const userId = req.user!.userId;
       const paymentLink = await this.appointmentService.createPaymentLink(id, userId);
       res.status(200).json(paymentLink);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  sendReminder = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const result = await this.appointmentService.sendReminder(id, req.user);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getOccupiedSlots = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const month = (req.query.month as string) || ""; // format YYYY-MM
+      const data = await this.appointmentService.getOccupiedSlots(month, req.user!);
+      res.status(200).json(data);
     } catch (error) {
       next(error);
     }

@@ -55,6 +55,7 @@ export const validateServiceCreate: RequestHandler = (req, res, next) => {
     description: z.string().min(5),
     price: z.number().positive(),
     duration: z.string().min(3),
+    requires_deposit: z.boolean().optional(),
   });
   const result = schema.safeParse(req.body);
   if (!result.success) {
@@ -70,12 +71,15 @@ export const validateServiceCreate: RequestHandler = (req, res, next) => {
 };
 
 export const validateAppointmentCreate: RequestHandler = (req, res, next) => {
-  const createSchema = z.object({
-    service_id: z.string().min(1, "Servicio obligatorio"),
-    description: z.string().max(3000).optional(),
-    // ISO 8601/RFC 3339 (permite offset -03:00 para Argentina)
-    start_date: z.string().datetime(),
-  }).strict();
+  const createSchema = z
+    .object({
+      service_id: z.string().min(1, "Servicio obligatorio"),
+      description: z.string().max(3000).optional(),
+      // ISO 8601/RFC 3339 (permite offset -03:00 para Argentina)
+      start_date: z.string().datetime(),
+      client_id: z.string().uuid().optional(),
+    })
+    .strict();
 
   const result = createSchema.safeParse(req.body);
 
@@ -95,6 +99,7 @@ export const validateAppointmentUpdate: RequestHandler = (req, res, next) => {
   const updateSchema = z
     .object({
       description: z.string().max(3000).optional(),
+      service_id: z.string().min(1).optional(),
       start_date: z.string().datetime().optional(),
       status: z.enum(["pending", "confirmed", "cancelled"]).optional(),
     })
@@ -123,6 +128,7 @@ export const validateServiceUpdate: RequestHandler = (req, res, next) => {
       description: z.string().min(5).optional(),
       price: z.number().positive().optional(),
       duration: z.string().min(3).optional(),
+      requires_deposit: z.boolean().optional(),
     })
     .strict();
 
@@ -151,6 +157,30 @@ export const validateClientUpdate: RequestHandler = (req, res, next) => {
     .strict();
 
   const result = updateSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Error de validacion",
+      errors: result.error.errors.map((error) => ({
+        field: error.path[0],
+        message: error.message,
+      })),
+    });
+  }
+  req.body = result.data;
+  next();
+};
+
+export const validateClientCreate: RequestHandler = (req, res, next) => {
+  const schema = z
+    .object({
+      name: z.string().min(1),
+      email: z.string().email(),
+      phone: z.string().min(6),
+      address: z.string().min(1),
+    })
+    .strict();
+
+  const result = schema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({
       message: "Error de validacion",
