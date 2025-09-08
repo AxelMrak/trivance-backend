@@ -16,15 +16,14 @@ const TRIVANCE_ID = "6f299074-dc4c-47b7-9aed-4683fb29d97e";
 const OTHER_COMPANIES = [{ name: "NovaTech Solutions" }, { name: "BlueHorizon Ltd" }];
 
 const initialUsers = [
-  "julian99skate@gmail.com",
-  "nacho301011@gmail.com",
-  "agustin2015.castillo@gmail.com",
-  "nahuposebon@gmail.com",
-  "lautaro.ajrz@gmail.com",
-  "axel@test.com",
+  "maria.gonzalez@example.com",
+  "juan.perez@example.com",
+  "sofia.lopez@example.com",
+  "lucas.fernandez@example.com",
 ];
 
-const rolesToSeed = [0, 1, 2, 3, 4];
+const rolesToSeed = [1]; // Only clients
+const STAFF_COUNT = 2;
 const femaleNames = [
   "Valeria",
   "Camila",
@@ -62,15 +61,14 @@ const users = initialUsers.map((email) => {
 });
 
 for (const role of rolesToSeed) {
+  const fname = femaleNames[Math.floor(Math.random() * femaleNames.length)];
   users.push({
-    name: `${femaleNames[Math.floor(Math.random() * femaleNames.length)]}`,
-    email: `${femaleNames[Math.floor(Math.random() * femaleNames.length)].toLowerCase()}@example${Math.floor(
-      Math.random() * 1000 + 1,
-    )}.com`,
+    name: `${fname} ${Math.random() > 0.5 ? "García" : "Rodríguez"}`,
+    email: `${fname.toLowerCase()}${Math.floor(Math.random() * 1000 + 1)}@cliente.com.ar`,
     password: "password",
     role,
-    phone: "9876543210",
-    address: "456 Belgrano, Córdoba, Argentina",
+    phone: `11${Math.floor(10000000 + Math.random() * 89999999)}`,
+    address: `${Math.floor(100 + Math.random() * 900)} Av. Belgrano, CABA, Argentina`,
   });
 }
 
@@ -211,11 +209,11 @@ const seedDb = async () => {
       const hashed = bcrypt.hashSync(user.password, 10);
       await client.query(
         `INSERT INTO users (
-          id, company_id, name, email, password, role, phone, address
+          id, company_id, name, email, password, phone, address
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8
+          $1, $2, $3, $4, $5, $6, $7
         )`,
-        [id, TRIVANCE_ID, user.name, user.email, hashed, user.role, user.phone, user.address],
+        [id, TRIVANCE_ID, user.name, user.email, hashed, user.phone, user.address],
       );
       insertedUserIds.push(id);
       try {
@@ -223,6 +221,16 @@ const seedDb = async () => {
           `INSERT INTO user_roles (user_id, role_level) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING`,
           [id, user.role],
         );
+      } catch {}
+      try {
+        // Create clients entry only for CLIENT role users
+        if (user.role === 1) {
+          await client.query(
+            `INSERT INTO clients (user_id, company_id, name, email, phone, address) VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (user_id) DO NOTHING`,
+            [id, TRIVANCE_ID, user.name, user.email, user.phone, user.address],
+          );
+        }
       } catch {}
       console.log(`➕ Inserted user: ${user.email}`);
     }
@@ -233,7 +241,15 @@ const seedDb = async () => {
     );
     const serviceMap = new Map(serviceRows.map((s) => [s.name, s.id]));
 
-    for (const service of services) {
+    // Add extra realistic services
+    const extraServices = [
+      { name: "Corte de cabello", description: "Corte profesional unisex.", duration: "00:45:00", price: 50.0 },
+      { name: "Coloración", description: "Color completo o retoque de raíz.", duration: "02:00:00", price: 180.0 },
+      { name: "Masaje descontracturante", description: "Alivia tensiones y contracturas.", duration: "01:00:00", price: 95.0 },
+    ];
+    const allServices = [...services, ...extraServices];
+
+    for (const service of allServices) {
       if (serviceMap.has(service.name)) {
         console.log(`↩️ Skipping existing service: ${service.name}`);
         continue;
@@ -252,30 +268,81 @@ const seedDb = async () => {
       console.log(`➕ Inserted service: ${service.name}`);
     }
 
-    // Insert appointments
-    const userIds = insertedUserIds.length
-      ? insertedUserIds
-      : (await client.query(`SELECT id FROM users WHERE company_id = $1`, [TRIVANCE_ID])).rows.map(
-        (u) => u.id,
+    // Create some staff users
+    const staffUsers = [];
+    for (let i = 0; i < STAFF_COUNT; i++) {
+      const id = randomUUID();
+      const name = `Staff ${i + 1}`;
+      const email = `staff${i + 1}@empresa.com`;
+      const hashed = bcrypt.hashSync("password", 10);
+      await client.query(
+        `INSERT INTO users (id, company_id, name, email, password, phone, address) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [id, TRIVANCE_ID, name, email, hashed, `11${Math.floor(10000000 + Math.random() * 89999999)}`, `Oficina ${i + 1}, CABA`],
       );
+      await client.query(
+        `INSERT INTO user_roles (user_id, role_level) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING`,
+        [id, 2],
+      );
+      staffUsers.push(id);
+      console.log(`➕ Inserted staff user: ${email}`);
+    }
+
+    // Insert appointments
+    // Use only CLIENTS as subjects, but mix creators (some staff creating on behalf of clients)
+    const userIds = (
+      await client.query(
+        `SELECT u.id
+         FROM users u
+         JOIN user_roles ur ON ur.user_id = u.id
+         WHERE u.company_id = $1 AND ur.role_level = 1`,
+        [TRIVANCE_ID],
+      )
+    ).rows.map((u) => u.id);
 
     const serviceIds = Array.from(serviceMap.values());
 
-    for (let i = 0; i < 10; i++) {
-      const userId = userIds[i % userIds.length];
+    // collect clients ids for client_id usage
+    const clientRows = await client.query(`SELECT id FROM clients WHERE company_id = $1`, [TRIVANCE_ID]);
+    const clientIds = clientRows.rows.map((r) => r.id);
+    let ci = 0;
+    const totalToInsert = Math.min(12, serviceIds.length * Math.max(1, userIds.length));
+    for (let i = 0; i < totalToInsert; i++) {
+      const clientUserId = userIds[i % userIds.length];
       const serviceId = serviceIds[i % serviceIds.length];
       const { start_date } = getRandomDateRange();
       const status = statuses[i % statuses.length];
+      const staffCreator = staffUsers.length > 0 && clientIds.length > 0 && i % 2 === 0;
+      const creatorId = staffCreator ? staffUsers[i % staffUsers.length] : clientUserId;
+      const maybeClientId = staffCreator ? clientIds[ci++ % clientIds.length] : null;
 
-      await client.query(
-        `INSERT INTO appointments (
-          id, user_id, service_id, status, start_date, description
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6
-        )`,
-        [randomUUID(), userId, serviceId, status, start_date, `Descripción automática ${i + 1}`],
-      );
+      if (maybeClientId) {
+        await client.query(
+          `INSERT INTO appointments (id, user_id, client_id, service_id, status, start_date, description) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [randomUUID(), creatorId, maybeClientId, serviceId, status, start_date, `Turno ${i + 1} creado por staff`],
+        );
+      } else {
+        await client.query(
+          `INSERT INTO appointments (id, user_id, service_id, status, start_date, description) VALUES ($1, $2, $3, $4, $5, $6)`,
+          [randomUUID(), creatorId, serviceId, status, start_date, `Turno ${i + 1} auto-reservado`],
+        );
+      }
       console.log(`➕ Inserted appointment ${i + 1}`);
+    }
+
+    // Create a few standalone clients (no user linked)
+    const standaloneClients = [
+      { name: "Carla Gómez", email: `carla${Date.now()}@gmail.com`, phone: "1198765432", address: "Av. Córdoba 321, CABA" },
+      { name: "Mario Díaz", email: `mario${Date.now()}@gmail.com`, phone: "1187654321", address: "Bv. San Juan 111, Córdoba" },
+    ];
+    for (const sc of standaloneClients) {
+      try {
+        await client.query(
+          `INSERT INTO clients (company_id, name, email, phone, address) VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (email, company_id) DO NOTHING`,
+          [TRIVANCE_ID, sc.name, sc.email, sc.phone, sc.address],
+        );
+        console.log(`➕ Inserted standalone client: ${sc.email}`);
+      } catch {}
     }
 
     await client.query("COMMIT");
