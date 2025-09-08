@@ -24,14 +24,45 @@ export class AppointmentService {
     private userRepository: UserRepository,
   ) {}
 
-  async getAll(currentUser?: { userId: string; role: number }): Promise<Appointment[]> {
-    if (currentUser && currentUser.role < 2) {
-      return this.repository.getUserAppointments(currentUser.userId);
+  async getAll(
+    currentUser?: { userId: string; role: number },
+    include?: { service?: boolean; user?: boolean },
+  ): Promise<Array<Appointment & { service?: any; user?: any }>> {
+    const list = currentUser && currentUser.role < 2
+      ? await this.repository.getUserAppointments(currentUser.userId)
+      : await this.repository.getCompanyAppointments();
+
+    if (!include || (!include.service && !include.user)) {
+      return list as any;
     }
-    return this.repository.getCompanyAppointments();
+
+    const enriched = [] as Array<Appointment & { service?: any; user?: any }>;
+    for (const appt of list) {
+      const item: any = { ...appt };
+      if (include.service) {
+        try {
+          const service = await this.serviceHandlerService.getServiceById(appt.service_id);
+          if (service) item.service = service;
+          delete item.service_id;
+        } catch {}
+      }
+      if (include.user) {
+        try {
+          const user = await this.userRepository.findById(appt.user_id);
+          if (user) item.user = { ...user, password: undefined } as any;
+          delete item.user_id;
+        } catch {}
+      }
+      enriched.push(item);
+    }
+    return enriched;
   }
 
-  async getById(id: string, currentUser?: { userId: string; role: number }): Promise<Appointment | null> {
+  async getById(
+    id: string,
+    currentUser?: { userId: string; role: number },
+    include?: { service?: boolean; user?: boolean },
+  ): Promise<Appointment | (Appointment & { service?: any; user?: any }) | null> {
     let appointment;
     try {
       appointment = await this.repository.getAppointmentByIdWithJoins(id);
@@ -45,7 +76,35 @@ export class AppointmentService {
     if (currentUser && currentUser.role < 2 && appointment.user_id !== currentUser.userId) {
       throw new ForbiddenError("No tienes permiso para acceder a este turno");
     }
-    return appointment;
+    if (!include) {
+      return appointment;
+    }
+
+    const response: any = { ...appointment };
+
+    if (include.service) {
+      try {
+        const service = await this.serviceHandlerService.getServiceById(appointment.service_id);
+        if (service) response.service = service;
+        // Remove redundant FK when expanded
+        delete response.service_id;
+      } catch (_e) {
+        // Swallow include errors; keep base response intact
+      }
+    }
+
+    if (include.user) {
+      try {
+        const user = await this.userRepository.findById(appointment.user_id);
+        if (user) response.user = { ...user, password: undefined } as any;
+        // Remove redundant FK when expanded
+        delete response.user_id;
+      } catch (_e) {
+        // Swallow include errors; keep base response intact
+      }
+    }
+
+    return response;
   }
 
   async updateAppointment(

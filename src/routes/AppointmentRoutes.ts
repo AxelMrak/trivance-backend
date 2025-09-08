@@ -57,4 +57,7 @@ router.post(
   appointmentController.createAppointmentPaymentLink,
 );
 
+// RESTful alias for get by id. Keep after specific routes to avoid conflicts.
+router.get("/:id", AuthMiddleware, attachUserRole(), appointmentController.getById);
+
 export default router;

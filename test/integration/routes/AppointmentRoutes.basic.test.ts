@@ -68,6 +68,35 @@ describe("Appointments Endpoints - Basic", () => {
     }
   });
 
+  it("GET  /appointments/getAll?include=service • returns list with service included", async () => {
+    await createAppointment({ user_id: user.id, service_id: service.id });
+    const res = await getTestAgent()
+      .get("/appointments/getAll?include=service")
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    if (res.body.length > 0) {
+      expect(res.body[0]).toHaveProperty("service");
+      expect(res.body[0]).not.toHaveProperty("service_id");
+      expect(res.body[0].service).toHaveProperty("id");
+    }
+  });
+
+  it("GET  /appointments/getAll?include=user • returns list with user included (no password)", async () => {
+    await createAppointment({ user_id: user.id, service_id: service.id });
+    const res = await getTestAgent()
+      .get("/appointments/getAll?include=user")
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    if (res.body.length > 0) {
+      expect(res.body[0]).toHaveProperty("user");
+      expect(res.body[0]).not.toHaveProperty("user_id");
+      expect(res.body[0].user).toHaveProperty("id");
+      expect(res.body[0].user).not.toHaveProperty("password");
+    }
+  });
+
   it("GET  /appointments/get/:id • existing appointment • returns 200 with entity", async () => {
     const appt = await createAppointment({ user_id: user.id, service_id: service.id });
 
@@ -77,6 +106,64 @@ describe("Appointments Endpoints - Basic", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("id", appt.id);
+  });
+
+  it("GET  /appointments/get/:id?include=service • includes service object", async () => {
+    const appt = await createAppointment({ user_id: user.id, service_id: service.id });
+
+    const res = await getTestAgent()
+      .get(`/appointments/get/${appt.id}?include=service`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("id", appt.id);
+    expect(res.body).toHaveProperty("service");
+    expect(res.body).not.toHaveProperty("service_id");
+    expect(res.body.service).toHaveProperty("id", service.id);
+  });
+
+  it("GET  /appointments/get/:id?include=user • includes user object without password", async () => {
+    const appt = await createAppointment({ user_id: user.id, service_id: service.id });
+
+    const res = await getTestAgent()
+      .get(`/appointments/get/${appt.id}?include=user`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("id", appt.id);
+    expect(res.body).toHaveProperty("user");
+    expect(res.body).not.toHaveProperty("user_id");
+    expect(res.body.user).toHaveProperty("id", user.id);
+    expect(res.body.user).not.toHaveProperty("password");
+  });
+
+  it("GET  /appointments/get/:id?include=service,user • includes both objects", async () => {
+    const appt = await createAppointment({ user_id: user.id, service_id: service.id });
+
+    const res = await getTestAgent()
+      .get(`/appointments/get/${appt.id}?include=service,user`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("service");
+    expect(res.body).toHaveProperty("user");
+    expect(res.body).not.toHaveProperty("service_id");
+    expect(res.body).not.toHaveProperty("user_id");
+  });
+
+  it("GET  /appointments/:id?include=service,user • RESTful alias includes both objects", async () => {
+    const appt = await createAppointment({ user_id: user.id, service_id: service.id });
+
+    const res = await getTestAgent()
+      .get(`/appointments/${appt.id}?include=service,user`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("id", appt.id);
+    expect(res.body).toHaveProperty("service");
+    expect(res.body).toHaveProperty("user");
+    expect(res.body).not.toHaveProperty("service_id");
+    expect(res.body).not.toHaveProperty("user_id");
   });
 
   it("PUT  /appointments/update/:id • valid changes • returns 200 with updated fields", async () => {

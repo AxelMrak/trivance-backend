@@ -7,7 +7,17 @@ export class AppointmentController {
 
   getAll = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const appointments = await this.appointmentService.getAll(req.user as any);
+      const includeParam = (req.query.include as string) || "";
+      const includeParts = includeParam
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+      const include = {
+        service: includeParts.includes("service"),
+        user: includeParts.includes("user"),
+      };
+
+      const appointments = await this.appointmentService.getAll(req.user as any, include);
       res.json(appointments);
     } catch (error) {
       next(error);
@@ -17,7 +27,17 @@ export class AppointmentController {
   getById = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-      const appointment = await this.appointmentService.getById(id, req.user as any);
+      const includeParam = (req.query.include as string) || "";
+      const includeParts = includeParam
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+      const include = {
+        service: includeParts.includes("service"),
+        user: includeParts.includes("user"),
+      };
+
+      const appointment = await this.appointmentService.getById(id, req.user as any, include);
       res.json(appointment);
     } catch (error) {
       next(error);
