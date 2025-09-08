@@ -27,6 +27,23 @@ export class AppointmentService {
     private clientsPivotRepository: ClientsPivotRepository,
   ) {}
 
+  private async isUserLinkedClientForAppointment(
+    appointment: { client_id?: string | null },
+    userId: string,
+  ): Promise<boolean> {
+    if (!appointment.client_id) return false;
+    try {
+      const { dbClient } = await import("@/config/db");
+      const { rows } = await dbClient.query(
+        `SELECT 1 FROM clients WHERE id = $1 AND user_id = $2 LIMIT 1`,
+        [appointment.client_id, userId],
+      );
+      return (rows?.length ?? 0) > 0;
+    } catch {
+      return false;
+    }
+  }
+
   async getAll(
     currentUser?: { userId: string; role: number },
     include?: { service?: boolean; user?: boolean; client?: boolean },
@@ -111,8 +128,26 @@ export class AppointmentService {
     if (!appointment) {
       throw new NotFoundError("Turno no encontrado");
     }
-    if (currentUser && currentUser.role < 2 && appointment.user_id !== currentUser.userId) {
-      throw new ForbiddenError("No tienes permiso para acceder a este turno");
+    if (currentUser) {
+      // Managers+ can access all
+      if (currentUser.role >= 3) {
+        // allow
+      } else if (currentUser.role >= 2) {
+        // Staff: only appointments they created
+        if (appointment.user_id !== currentUser.userId) {
+          throw new ForbiddenError("No tienes permiso para acceder a este turno");
+        }
+      } else {
+        // Clients: allow if creator OR linked client of the appointment
+        if (appointment.user_id === currentUser.userId) {
+          // ok
+        } else {
+          const linked = await this.isUserLinkedClientForAppointment(appointment, currentUser.userId);
+          if (!linked) {
+            throw new ForbiddenError("No tienes permiso para acceder a este turno");
+          }
+        }
+      }
     }
     if (!include) {
       return appointment;
@@ -404,7 +439,11 @@ export class AppointmentService {
     }
 
     if (appointment.user_id !== userId) {
-      throw new ForbiddenError("No tienes permiso para acceder a este turno");
+      // Allow clients linked to the appointment to generate payment link
+      const linked = await this.isUserLinkedClientForAppointment(appointment as any, userId);
+      if (!linked) {
+        throw new ForbiddenError("No tienes permiso para acceder a este turno");
+      }
     }
 
     const service = await this.serviceHandlerService.getServiceById(appointment.service_id);
