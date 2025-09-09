@@ -7,7 +7,12 @@ import { InternalServerError } from "@/errors/httpErrors";
 export class MercadoPagoService implements PaymentProvider {
   private preference = new Preference(mercadoPagoClient);
 
-  async createPaymentLink(item: { id: string; title: string; price: number }): Promise<string> {
+  async createPaymentLink(item: {
+    id: string;
+    title: string;
+    price: number;
+    orderId: string;
+  }): Promise<string> {
     // In tests, avoid external network calls and return a deterministic stub
     if (process.env.NODE_ENV === "test") {
       return {
@@ -15,6 +20,14 @@ export class MercadoPagoService implements PaymentProvider {
         init_point: `https://payments.example.test/pay/${item.id}`,
       } as any;
     }
+    const siteUrlRaw = process.env.NEXT_PUBLIC_BASE_URL || process.env.SITE_URL || "http://localhost";
+    const siteUrl = siteUrlRaw.replace(/\/$/, "");
+    if (!siteUrl) {
+      throw new InternalServerError(
+        "Configuración inválida: SITE_URL no está definida para generar back_urls",
+      );
+    }
+
     const payload = {
       items: [
         {
@@ -25,13 +38,14 @@ export class MercadoPagoService implements PaymentProvider {
           currency_id: "ARS",
         },
       ],
+      external_reference: item.orderId,
       back_urls: {
-        success: `${process.env.SITE_URL}/payment/success`,
-        failure: `${process.env.SITE_URL}/payment/failure`,
-        pending: `${process.env.SITE_URL}/payment/pending`,
+        success: `${siteUrl}/dashboard/payment/success?order_id=${item.orderId}`,
+        failure: `${siteUrl}/dashboard/payment/cancelled`,
+        pending: `${siteUrl}/dashboard/payment/cancelled`,
       },
       auto_return: "approved",
-      notification_url: `${process.env.SITE_URL}/api/webhooks/mercadopago`,
+      notification_url: `${siteUrl}/api/webhooks/mercadopago`,
     };
 
     const response: any = await this.preference.create({ body: payload });

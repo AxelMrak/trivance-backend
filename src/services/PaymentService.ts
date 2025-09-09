@@ -5,8 +5,21 @@ import { mercadoPagoClient } from "@/config/mercadopago";
 export class PaymentService {
   private mercadopagoClient = mercadoPagoClient;
 
-  async createPaymentLink(item: { id: string; title: string; price: number }): Promise<any> {
+  async createPaymentLink(item: {
+    id: string;
+    title: string;
+    price: number;
+    orderId: string;
+  }): Promise<any> {
     const preference = new Preference(this.mercadopagoClient);
+
+    const siteUrlRaw = process.env.NEXT_PUBLIC_BASE_URL || process.env.SITE_URL || "http://localhost";
+    const siteUrl = siteUrlRaw.replace(/\/$/, "");
+    if (!siteUrl) {
+      throw new Error(
+        "Configuración inválida: SITE_URL no está definida para generar back_urls",
+      );
+    }
 
     const payload = {
       items: [
@@ -18,13 +31,14 @@ export class PaymentService {
           currency_id: "ARS",
         },
       ],
+      external_reference: item.orderId,
       back_urls: {
-        success: `${process.env.SITE_URL}/payment/success`,
-        failure: `${process.env.SITE_URL}/payment/failure`,
-        pending: `${process.env.SITE_URL}/payment/pending`,
+        success: `${siteUrl}/dashboard/payment/success?order_id=${item.orderId}`,
+        failure: `${siteUrl}/dashboard/payment/cancelled`,
+        pending: `${siteUrl}/dashboard/payment/cancelled`,
       },
       auto_return: "approved",
-      notification_url: `${process.env.SITE_URL}/api/webhooks/mercadopago`,
+      notification_url: `${siteUrl}/api/webhooks/mercadopago`,
     };
 
     const response: any = await preference.create({ body: payload });

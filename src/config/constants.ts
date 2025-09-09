@@ -9,6 +9,10 @@ if (process.env.NODE_ENV === "test") {
   dotenv.config();
 } else {
   dotenv.config({ path: ".env.development" });
+  // Fallback to project root .env when .env.development is absent
+  if (!process.env.SITE_URL || !process.env.DATABASE_URL) {
+    dotenv.config({ path: "../.env" });
+  }
 }
 
 const isTest = process.env.NODE_ENV === "test";
