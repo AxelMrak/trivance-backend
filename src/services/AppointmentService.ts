@@ -467,27 +467,35 @@ export class AppointmentService {
     const formattedTitle = `Turno para ${service.name} - ${formatDate(appointment.start_date)}`;
     const provider = PaymentServiceFactory.getProvider("mercadopago");
 
+    // Create the order with a temporary unique reference; we'll set it to order.id after create
+    const { randomUUID } = await import("crypto");
+    const tempRef = randomUUID();
+    const orderToCreate: CreateOrderDto = {
+      appointment_id: appointment.id,
+      status: "pending",
+      provider: "mercadopago",
+      reference_id: tempRef,
+    };
+    const createdOrder = await this.orderService.createOrder(orderToCreate);
+    if (!createdOrder) {
+      throw new InternalServerError("Fallo al crear el pedido asociado al turno");
+    }
+
     const paymentResponse = (await provider.createPaymentLink({
       id: appointment.id,
       title: formattedTitle,
       price: Number(service.price),
+      orderId: createdOrder.id,
     })) as any;
 
     if (!paymentResponse) {
       throw new InternalServerError("Fallo al crear link de pago");
     }
 
-    const order: CreateOrderDto = {
-      appointment_id: appointment.id,
-      status: "pending",
-      provider: "mercadopago",
-      reference_id: paymentResponse.id,
-    };
-
-    const createdOrder = await this.orderService.createOrder(order);
-    if (!createdOrder) {
-      throw new InternalServerError("Fallo al crear el pedido asociado al turno");
-    }
+    // Ensure the order has a stable reference that matches Mercado Pago external_reference
+    await this.orderService.updateOrder(createdOrder.id, {
+      reference_id: createdOrder.id,
+    });
 
     const response = {
       orderId: createdOrder.id,

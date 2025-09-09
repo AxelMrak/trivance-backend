@@ -24,8 +24,8 @@ describe("Appointments Endpoints - Basic", () => {
 
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("id");
-    expect(res.body).toHaveProperty("service_id", service.id);
-    expect(res.body).toHaveProperty("user_id", user.id);
+    expect(res.body).toHaveProperty("service.id", service.id);
+    expect(res.body).toHaveProperty("user.id", user.id);
     expect(res.body).toHaveProperty("status", "confirmed");
   });
 
