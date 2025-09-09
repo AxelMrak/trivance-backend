@@ -96,8 +96,6 @@ export class AppointmentService {
               email: row.email,
               phone: row.phone,
               address: row.address,
-              contact_email: row.contact_email,
-              contact_phone: row.contact_phone,
             };
             if (row.u_id) {
               client.user = {
@@ -203,8 +201,6 @@ export class AppointmentService {
             email: row.email,
             phone: row.phone,
             address: row.address,
-            contact_email: row.contact_email,
-            contact_phone: row.contact_phone,
           };
           if (row.u_id) {
             client.user = {

@@ -9,8 +9,6 @@ type ClientDTO = {
   user_id: string | null;
   company_id: string | null;
   created_at?: string | Date;
-  contact_email?: string | null;
-  contact_phone?: string | null;
 };
 
 const toDTO = (c: ClientEntity): ClientDTO => ({
@@ -22,8 +20,6 @@ const toDTO = (c: ClientEntity): ClientDTO => ({
   user_id: c.user_id,
   company_id: c.company_id,
   created_at: c.created_at,
-  contact_email: c.contact_email,
-  contact_phone: c.contact_phone,
 });
 
 export class ClientService {
@@ -54,11 +50,9 @@ export class ClientService {
       const user = c.user_id ? usersById.get(c.user_id) : null;
       const dto = toDTO(c);
       dto.name = dto.name ?? user?.name ?? null;
-      dto.email = dto.email ?? dto.contact_email ?? user?.email ?? null;
-      dto.phone = dto.phone ?? dto.contact_phone ?? user?.phone ?? null;
+      dto.email = dto.email ?? user?.email ?? null;
+      dto.phone = dto.phone ?? user?.phone ?? null;
       dto.address = dto.address ?? user?.address ?? null;
-      dto.contact_email = dto.contact_email ?? user?.email ?? null;
-      dto.contact_phone = dto.contact_phone ?? user?.phone ?? null;
       return dto;
     });
   }
@@ -75,11 +69,9 @@ export class ClientService {
       );
       const user = rows[0];
       dto.name = dto.name ?? user?.name ?? null;
-      dto.email = dto.email ?? dto.contact_email ?? user?.email ?? null;
-      dto.phone = dto.phone ?? dto.contact_phone ?? user?.phone ?? null;
+      dto.email = dto.email ?? user?.email ?? null;
+      dto.phone = dto.phone ?? user?.phone ?? null;
       dto.address = dto.address ?? user?.address ?? null;
-      dto.contact_email = dto.contact_email ?? user?.email ?? null;
-      dto.contact_phone = dto.contact_phone ?? user?.phone ?? null;
     }
     return dto;
   }
@@ -90,8 +82,6 @@ export class ClientService {
     if (typeof data.email !== "undefined") allowed.email = data.email as any;
     if (typeof data.phone !== "undefined") allowed.phone = data.phone as any;
     if (typeof data.address !== "undefined") allowed.address = data.address as any;
-    if (typeof data.contact_email !== "undefined") allowed.contact_email = data.contact_email as any;
-    if (typeof data.contact_phone !== "undefined") allowed.contact_phone = data.contact_phone as any;
     const updated = await this.clientsRepository.update(id, allowed);
     if (!updated) return null;
     // enrich like getClientByID
@@ -104,11 +94,9 @@ export class ClientService {
       );
       const user = rows[0];
       dto.name = dto.name ?? user?.name ?? null;
-      dto.email = dto.email ?? dto.contact_email ?? user?.email ?? null;
-      dto.phone = dto.phone ?? dto.contact_phone ?? user?.phone ?? null;
+      dto.email = dto.email ?? user?.email ?? null;
+      dto.phone = dto.phone ?? user?.phone ?? null;
       dto.address = dto.address ?? user?.address ?? null;
-      dto.contact_email = dto.contact_email ?? user?.email ?? null;
-      dto.contact_phone = dto.contact_phone ?? user?.phone ?? null;
     }
     return dto;
   }
@@ -117,7 +105,9 @@ export class ClientService {
     return this.clientsRepository.delete(id);
   }
 
-  async createClient(data: Pick<ClientDTO, "name" | "email" | "phone" | "address">): Promise<ClientDTO> {
+  async createClient(
+    data: Pick<ClientDTO, "name" | "email" | "phone" | "address">,
+  ): Promise<ClientDTO> {
     const companyId = process.env.COMPANY_ID || null;
     const created = await this.clientsRepository.create({
       company_id: companyId,

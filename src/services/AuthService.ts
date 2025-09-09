@@ -68,8 +68,6 @@ export class AuthService {
         if (!client.email) updates.email = payload.email;
         if (!client.phone) updates.phone = payload.phone;
         if (!client.address) updates.address = payload.address;
-        updates.contact_email = payload.email;
-        updates.contact_phone = payload.phone;
         await clientsRepo.update(client.id, updates);
       }
     } catch {}
@@ -109,6 +107,7 @@ export class AuthService {
     }
     await this.sessionRepo.delete(session.id);
   }
+
   async getUserById(id: string): Promise<PublicUserDTO | null> {
     const user = await this.repository.findByField("id", id);
     if (!user) return null;

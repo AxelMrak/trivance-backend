@@ -8,8 +8,6 @@ export interface ClientEntity {
   email: string | null;
   phone: string | null;
   address: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
   created_at: Date;
   updated_at: Date;
 }
