@@ -20,7 +20,8 @@ export class MercadoPagoService implements PaymentProvider {
         init_point: `https://payments.example.test/pay/${item.id}`,
       } as any;
     }
-    const siteUrlRaw = process.env.NEXT_PUBLIC_BASE_URL || process.env.SITE_URL || "http://localhost";
+    const siteUrlRaw = (await process.env.SITE_URL) || "http://localhost";
+    console.log("SITE_URL:", siteUrlRaw);
     const siteUrl = siteUrlRaw.replace(/\/$/, "");
     if (!siteUrl) {
       throw new InternalServerError(

@@ -13,14 +13,12 @@ export class PaymentService {
   }): Promise<any> {
     const preference = new Preference(this.mercadopagoClient);
 
-    const siteUrlRaw = process.env.NEXT_PUBLIC_BASE_URL || process.env.SITE_URL || "http://localhost";
+    const siteUrlRaw = (await process.env.SITE_URL) || "http://localhost";
+    console.log("SITE_URL:", siteUrlRaw);
     const siteUrl = siteUrlRaw.replace(/\/$/, "");
     if (!siteUrl) {
-      throw new Error(
-        "Configuración inválida: SITE_URL no está definida para generar back_urls",
-      );
+      throw new Error("Configuración inválida: SITE_URL no está definida para generar back_urls");
     }
-
     const payload = {
       items: [
         {

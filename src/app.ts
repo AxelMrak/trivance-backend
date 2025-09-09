@@ -53,8 +53,17 @@ const corsOptions = {
     // Accept no-origin requests (mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
 
-    const envOrigins = parseOrigins(process.env.CORS_ORIGIN);
-    const defaults = ["http://localhost:3000", "http://localhost:5173"];
+    // Support both CORS_ORIGIN (preferred) and legacy CROSS_ORIGIN
+    // Also consider SITE_URL as a single allowed origin if provided
+    const envOrigins = parseOrigins(
+      process.env.CORS_ORIGIN || process.env.CROSS_ORIGIN || process.env.SITE_URL,
+    );
+    const defaults = [
+      "http://localhost",
+      "https://localhost",
+      "http://localhost:3000",
+      "http://localhost:5173",
+    ];
     const allowed = envOrigins.length ? envOrigins : defaults;
 
     if (isOriginAllowed(origin, allowed)) {
