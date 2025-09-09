@@ -1,359 +1,436 @@
+// Setup & imports
 const { Client } = require("pg");
 const bcrypt = require("bcryptjs");
 const dotenv = require("dotenv");
 const { randomUUID } = require("crypto");
-// TODO: Clear db before seeding
+
 dotenv.config();
 
+// DB connection
 const client = new Client({
   connectionString:
     process.env.DATABASE_URL || "postgres://postgres:postgres@trivance-db:5432/trivance_db",
 });
 
+// App constants
 const TRIVANCE_NAME = "Trivance";
 const TRIVANCE_ID = "6f299074-dc4c-47b7-9aed-4683fb29d97e";
-
 const OTHER_COMPANIES = [{ name: "NovaTech Solutions" }, { name: "BlueHorizon Ltd" }];
 
-const initialUsers = [
-  "maria.gonzalez@example.com",
-  "juan.perez@example.com",
-  "sofia.lopez@example.com",
-  "lucas.fernandez@example.com",
+const ROLE = {
+  GUEST: 0,
+  CLIENT: 1,
+  STAFF: 2,
+  MANAGER: 3,
+  ADMIN: 4,
+  SUPER_USER: 5,
+};
+
+// Small helpers
+const argPhone = () => `11${Math.floor(10000000 + Math.random() * 89999999)}`;
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const formatIso = (d) => d.toISOString();
+
+// Sample data
+const addressList = [
+  "Av. San Martín 742, Mendoza",
+  "Av. Belgrano 1234, CABA",
+  "Bv. San Juan 111, Córdoba",
+  "Av. Colón 2150, Mar del Plata",
+  "Brown 980, Rosario",
 ];
 
-const rolesToSeed = [1]; // Only clients
-const STAFF_COUNT = 2;
-const femaleNames = [
-  "Valeria",
-  "Camila",
-  "Carolina",
-  "Claudia",
-  "Clara",
-  "Florencia",
-  "Lucía",
-  "María",
-  "Ana",
-  "Sofía",
-  "Valentina",
-  "Victoria",
-  "Gabriela",
-  "Isabella",
-  "Martina",
-  "Juliana",
-  "Renata",
-  "Emilia",
-  "Daniela",
-  "Paula",
-  "Elena",
-  "Marta",
+const superAdminsFixed = [
+  { name: "Axel", email: "axel@test.com" },
+  { name: "Julian", email: "julian@test.com" },
+  { name: "Nacho", email: "nacho@test.com" },
+  { name: "Nahuel", email: "nahuel@test.com" },
 ];
-const users = initialUsers.map((email) => {
-  const name = email.split("@")[0];
-  return {
-    name,
-    email,
-    password: "password",
-    role: 5,
-    phone: "1234567890",
-    address: "123 San Martin, Mendoza, Argentina",
-  };
-});
 
-for (const role of rolesToSeed) {
-  const fname = femaleNames[Math.floor(Math.random() * femaleNames.length)];
-  users.push({
-    name: `${fname} ${Math.random() > 0.5 ? "García" : "Rodríguez"}`,
-    email: `${fname.toLowerCase()}${Math.floor(Math.random() * 1000 + 1)}@cliente.com.ar`,
-    password: "password",
-    role,
-    phone: `11${Math.floor(10000000 + Math.random() * 89999999)}`,
-    address: `${Math.floor(100 + Math.random() * 900)} Av. Belgrano, CABA, Argentina`,
-  });
-}
+const roleSampleUsers = [
+  { role: ROLE.CLIENT, name: "María González", email: "maria.gonzalez@test.com" },
+  { role: ROLE.STAFF, name: "Laura Rodríguez", email: "laura.rodriguez@test.com" },
+  { role: ROLE.MANAGER, name: "Santiago López", email: "santiago.lopez@test.com" },
+  { role: ROLE.ADMIN, name: "Camila Fernández", email: "camila.fernandez@test.com" },
+];
 
-const services = [
+const serviceCatalog = [
   {
-    name: "limpieza facial profunda",
-    description: "tratamiento de limpieza intensiva para todo tipo de piel.",
+    name: "Limpieza Facial Profunda",
+    description:
+      "Higiene profesional con extracción, vapor ozono y máscara calmante. Recomendado para piel mixta a grasa.",
     duration: "01:00:00",
-    price: 100.0,
+    price: 18000,
   },
   {
-    name: "masaje relajante",
-    description: "masaje corporal para reducir estrés y tensión muscular.",
+    name: "Masaje Descontracturante",
+    description: "Técnica focalizada para aliviar tensiones en cervicales, espalda y hombros.",
     duration: "01:00:00",
-    price: 80.0,
+    price: 22000,
   },
   {
-    name: "depilación láser",
-    description: "eliminación de vello con tecnología láser.",
+    name: "Depilación Láser (Zonas Pequeñas)",
+    description:
+      "Tecnología láser diodo con enfriamiento. Sesión rápida para bozo, mentón o axilas.",
     duration: "00:30:00",
-    price: 120.0,
+    price: 25000,
   },
   {
-    name: "tratamiento anticelulítico",
-    description: "mejora la apariencia de la piel con técnicas reafirmantes.",
+    name: "Tratamiento Anticelulitis",
+    description: "Radiofrecuencia + drenaje para mejorar textura y tono de la piel.",
     duration: "01:30:00",
-    price: 150.0,
+    price: 38000,
   },
   {
-    name: "microdermoabrasión",
-    description: "exfoliación para regenerar la piel.",
+    name: "Microdermoabrasión con Punta de Diamante",
+    description: "Exfoliación controlada para renovar la capa superficial y suavizar poros.",
     duration: "00:45:00",
-    price: 110.0,
+    price: 20000,
   },
   {
-    name: "radiofrecuencia facial",
-    description: "reafirmación de la piel del rostro.",
+    name: "Radiofrecuencia Facial",
+    description: "Estimulación de colágeno para firmeza y contorno.",
     duration: "01:00:00",
-    price: 130.0,
+    price: 26000,
   },
   {
-    name: "manicura y pedicura",
-    description: "servicio completo de uñas para manos y pies.",
+    name: "Manicura & Pedicura Spa",
+    description: "Servicio completo con limado, cutícula, hidratación y esmaltado.",
     duration: "02:00:00",
-    price: 90.0,
+    price: 18000,
   },
   {
-    name: "spa de pies",
-    description: "hidratación y relajación profunda para los pies.",
+    name: "Spa de Pies",
+    description: "Exfoliación profunda, hidratación intensa y masaje.",
     duration: "01:00:00",
-    price: 70.0,
+    price: 14000,
   },
   {
-    name: "pestañas 3d",
-    description: "extensiones de pestañas con efecto volumen.",
+    name: "Extensiones de Pestañas Volume 3D",
+    description: "Efecto volumen con diseño personalizado.",
     duration: "01:30:00",
-    price: 140.0,
+    price: 32000,
   },
   {
-    name: "perfilado de cejas",
-    description: "diseño y depilación de cejas personalizado.",
+    name: "Perfilado y Diseño de Cejas",
+    description: "Medición de visagismo, depilación y styling. Opcional tintura.",
     duration: "00:30:00",
-    price: 60.0,
+    price: 10000,
   },
+  {
+    name: "Corte de Cabello Unisex",
+    description: "Lavado y corte a tijera o máquina.",
+    duration: "00:45:00",
+    price: 12000,
+  },
+  {
+    name: "Coloración Completa",
+    description: "Color global o retoque de raíces. Incluye brushing.",
+    duration: "02:00:00",
+    price: 42000,
+  },
+  {
+    name: "Lifting de Pestañas",
+    description: "Curvatura natural y tinte suave.",
+    duration: "00:50:00",
+    price: 18000,
+  },
+];
+
+const appointmentNotes = [
+  "Primera visita, evaluación rápida previa.",
+  "Foco en cervicales y hombros.",
+  "Recomendación: hidratación diaria.",
+  "Confirmado por WhatsApp.",
+  "Piel sensible: intensidad ajustada.",
+  "Sugerir limpieza facial el próximo mes.",
+  "Reprogramado por clima.",
+  "Muy buen resultado; repetir en 3 semanas.",
+  "Alergia a perfumes: registrar.",
+  "Pago en local, factura A.",
 ];
 
 const statuses = ["pending", "confirmed", "cancelled"];
 
-const getRandomDateRange = () => {
-  const now = new Date();
-  const start = new Date(now.getTime() + Math.random() * 10 * 24 * 60 * 60 * 1000); // within 10 days
-  const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 hour later
-  return { start_date: start.toISOString(), end_date: end.toISOString() };
+// Date generator for appointments
+const randomFutureStart = () => {
+  const days = 2 + Math.floor(Math.random() * 13);
+  const base = new Date();
+  base.setDate(base.getDate() + days);
+  const hour = 9 + Math.floor(Math.random() * 9);
+  const minute = [0, 30][Math.floor(Math.random() * 2)];
+  base.setHours(hour, minute, 0, 0);
+  return base;
 };
 
-const seedDb = async () => {
+// Ensure companies
+async function ensureCompanies() {
+  const { rows } = await client.query(`SELECT id FROM companies WHERE id = $1`, [TRIVANCE_ID]);
+  if (!rows.length) {
+    await client.query(`INSERT INTO companies (id, name) VALUES ($1, $2)`, [
+      TRIVANCE_ID,
+      TRIVANCE_NAME,
+    ]);
+    console.log(`➕ Created company "${TRIVANCE_NAME}"`);
+  } else {
+    console.log(`ℹ️ Company "${TRIVANCE_NAME}" already exists`);
+  }
+
+  for (const c of OTHER_COMPANIES) {
+    const r = await client.query(`SELECT id FROM companies WHERE name = $1`, [c.name]);
+    if (!r.rows.length) {
+      await client.query(`INSERT INTO companies (id, name) VALUES ($1, $2)`, [
+        randomUUID(),
+        c.name,
+      ]);
+      console.log(`➕ Created company "${c.name}"`);
+    } else {
+      console.log(`↩️ Company "${c.name}" already exists`);
+    }
+  }
+}
+
+// Ensure roles
+async function ensureRoles() {
+  await client.query(
+    `INSERT INTO roles (level, name) VALUES
+      (0,'GUEST'),(1,'CLIENT'),(2,'STAFF'),(3,'MANAGER'),(4,'ADMIN'),(5,'SUPER_USER')
+     ON CONFLICT (level) DO NOTHING`,
+  );
+}
+
+// User builders
+function buildUserRow({ name, email, role }) {
+  return {
+    id: randomUUID(),
+    name,
+    email,
+    role,
+    passwordHash: bcrypt.hashSync("password", 10),
+    phone: argPhone(),
+    address: pick(addressList),
+  };
+}
+
+async function upsertUser(u, { createClientOn = ROLE.CLIENT } = {}) {
+  const exists = await client.query(`SELECT id FROM users WHERE email = $1 AND company_id = $2`, [
+    u.email,
+    TRIVANCE_ID,
+  ]);
+  if (exists.rows.length) {
+    console.log(`↩️ Skipping existing user: ${u.email}`);
+    return exists.rows[0].id;
+  }
+
+  await client.query(
+    `INSERT INTO users (id, company_id, name, email, password, phone, address)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    [u.id, TRIVANCE_ID, u.name, u.email, u.passwordHash, u.phone, u.address],
+  );
+
+  await client.query(
+    `INSERT INTO user_roles (user_id, role_level)
+     VALUES ($1,$2) ON CONFLICT (user_id) DO NOTHING`,
+    [u.id, u.role],
+  );
+
+  if (u.role === createClientOn) {
+    await client.query(
+      `INSERT INTO clients (user_id, company_id, name, email, phone, address)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT (user_id) DO NOTHING`,
+      [u.id, TRIVANCE_ID, u.name, u.email, u.phone, u.address],
+    );
+  }
+
+  console.log(`➕ Inserted user: ${u.email} [role=${u.role}]`);
+  return u.id;
+}
+
+// Seed users
+async function seedUsers() {
+  for (const sa of superAdminsFixed) {
+    const row = buildUserRow({ name: sa.name, email: sa.email, role: ROLE.SUPER_USER });
+    await upsertUser(row, { createClientOn: ROLE.CLIENT });
+  }
+
+  for (const ru of roleSampleUsers) {
+    const row = buildUserRow(ru);
+    await upsertUser(row, { createClientOn: ROLE.CLIENT });
+  }
+
+  const extraStaff = [
+    { name: "Tamara Pérez", email: "tamara.perez@test.com" },
+    { name: "Diego Gómez", email: "diego.gomez@test.com" },
+  ];
+  for (const e of extraStaff) {
+    await upsertUser(buildUserRow({ name: e.name, email: e.email, role: ROLE.STAFF }), {
+      createClientOn: ROLE.CLIENT,
+    });
+  }
+}
+
+// Seed services
+async function seedServices() {
+  const { rows } = await client.query(`SELECT id,name FROM services WHERE company_id = $1`, [
+    TRIVANCE_ID,
+  ]);
+  const existing = new Set(rows.map((r) => r.name));
+
+  for (const s of serviceCatalog) {
+    if (existing.has(s.name)) {
+      console.log(`↩️ Skipping existing service: ${s.name}`);
+      continue;
+    }
+    const id = randomUUID();
+    await client.query(
+      `INSERT INTO services (id, company_id, name, description, duration, price)
+       VALUES ($1,$2,$3,$4,$5,$6)`,
+      [id, TRIVANCE_ID, s.name, s.description, s.duration, s.price],
+    );
+    console.log(`➕ Inserted service: ${s.name}`);
+  }
+
+  const { rows: all } = await client.query(`SELECT id FROM services WHERE company_id = $1`, [
+    TRIVANCE_ID,
+  ]);
+  return all.map((r) => r.id);
+}
+
+// Ensure standalone clients
+async function ensureStandaloneClients() {
+  const list = [
+    {
+      name: "Carla Gómez",
+      email: "carla.indep@test.com",
+      phone: argPhone(),
+      address: pick(addressList),
+    },
+    {
+      name: "Mario Díaz",
+      email: "mario.indep@test.com",
+      phone: argPhone(),
+      address: pick(addressList),
+    },
+  ];
+
+  for (const c of list) {
+    await client.query(
+      `INSERT INTO clients (company_id, name, email, phone, address)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (email, company_id) DO NOTHING`,
+      [TRIVANCE_ID, c.name, c.email, c.phone, c.address],
+    );
+    console.log(`➕ Ensured standalone client: ${c.email}`);
+  }
+}
+
+// Seed appointments
+async function seedAppointments({ perService = 2 } = {}) {
+  // collect clients
+  const { rows: clientRows } = await client.query(`SELECT id FROM clients WHERE company_id = $1`, [
+    TRIVANCE_ID,
+  ]);
+  const clientIds = clientRows.map((r) => r.id);
+  if (!clientIds.length) return;
+
+  // collect staff creators
+  const { rows: staffRows } = await client.query(
+    `SELECT u.id
+     FROM users u
+     JOIN user_roles ur ON ur.user_id = u.id
+     WHERE u.company_id = $1 AND ur.role_level = $2`,
+    [TRIVANCE_ID, ROLE.STAFF],
+  );
+  const staffIds = staffRows.map((r) => r.id);
+
+  // collect client users
+  const { rows: clientUserRows } = await client.query(
+    `SELECT u.id
+     FROM users u
+     JOIN user_roles ur ON ur.user_id = u.id
+     WHERE u.company_id = $1 AND ur.role_level = $2`,
+    [TRIVANCE_ID, ROLE.CLIENT],
+  );
+  const clientUserIds = clientUserRows.map((r) => r.id);
+
+  // collect services
+  const { rows: serviceRows } = await client.query(
+    `SELECT id FROM services WHERE company_id = $1`,
+    [TRIVANCE_ID],
+  );
+  const serviceIds = serviceRows.map((r) => r.id);
+  if (!serviceIds.length) return;
+
+  let created = 0;
+
+  for (const sId of serviceIds) {
+    for (let i = 0; i < perService; i++) {
+      const start = randomFutureStart();
+      const status = pick(statuses);
+      const note = pick(appointmentNotes);
+      const asStaff = staffIds.length && i % 2 === 0;
+
+      const id = randomUUID();
+      const descStaff = `Reserva creada por staff. ${note}`;
+      const descClient = `Auto-reservado por el cliente. ${note}`;
+
+      if (asStaff) {
+        const creatorId = pick(staffIds);
+        const clientId = pick(clientIds);
+
+        // 7 params: id, user_id, client_id, service_id, status, start_date, description
+        await client.query(
+          `INSERT INTO appointments
+            (id, user_id, client_id, service_id, status, start_date, description)
+           VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+          [id, creatorId, clientId, sId, status, formatIso(start), descStaff],
+        );
+      } else {
+        const creatorId = pick(clientUserIds.length ? clientUserIds : staffIds);
+
+        // 6 params: id, user_id, service_id, status, start_date, description
+        await client.query(
+          `INSERT INTO appointments
+            (id, user_id, service_id, status, start_date, description)
+           VALUES ($1,$2,$3,$4,$5,$6)`,
+          [id, creatorId, sId, status, formatIso(start), descClient],
+        );
+      }
+
+      created++;
+      console.log(`➕ Inserted appointment #${created}`);
+    }
+  }
+}
+
+// Orchestrator
+(async function seedDb() {
   try {
     await client.connect();
     console.log("✅ Connected to the database");
-
     await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
     await client.query("BEGIN");
 
-    const { rows: trivanceRows } = await client.query(`SELECT id FROM companies WHERE id = $1`, [
-      TRIVANCE_ID,
-    ]);
-
-    if (!trivanceRows.length) {
-      await client.query(`INSERT INTO companies (id, name) VALUES ($1, $2)`, [
-        TRIVANCE_ID,
-        TRIVANCE_NAME,
-      ]);
-      console.log(`➕ Created company "${TRIVANCE_NAME}"`);
-    } else {
-      console.log(`ℹ️ Company "${TRIVANCE_NAME}" already exists`);
-    }
-
-    for (const company of OTHER_COMPANIES) {
-      const { rows } = await client.query(`SELECT id FROM companies WHERE name = $1`, [
-        company.name,
-      ]);
-
-      if (!rows.length) {
-        await client.query(`INSERT INTO companies (id, name) VALUES ($1, $2)`, [
-          randomUUID(),
-          company.name,
-        ]);
-        console.log(`➕ Created company "${company.name}"`);
-      } else {
-        console.log(`↩️ Company "${company.name}" already exists`);
-      }
-    }
-
-    // Ensure base roles exist (ignore if roles table is missing)
-    try {
-      await client.query(
-        `INSERT INTO roles (level, name) VALUES
-          (0, 'GUEST'), (1, 'CLIENT'), (2, 'STAFF'), (3, 'MANAGER'), (4, 'ADMIN'), (5, 'SUPER_USER')
-         ON CONFLICT (level) DO NOTHING`,
-      );
-    } catch {}
-
-    const { rows: existingUserRows } = await client.query(
-      `SELECT email FROM users WHERE email = ANY($1)`,
-      [users.map((u) => u.email)],
-    );
-    const existingEmails = new Set(existingUserRows.map((r) => r.email));
-
-    const insertedUserIds = [];
-
-    for (const user of users) {
-      if (existingEmails.has(user.email)) {
-        console.log(`↩️ Skipping existing user: ${user.email}`);
-        continue;
-      }
-
-      const id = randomUUID();
-      const hashed = bcrypt.hashSync(user.password, 10);
-      await client.query(
-        `INSERT INTO users (
-          id, company_id, name, email, password, phone, address
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7
-        )`,
-        [id, TRIVANCE_ID, user.name, user.email, hashed, user.phone, user.address],
-      );
-      insertedUserIds.push(id);
-      try {
-        await client.query(
-          `INSERT INTO user_roles (user_id, role_level) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING`,
-          [id, user.role],
-        );
-      } catch {}
-      try {
-        // Create clients entry only for CLIENT role users
-        if (user.role === 1) {
-          await client.query(
-            `INSERT INTO clients (user_id, company_id, name, email, phone, address) VALUES ($1, $2, $3, $4, $5, $6)
-             ON CONFLICT (user_id) DO NOTHING`,
-            [id, TRIVANCE_ID, user.name, user.email, user.phone, user.address],
-          );
-        }
-      } catch {}
-      console.log(`➕ Inserted user: ${user.email}`);
-    }
-
-    const { rows: serviceRows } = await client.query(
-      `SELECT id, name FROM services WHERE company_id = $1`,
-      [TRIVANCE_ID],
-    );
-    const serviceMap = new Map(serviceRows.map((s) => [s.name, s.id]));
-
-    // Add extra realistic services
-    const extraServices = [
-      { name: "Corte de cabello", description: "Corte profesional unisex.", duration: "00:45:00", price: 50.0 },
-      { name: "Coloración", description: "Color completo o retoque de raíz.", duration: "02:00:00", price: 180.0 },
-      { name: "Masaje descontracturante", description: "Alivia tensiones y contracturas.", duration: "01:00:00", price: 95.0 },
-    ];
-    const allServices = [...services, ...extraServices];
-
-    for (const service of allServices) {
-      if (serviceMap.has(service.name)) {
-        console.log(`↩️ Skipping existing service: ${service.name}`);
-        continue;
-      }
-
-      const id = randomUUID();
-      await client.query(
-        `INSERT INTO services (
-          id, company_id, name, description, duration, price
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6
-        )`,
-        [id, TRIVANCE_ID, service.name, service.description, service.duration, service.price],
-      );
-      serviceMap.set(service.name, id);
-      console.log(`➕ Inserted service: ${service.name}`);
-    }
-
-    // Create some staff users
-    const staffUsers = [];
-    for (let i = 0; i < STAFF_COUNT; i++) {
-      const id = randomUUID();
-      const name = `Staff ${i + 1}`;
-      const email = `staff${i + 1}@empresa.com`;
-      const hashed = bcrypt.hashSync("password", 10);
-      await client.query(
-        `INSERT INTO users (id, company_id, name, email, password, phone, address) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [id, TRIVANCE_ID, name, email, hashed, `11${Math.floor(10000000 + Math.random() * 89999999)}`, `Oficina ${i + 1}, CABA`],
-      );
-      await client.query(
-        `INSERT INTO user_roles (user_id, role_level) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING`,
-        [id, 2],
-      );
-      staffUsers.push(id);
-      console.log(`➕ Inserted staff user: ${email}`);
-    }
-
-    // Insert appointments
-    // Use only CLIENTS as subjects, but mix creators (some staff creating on behalf of clients)
-    const userIds = (
-      await client.query(
-        `SELECT u.id
-         FROM users u
-         JOIN user_roles ur ON ur.user_id = u.id
-         WHERE u.company_id = $1 AND ur.role_level = 1`,
-        [TRIVANCE_ID],
-      )
-    ).rows.map((u) => u.id);
-
-    const serviceIds = Array.from(serviceMap.values());
-
-    // collect clients ids for client_id usage
-    const clientRows = await client.query(`SELECT id FROM clients WHERE company_id = $1`, [TRIVANCE_ID]);
-    const clientIds = clientRows.rows.map((r) => r.id);
-    let ci = 0;
-    const totalToInsert = Math.min(12, serviceIds.length * Math.max(1, userIds.length));
-    for (let i = 0; i < totalToInsert; i++) {
-      const clientUserId = userIds[i % userIds.length];
-      const serviceId = serviceIds[i % serviceIds.length];
-      const { start_date } = getRandomDateRange();
-      const status = statuses[i % statuses.length];
-      const staffCreator = staffUsers.length > 0 && clientIds.length > 0 && i % 2 === 0;
-      const creatorId = staffCreator ? staffUsers[i % staffUsers.length] : clientUserId;
-      const maybeClientId = staffCreator ? clientIds[ci++ % clientIds.length] : null;
-
-      if (maybeClientId) {
-        await client.query(
-          `INSERT INTO appointments (id, user_id, client_id, service_id, status, start_date, description) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [randomUUID(), creatorId, maybeClientId, serviceId, status, start_date, `Turno ${i + 1} creado por staff`],
-        );
-      } else {
-        await client.query(
-          `INSERT INTO appointments (id, user_id, service_id, status, start_date, description) VALUES ($1, $2, $3, $4, $5, $6)`,
-          [randomUUID(), creatorId, serviceId, status, start_date, `Turno ${i + 1} auto-reservado`],
-        );
-      }
-      console.log(`➕ Inserted appointment ${i + 1}`);
-    }
-
-    // Create a few standalone clients (no user linked)
-    const standaloneClients = [
-      { name: "Carla Gómez", email: `carla${Date.now()}@gmail.com`, phone: "1198765432", address: "Av. Córdoba 321, CABA" },
-      { name: "Mario Díaz", email: `mario${Date.now()}@gmail.com`, phone: "1187654321", address: "Bv. San Juan 111, Córdoba" },
-    ];
-    for (const sc of standaloneClients) {
-      try {
-        await client.query(
-          `INSERT INTO clients (company_id, name, email, phone, address) VALUES ($1, $2, $3, $4, $5)
-           ON CONFLICT (email, company_id) DO NOTHING`,
-          [TRIVANCE_ID, sc.name, sc.email, sc.phone, sc.address],
-        );
-        console.log(`➕ Inserted standalone client: ${sc.email}`);
-      } catch {}
-    }
+    await ensureCompanies();
+    await ensureRoles();
+    await seedUsers();
+    const serviceIds = await seedServices();
+    await ensureStandaloneClients();
+    if (serviceIds.length) await seedAppointments({ perService: 2 });
 
     await client.query("COMMIT");
     console.log("✅ Seeding complete");
     process.exit(0);
   } catch (err) {
     console.error("❌ Error during seeding:", err);
-    await client.query("ROLLBACK");
-    await client.end();
+    try {
+      await client.query("ROLLBACK");
+    } catch {}
     process.exit(1);
+  } finally {
+    try {
+      await client.end();
+    } catch {}
   }
-};
-
-seedDb();
+})();
