@@ -7,10 +7,10 @@ beforeAll(() => {
       ({
         get: async ({ id }: { id: string }) => {
           if (id === "pay-approved")
-            return { id, status: "approved", preference_id: "pref-123" } as any;
+            return { id, status: "approved", external_reference: "pref-123" } as any;
           if (id === "pay-rejected")
-            return { id, status: "rejected", preference_id: "pref-456" } as any;
-          return { id, status: "pending", preference_id: "pref-789" } as any;
+            return { id, status: "rejected", external_reference: "pref-456" } as any;
+          return { id, status: "pending", external_reference: "pref-789" } as any;
         },
       }) as any,
   );
@@ -67,11 +67,11 @@ describe("MercadoPagoWebhookService", () => {
     expect(result).toEqual({ orderId: "order-1", appointmentId: "appt-1", status: "cancelled" });
   });
 
-  test("throws when missing data entirely", async () => {
+  test("returns a message when webhook is not a processable payment notification", async () => {
     const { service } = makeSvc();
-    await expect(service.processWebhook({} as any)).rejects.toThrow(
-      "Faltan datos en el cuerpo del webhook",
-    );
+    const result = await service.processWebhook({} as any);
+    expect(result).toEqual({
+      message: "Webhook not processed: not a payment notification.",
+    });
   });
 });
-

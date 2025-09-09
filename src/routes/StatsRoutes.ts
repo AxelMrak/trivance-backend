@@ -18,7 +18,12 @@ const serviceHandlerService = new ServiceHandlerService(serviceRepository);
 const statsService = new StatsService(statsRepository, userRepository, serviceHandlerService);
 const statsController = new StatsController(statsService);
 
-router.get("/appointments/summary", AuthMiddleware, attachUserRole(), statsController.getAppointmentSummary);
+router.get(
+  "/appointments/summary",
+  AuthMiddleware,
+  attachUserRole(),
+  statsController.getAppointmentSummary,
+);
 router.get(
   "/appointments/most-used-service",
   AuthMiddleware,
@@ -27,4 +32,3 @@ router.get(
 );
 
 export default router;
-

@@ -34,7 +34,9 @@ export class BaseRepository<T> {
       const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
       const result = await dbClient.query(query, values);
       if (result.rowCount === 0) {
-        throw new Error(`No se encontró ningún registro con las condiciones: ${whereClauses.join(", ")}`);
+        throw new Error(
+          `No se encontró ningún registro con las condiciones: ${whereClauses.join(", ")}`,
+        );
       }
       return result.rows[0] || null;
     } catch (error) {

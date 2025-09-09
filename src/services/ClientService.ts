@@ -33,12 +33,12 @@ export class ClientService {
     if (userIds.length) {
       const { dbClient } = await import("@/config/db");
       const { rows: users } = await dbClient.query(
-        `SELECT id, name, email, phone, address FROM users WHERE id = ANY($1::uuid[])`,
+        "SELECT id, name, email, phone, address FROM users WHERE id = ANY($1::uuid[])",
         [userIds],
       );
       usersById = new Map(users.map((u: any) => [u.id, u]));
       const { rows: roles } = await dbClient.query(
-        `SELECT user_id, role_level FROM user_roles WHERE user_id = ANY($1::uuid[])`,
+        "SELECT user_id, role_level FROM user_roles WHERE user_id = ANY($1::uuid[])",
         [userIds],
       );
       rolesByUserId = new Map(roles.map((r: any) => [r.user_id, r.role_level]));
@@ -64,7 +64,7 @@ export class ClientService {
     if (client.user_id) {
       const { dbClient } = await import("@/config/db");
       const { rows } = await dbClient.query(
-        `SELECT id, name, email, phone, address FROM users WHERE id = $1`,
+        "SELECT id, name, email, phone, address FROM users WHERE id = $1",
         [client.user_id],
       );
       const user = rows[0];
@@ -89,7 +89,7 @@ export class ClientService {
     if (updated.user_id) {
       const { dbClient } = await import("@/config/db");
       const { rows } = await dbClient.query(
-        `SELECT id, name, email, phone, address FROM users WHERE id = $1`,
+        "SELECT id, name, email, phone, address FROM users WHERE id = $1",
         [updated.user_id],
       );
       const user = rows[0];

@@ -51,7 +51,9 @@ export class ServiceHandlerService {
       description: payload.description,
       price: String(payload.price),
       duration: payload.duration,
-      ...(typeof (payload as any).requires_deposit !== 'undefined' ? { requires_deposit: Boolean((payload as any).requires_deposit) } : {}),
+      ...(typeof (payload as any).requires_deposit !== "undefined"
+        ? { requires_deposit: Boolean((payload as any).requires_deposit) }
+        : {}),
     });
     if (!service) {
       throw new Error("Servicio no encontrado");

@@ -16,9 +16,7 @@ describe("Clients Endpoints - Basic", () => {
     await createUser({ role: UserRole.CLIENT, company_id: authUser.company_id });
     await createUser({ role: UserRole.CLIENT, company_id: authUser.company_id });
 
-    const res = await getTestAgent()
-      .get("/clients/getAll")
-      .set("Authorization", `Bearer ${token}`);
+    const res = await getTestAgent().get("/clients/getAll").set("Authorization", `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);

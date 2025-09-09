@@ -1,4 +1,5 @@
 import { Response, NextFunction } from "express";
+
 import { AuthRequest } from "@/middlewares/authmiddleware";
 import { AppointmentService } from "@/services/AppointmentService";
 
@@ -46,11 +47,19 @@ export class AppointmentController {
     }
   };
 
-  updateAppointment = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  updateAppointment = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       const updatedData = req.body;
-      const updatedAppointment = await this.appointmentService.updateAppointment(id, updatedData, req.user);
+      const updatedAppointment = await this.appointmentService.updateAppointment(
+        id,
+        updatedData,
+        req.user,
+      );
       if (updatedAppointment) {
         res.status(200).json(updatedAppointment);
       } else {
@@ -75,18 +84,30 @@ export class AppointmentController {
     }
   };
 
-  createAppointment = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  createAppointment = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const appointmentData = req.body;
       const userId = req.user!.userId;
-      const newAppointment = await this.appointmentService.createAppointment(appointmentData, userId, req.user as any);
+      const newAppointment = await this.appointmentService.createAppointment(
+        appointmentData,
+        userId,
+        req.user as any,
+      );
       res.status(201).json(newAppointment);
     } catch (error) {
       next(error);
     }
   };
 
-  createAppointmentPaymentLink = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  createAppointmentPaymentLink = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const { id } = req.params;
       const userId = req.user!.userId;

@@ -32,4 +32,3 @@ export class EmailNotificationService {
     await this.notify({ appointmentId, userId, type: "reminder" });
   }
 }
-

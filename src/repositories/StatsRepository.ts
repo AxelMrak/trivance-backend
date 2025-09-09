@@ -24,7 +24,9 @@ export class StatsRepository {
     return result.rows[0] || { total: 0, confirmed: 0, pending: 0, cancelled: 0 };
   }
 
-  async getMostUsedServiceByCompany(companyId: string): Promise<{ service_id: string; usage_count: number } | null> {
+  async getMostUsedServiceByCompany(
+    companyId: string,
+  ): Promise<{ service_id: string; usage_count: number } | null> {
     const query = `
       SELECT a.service_id, COUNT(*)::int AS usage_count
       FROM appointments a
@@ -38,4 +40,3 @@ export class StatsRepository {
     return result.rows[0] || null;
   }
 }
-

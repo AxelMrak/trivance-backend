@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+
 import { UserRepository } from "@/repositories/UserRepository";
 
 export class SearchController {
@@ -20,7 +21,7 @@ export class SearchController {
 
       // Services for company
       const servicesPromise = dbClient.query(
-        `SELECT id, name, description FROM services WHERE company_id = $1 AND ($2 = '%%' OR name ILIKE $2 OR description ILIKE $2) ORDER BY name LIMIT $3`,
+        "SELECT id, name, description FROM services WHERE company_id = $1 AND ($2 = '%%' OR name ILIKE $2 OR description ILIKE $2) ORDER BY name LIMIT $3",
         [companyId, like, limit],
       );
 
@@ -83,8 +84,21 @@ export class SearchController {
         dbClient.query(apptQuery, apptParams),
       ]);
 
-      const results: Array<{ type: string; id: string; title: string; subtitle?: string; href?: string }> = [];
-      const mapStatus = (s: string) => (s === 'confirmed' ? 'Confirmado' : s === 'pending' ? 'Pendiente' : s === 'cancelled' ? 'Cancelado' : s);
+      const results: Array<{
+        type: string;
+        id: string;
+        title: string;
+        subtitle?: string;
+        href?: string;
+      }> = [];
+      const mapStatus = (s: string) =>
+        s === "confirmed"
+          ? "Confirmado"
+          : s === "pending"
+            ? "Pendiente"
+            : s === "cancelled"
+              ? "Cancelado"
+              : s;
       for (const s of servicesRes.rows) {
         results.push({
           type: "Servicio",
@@ -108,7 +122,7 @@ export class SearchController {
         results.push({
           type: "Cliente",
           id: c.id,
-          title: c.name || c.email || 'Cliente',
+          title: c.name || c.email || "Cliente",
           subtitle: c.email || undefined,
         });
       }

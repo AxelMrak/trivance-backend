@@ -10,7 +10,12 @@ describe("Appointments Availability - occupied slots endpoint", () => {
     const service = await createService({ company_id: client.company_id, duration: "01:00:00" });
     const start = new Date();
     start.setHours(10, 0, 0, 0);
-    const appt = await createAppointment({ user_id: client.id, service_id: service.id, start_date: start, status: "confirmed" } as any);
+    const appt = await createAppointment({
+      user_id: client.id,
+      service_id: service.id,
+      start_date: start,
+      status: "confirmed",
+    } as any);
 
     const month = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`;
     const res = await getTestAgent()
@@ -24,4 +29,3 @@ describe("Appointments Availability - occupied slots endpoint", () => {
     expect(body[dateKey]).toContain("10:00");
   });
 });
-

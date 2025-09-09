@@ -9,37 +9,40 @@ export class MercadoPagoWebhookService {
   ) {}
 
   async processWebhook(body: any): Promise<any> {
-    // Mercado Pago webhooks often only include { type: 'payment', data: { id } }.
-    // If status is missing, fetch the payment details to get status and reference.
-    let paymentStatus: string | undefined = body?.data?.status;
-    let reference: string | undefined = body?.data?.external_reference || body?.data?.preference_id;
-    if ((!paymentStatus || !reference) && body?.type === "payment" && body?.data?.id) {
-      try {
-        const paymentResource = getPaymentResource();
-        const paymentData: any = await paymentResource.get({ id: body.data.id });
-        paymentStatus = paymentStatus || paymentData?.status;
-        reference = reference || paymentData?.external_reference || paymentData?.preference_id;
-      } catch (_err) {
-        throw new Error("No se pudo obtener el estado del pago desde Mercado Pago");
-      }
+    if (body?.type !== "payment" || !body?.data?.id) {
+      console.warn("Webhook is not a processable payment notification:", body);
+      return { message: "Webhook not processed: not a payment notification." };
     }
 
-    if (!reference && body?.data?.id) {
-      reference = body.data.id;
+    let paymentData: any;
+    console.log("Processing Mercado Pago webhook for payment ID:", body);
+    try {
+      const paymentResource = getPaymentResource();
+      paymentData = await paymentResource.get({ id: body.data.id });
+    } catch (err) {
+      console.error(`Error fetching payment with id ${body.data.id} from Mercado Pago:`, err);
+      throw new Error("Could not fetch payment details from Mercado Pago.");
     }
 
+    const paymentStatus = paymentData?.status;
+    const reference = paymentData?.external_reference;
+    console.log("Fetched payment data:", paymentData);
+    console.log(`Payment status: ${paymentStatus}, Reference: ${reference}`);
     if (!paymentStatus || !reference) {
-      throw new Error("Faltan datos en el cuerpo del webhook");
+      console.error("Fetched payment data is missing status or reference:", paymentData);
+      throw new Error("Incomplete payment data from Mercado Pago.");
     }
 
     let order = null as any;
     try {
       order = await this.orderService.getOrderByReference(reference);
     } catch (e) {
-      return;
+      console.error(`Error fetching order with reference ${reference}:`, e);
+      return; // Stop processing if order lookup fails
     }
     if (!order) {
-      return;
+      console.warn(`Order not found for reference: ${reference}`);
+      return; // Stop processing if order not found
     }
 
     const updatedStatus =

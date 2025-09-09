@@ -5,13 +5,20 @@ import { UserRole } from "@/entities/User";
 
 describe("Clients normalization - standalone clients and linking on signup", () => {
   it("manager can create client without user", async () => {
-    const manager = await createUser({ /* role column removed, using pivot */ });
+    const manager = await createUser({
+      /* role column removed, using pivot */
+    });
     const token = generateToken(manager.id, UserRole.MANAGER);
 
     const res = await getTestAgent()
       .post("/clients/create")
       .set("Authorization", `Bearer ${token}`)
-      .send({ name: "Cliente Test", email: "cliente@test.com", phone: "1122334455", address: "Av. Siempre Viva 123" });
+      .send({
+        name: "Cliente Test",
+        email: "cliente@test.com",
+        phone: "1122334455",
+        address: "Av. Siempre Viva 123",
+      });
 
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("id");
@@ -50,4 +57,3 @@ describe("Clients normalization - standalone clients and linking on signup", () 
     expect(getClientRes.body.user_id).toBeTruthy();
   });
 });
-

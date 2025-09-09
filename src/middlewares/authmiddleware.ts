@@ -10,7 +10,7 @@ export type JwtPayload = {
 };
 
 const AuthMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const authHeader = (req.headers["authorization"] || "") as string;
+  const authHeader = (req.headers.authorization || "") as string;
   let token = req.cookies?.token as string | undefined;
 
   if (!token && authHeader) {

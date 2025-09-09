@@ -39,7 +39,7 @@ export class AppointmentService {
     try {
       const { dbClient } = await import("@/config/db");
       const { rows } = await dbClient.query(
-        `SELECT 1 FROM clients WHERE id = $1 AND user_id = $2 LIMIT 1`,
+        "SELECT 1 FROM clients WHERE id = $1 AND user_id = $2 LIMIT 1",
         [appointment.client_id, userId],
       );
       return (rows?.length ?? 0) > 0;
@@ -338,7 +338,7 @@ export class AppointmentService {
       // Fallback: if creator not found but a client was provided, try to use the linked user of that client
       try {
         const { dbClient } = await import("@/config/db");
-        const { rows } = await dbClient.query(`SELECT user_id FROM clients WHERE id = $1`, [
+        const { rows } = await dbClient.query("SELECT user_id FROM clients WHERE id = $1", [
           clientId,
         ]);
         const linkedUserId = rows[0]?.user_id as string | undefined;
@@ -361,14 +361,14 @@ export class AppointmentService {
       try {
         const { rows } = await (
           await import("@/config/db")
-        ).dbClient.query(`SELECT id FROM clients WHERE id = $1`, [appointmentData.client_id]);
+        ).dbClient.query("SELECT id FROM clients WHERE id = $1", [appointmentData.client_id]);
         if (rows[0]?.id) clientId = rows[0].id;
       } catch {}
       if (!clientId) {
         try {
           const { rows } = await (
             await import("@/config/db")
-          ).dbClient.query(`SELECT id FROM clients WHERE user_id = $1`, [
+          ).dbClient.query("SELECT id FROM clients WHERE user_id = $1", [
             appointmentData.client_id,
           ]);
           if (rows[0]?.id) clientId = rows[0].id;
@@ -379,7 +379,7 @@ export class AppointmentService {
       try {
         const { rows } = await (
           await import("@/config/db")
-        ).dbClient.query(`SELECT id FROM clients WHERE user_id = $1`, [userId]);
+        ).dbClient.query("SELECT id FROM clients WHERE user_id = $1", [userId]);
         if (rows[0]?.id) clientId = rows[0].id;
       } catch {}
     }
@@ -389,7 +389,7 @@ export class AppointmentService {
       try {
         const { dbClient } = await import("@/config/db");
         const { rows } = await dbClient.query(
-          `SELECT 1 FROM information_schema.columns WHERE table_name = 'appointments' AND column_name = 'client_id' LIMIT 1`,
+          "SELECT 1 FROM information_schema.columns WHERE table_name = 'appointments' AND column_name = 'client_id' LIMIT 1",
         );
         const hasColumn = rows && rows.length > 0;
         if (!hasColumn) {
@@ -565,6 +565,7 @@ export class AppointmentService {
     }
     return response;
   }
+
   async sendReminder(appointmentId: string, currentUser?: JwtPayload): Promise<{ ok: true }> {
     const appt = await this.repository.findById(appointmentId);
     if (!appt) {

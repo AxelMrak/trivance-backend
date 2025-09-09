@@ -60,12 +60,7 @@ router.post(
   appointmentController.createAppointmentPaymentLink,
 );
 
-router.post(
-  "/:id/remind",
-  AuthMiddleware,
-  attachUserRole(),
-  appointmentController.sendReminder,
-);
+router.post("/:id/remind", AuthMiddleware, attachUserRole(), appointmentController.sendReminder);
 
 router.get(
   "/occupiedSlots",

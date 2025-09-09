@@ -19,4 +19,3 @@ describe("Users Endpoints - Basic", () => {
     expect(res.body).toHaveProperty("id", user.id);
   });
 });
-

@@ -49,7 +49,12 @@ describe("Services Endpoints - Basic", () => {
     const res = await getTestAgent()
       .put(`/services/update/${svc.id}`)
       .set("Authorization", `Bearer ${token}`)
-      .send({ name: "Srv2", description: "Descripcion actualizada", price: 15, duration: "02:00:00" });
+      .send({
+        name: "Srv2",
+        description: "Descripcion actualizada",
+        price: 15,
+        duration: "02:00:00",
+      });
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("name", "Srv2");

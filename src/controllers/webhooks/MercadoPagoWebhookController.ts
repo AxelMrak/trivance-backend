@@ -4,7 +4,6 @@ import crypto from "crypto";
 import { MercadoPagoWebhookService } from "@/services/webhooks/MercadoPagoWebhookService";
 
 const SHARED_SECRET = process.env.MP_WEBHOOK_SECRET!;
-
 export class MercadoPagoWebhookController {
   constructor(private service: MercadoPagoWebhookService) {}
 

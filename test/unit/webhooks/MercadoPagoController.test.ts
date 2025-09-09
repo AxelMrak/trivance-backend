@@ -1,7 +1,7 @@
 import express, { Express } from "express";
 import request from "supertest";
-
 import crypto from "crypto";
+
 import { MercadoPagoWebhookController } from "@/controllers/webhooks/MercadoPagoWebhookController";
 import { MercadoPagoWebhookService } from "@/services/webhooks/MercadoPagoWebhookService";
 
@@ -82,4 +82,3 @@ describe.skip("MercadoPagoWebhookController", () => {
     expect(mockService.processWebhook).toHaveBeenCalledWith(payload);
   });
 });
-

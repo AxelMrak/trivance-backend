@@ -15,7 +15,7 @@ export class RoleService {
     } catch (_e) {
       // Table may not exist yet; fall back to users.role
       try {
-        const fallback = await dbClient.query(`SELECT role FROM users WHERE id = $1`, [userId]);
+        const fallback = await dbClient.query("SELECT role FROM users WHERE id = $1", [userId]);
         if (fallback.rowCount && fallback.rows[0]) return Number(fallback.rows[0].role);
       } catch {
         return null;

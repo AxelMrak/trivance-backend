@@ -1,4 +1,5 @@
 import { Preference } from "mercadopago";
+
 import { mercadoPagoClient } from "@/config/mercadopago";
 import { PaymentProvider } from "@/entities/PaymentProvider";
 import { InternalServerError } from "@/errors/httpErrors";
@@ -30,6 +31,7 @@ export class MercadoPagoService implements PaymentProvider {
         pending: `${process.env.SITE_URL}/payment/pending`,
       },
       auto_return: "approved",
+      notification_url: `${process.env.SITE_URL}/api/webhooks/mercadopago`,
     };
 
     const response: any = await this.preference.create({ body: payload });

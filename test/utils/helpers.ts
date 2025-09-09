@@ -1,5 +1,6 @@
-import { getTestAgent } from "@test/setup";
 import jwt from "jsonwebtoken";
+
+import { getTestAgent } from "@test/setup";
 
 export const signInAndGetToken = async (email: string, password: string) => {
   const res = await getTestAgent().post("/auth/sign-in").send({ email, password });

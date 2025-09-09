@@ -1,11 +1,16 @@
 import { Response, NextFunction } from "express";
+
 import { AuthRequest } from "@/middlewares/authmiddleware";
 import { StatsService } from "@/services/StatsService";
 
 export class StatsController {
   constructor(private statsService: StatsService) {}
 
-  getAppointmentSummary = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  getAppointmentSummary = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const data = await this.statsService.getAppointmentSummary(req.user!);
       res.status(200).json(data);
@@ -14,7 +19,11 @@ export class StatsController {
     }
   };
 
-  getMostUsedService = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  getMostUsedService = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const includeParam = (req.query.include as string) || "";
       const includeParts = includeParam
@@ -42,4 +51,3 @@ export class StatsController {
     }
   };
 }
-

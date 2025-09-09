@@ -1,6 +1,5 @@
 import { RequestHandler } from "express";
 import { z } from "zod";
-import { AppointmentStatus } from "@/entities/EnumTypes";
 
 export const validateUserCreate: RequestHandler = (req, res, next) => {
   const schema = z

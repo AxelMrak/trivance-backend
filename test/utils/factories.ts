@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+
 import { dbClient } from "@/config/db";
 import { User, UserRole } from "@/entities/User";
 import { Company } from "@/entities/Company";
@@ -25,10 +26,9 @@ export const createCompany = async (overrides: Partial<Company> = {}): Promise<C
     ...overrides,
   };
 
-  const { rows } = await dbClient.query(
-    "INSERT INTO companies (name) VALUES ($1) RETURNING *",
-    [companyData.name]
-  );
+  const { rows } = await dbClient.query("INSERT INTO companies (name) VALUES ($1) RETURNING *", [
+    companyData.name,
+  ]);
 
   return rows[0];
 };
@@ -67,21 +67,24 @@ export const createUser = async (overrides: Partial<User> = {}): Promise<User> =
       userData.password,
       userData.phone,
       userData.address,
-    ]
+    ],
   );
 
   const user = rows[0];
   // try to attach role in pivot if table exists
   try {
     await dbClient.query(
-      `INSERT INTO user_roles (user_id, role_level) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING`,
+      "INSERT INTO user_roles (user_id, role_level) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING",
       [user.id, userData.role],
     );
   } catch {}
   // try to create clients pivot if role is CLIENT
   try {
     if (user.role === 1) {
-      await dbClient.query(`INSERT INTO clients (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`, [user.id]);
+      await dbClient.query(
+        "INSERT INTO clients (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
+        [user.id],
+      );
     }
   } catch {}
   // We attach the plain password to the user object so that we can use it in tests for logging in.
@@ -118,7 +121,7 @@ export const createService = async (overrides: Partial<Service> = {}): Promise<S
       serviceData.price,
       serviceData.requires_deposit,
       serviceData.duration,
-    ]
+    ],
   );
 
   return rows[0];
@@ -129,7 +132,9 @@ export const createService = async (overrides: Partial<Service> = {}): Promise<S
  * @param {Partial<Appointment>} overrides - Optional overrides for the appointment data.
  * @returns {Promise<Appointment>} The created appointment.
  */
-export const createAppointment = async (overrides: Partial<Appointment> = {}): Promise<Appointment> => {
+export const createAppointment = async (
+  overrides: Partial<Appointment> = {},
+): Promise<Appointment> => {
   const appointmentData = {
     start_date: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
     status: "pending",
@@ -154,7 +159,7 @@ export const createAppointment = async (overrides: Partial<Appointment> = {}): P
       appointmentData.service_id,
       appointmentData.start_date,
       appointmentData.status,
-    ]
+    ],
   );
 
   return rows[0];
