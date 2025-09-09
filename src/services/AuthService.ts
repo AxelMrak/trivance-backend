@@ -63,7 +63,6 @@ export class AuthService {
       const client = await clientsRepo.findByEmail(payload.email, companyId);
       if (client) {
         const updates: any = { user_id: client.user_id ?? user.id };
-        // Fill missing profile fields and contacts from user
         if (!client.name) updates.name = payload.name;
         if (!client.email) updates.email = payload.email;
         if (!client.phone) updates.phone = payload.phone;
