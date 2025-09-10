@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
-
 import { AppError } from "@/errors/httpErrors";
 
 export const errorHandler: ErrorRequestHandler = (
@@ -16,16 +15,13 @@ export const errorHandler: ErrorRequestHandler = (
     ip: req.ip,
   });
 
-  // Default fallback
   let statusCode = 500;
   let message = "Internal Server Error";
 
-  // First, respect our domain errors
   if (err instanceof AppError) {
     statusCode = err.statusCode;
     message = err.message;
   } else {
-    // Then, map common framework/runtime errors
     switch (err.name) {
       case "SyntaxError":
         statusCode = 400;
@@ -57,6 +53,16 @@ export const errorHandler: ErrorRequestHandler = (
           message = err.message;
         }
         break;
+    }
+
+    if (err.message?.includes("duplicate key value violates unique constraint")) {
+      statusCode = 400;
+
+      if (err.message.includes("uq_clients_email_company")) {
+        message = "El correo electrónico ya existe y pertenece a otro cliente.";
+      } else {
+        message = "Los datos ingresados ya existen en otro cliente.";
+      }
     }
   }
 
