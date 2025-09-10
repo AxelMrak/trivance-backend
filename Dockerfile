@@ -26,5 +26,5 @@ COPY --from=builder /app/dist ./dist
 # Expose the port the app runs on
 EXPOSE 3001
 
-# Command to run the application
-CMD ["node", "dist/index.js"]
+# Command to run the application (compiled output lives under dist/src)
+CMD ["node", "dist/src/index.js"]
