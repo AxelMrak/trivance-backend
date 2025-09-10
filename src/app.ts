@@ -85,6 +85,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+// Handle CORS preflight for all routes
+app.options("*", cors(corsOptions));
 
 // Body parsing middleware
 app.use(
