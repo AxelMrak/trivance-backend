@@ -34,8 +34,6 @@ describe("MercadoPagoWebhookController Integration", () => {
     app = express();
     // For the real endpoint, we need to use express.raw to get the buffer for signature verification
     app.post("/api/webhooks/mercadopago", express.raw({ type: "application/json" }), controller.handle);
-    // For the test endpoint, we can use express.json
-    app.post("/api/webhooks/mercadopago/test", express.json(), controller.handleTest);
   });
 
   describe("POST /api/webhooks/mercadopago", () => {
@@ -89,39 +87,13 @@ describe("MercadoPagoWebhookController Integration", () => {
   });
 
   describe("POST /api/webhooks/mercadopago/test", () => {
-    it("should return 400 if the payload is invalid", async () => {
-      const res = await request(app).post("/api/webhooks/mercadopago/test").send({ foo: "bar" });
-      expect(res.status).toBe(400);
-      expect(res.body).toEqual({ error: "Invalid test payload" });
-    });
-
-    it("should process the webhook and return the result", async () => {
-      const testPayload = {
-        action: "payment.updated",
-        api_version: "v1",
-        data: { id: "123456" },
-        date_created: "2021-11-01T02:02:02Z",
-        id: "123456",
-        live_mode: false,
+    it("should return 404 because the unsigned test route was removed", async () => {
+      const res = await request(app).post("/api/webhooks/mercadopago/test").send({
         type: "payment",
-        user_id: 154027870,
-      };
-
-      (mockMercadoPagoWebhookService.processWebhook as jest.Mock).mockResolvedValue({
-        orderId: "order-1",
-        appointmentId: "appt-1",
-        status: "paid",
+        data: { id: "123456" },
       });
 
-      const res = await request(app).post("/api/webhooks/mercadopago/test").send(testPayload);
-
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual({
-        orderId: "order-1",
-        appointmentId: "appt-1",
-        status: "paid",
-      });
-      expect(mockMercadoPagoWebhookService.processWebhook).toHaveBeenCalledWith(testPayload);
+      expect(res.status).toBe(404);
     });
   });
 });
