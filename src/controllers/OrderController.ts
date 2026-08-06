@@ -79,26 +79,4 @@ export class OrderController {
       next(error);
     }
   };
-
-  // Demo-only: force confirm order and appointment without external verification
-  confirmForDemo = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const allow = process.env.ALLOW_DEMO_CONFIRM === "true" || process.env.NODE_ENV !== "production";
-      if (!allow) {
-        return res.status(403).json({ message: "Demo confirm no habilitado" });
-      }
-
-      const { id } = req.params;
-      const order = await this.orderService.getById(id);
-      if (!order) return res.status(404).json({ message: "Orden no encontrada" });
-
-      await this.orderService.updateOrder(order.id, { status: "paid" as any });
-      // Direct repository update to bypass status permission checks
-      await this.appointmentRepository.update(order.appointment_id, { status: "confirmed" } as any);
-
-      return res.json({ id: order.id, status: "paid", appointmentId: order.appointment_id });
-    } catch (error) {
-      next(error);
-    }
-  };
 }
