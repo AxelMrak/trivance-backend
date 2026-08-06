@@ -8,6 +8,7 @@ import { SessionRepository } from "@/repositories/SessionRepository";
 import { SignInResponse } from "@entities/Response";
 import { SignupRequest } from "@entities/Request";
 import { RoleService } from "@/services/RoleService";
+import { config } from "@/config/constants";
 
 export class AuthService {
   constructor(
@@ -125,7 +126,7 @@ export class AuthService {
   }
 
   private generateToken(userId: string, role: number): string {
-    return jwt.sign({ userId, role }, process.env.JWT_SECRET!, { expiresIn: "24h" });
+    return jwt.sign({ userId, role }, config.JWT_SECRET, { expiresIn: "24h" });
   }
 
   /**
