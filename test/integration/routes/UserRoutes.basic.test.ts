@@ -1,21 +1,61 @@
 import { createUser } from "@test/utils/factories";
 import { getTestAgent } from "@test/setup";
+import { generateToken } from "@test/utils/helpers";
+import { UserRole } from "@entities/User";
 
 describe("Users Endpoints - Basic", () => {
-  it("GET  /users/getAll • returns 200 and array", async () => {
-    await createUser();
-    await createUser();
+  it.each(["/users/getAll", "/users/get/non-existent-id"])(
+    "GET %s without a token returns 401",
+    async (path) => {
+      const res = await getTestAgent().get(path);
 
-    const res = await getTestAgent().get("/users/getAll");
+      expect(res.status).toBe(401);
+    },
+  );
+
+  it.each(["/users/getAll", "/users/get/%s"])(
+    "GET %s with a role below MANAGER returns 403",
+    async (path) => {
+      const user = await createUser({ role: UserRole.STAFF });
+      const resolvedPath = path.includes("%s") ? path.replace("%s", user.id) : path;
+      const token = generateToken(user.id, UserRole.STAFF);
+
+      const res = await getTestAgent().get(resolvedPath).set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(403);
+    },
+  );
+
+  it("GET /users/getAll with MANAGER or higher returns public users", async () => {
+    const manager = await createUser({ role: UserRole.MANAGER });
+    // Factories create separate companies; tenancy isolation is out of this fix's scope.
+    await createUser({ role: UserRole.STAFF });
+    const token = generateToken(manager.id, UserRole.MANAGER);
+
+    const res = await getTestAgent().get("/users/getAll").set("Authorization", `Bearer ${token}`);
+
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBeGreaterThanOrEqual(2);
+    expect(res.body).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: manager.id, role: UserRole.MANAGER })]),
+    );
+    for (const user of res.body) {
+      expect(user).not.toHaveProperty("password");
+    }
   });
 
-  it("GET  /users/get/:id • existing user • returns 200 with entity", async () => {
-    const user = await createUser();
-    const res = await getTestAgent().get(`/users/get/${user.id}`);
+  it("GET /users/get/:id with MANAGER or higher returns a public user", async () => {
+    const manager = await createUser({ role: UserRole.MANAGER });
+    // The target belongs to another factory-created company by design; this endpoint is not tenant-isolated yet.
+    const target = await createUser({ role: UserRole.ADMIN });
+    const token = generateToken(manager.id, UserRole.MANAGER);
+
+    const res = await getTestAgent()
+      .get(`/users/get/${target.id}`)
+      .set("Authorization", `Bearer ${token}`);
+
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("id", user.id);
+    expect(res.body).toMatchObject({ id: target.id, role: UserRole.ADMIN });
+    expect(res.body).not.toHaveProperty("password");
   });
 });

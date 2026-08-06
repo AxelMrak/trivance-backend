@@ -1,8 +1,50 @@
 import { BaseRepository } from "@repositories/BaseRepository";
-import { User } from "@entities/User";
+import { PublicUserDTO } from "@entities/User";
+import { dbClient } from "@config/db";
 
-export class UserRepository extends BaseRepository<User> {
+const PUBLIC_USER_PROJECTION = `
+  u.id,
+  u.company_id,
+  u.name,
+  u.email,
+  u.phone,
+  u.address,
+  COALESCE(ur.role_level, 0) AS role,
+  u.created_at,
+  u.updated_at
+`;
+
+export class UserRepository extends BaseRepository<PublicUserDTO> {
   constructor() {
     super("users");
+  }
+
+  async findAll(): Promise<PublicUserDTO[]> {
+    try {
+      const query = `
+        SELECT ${PUBLIC_USER_PROJECTION}
+        FROM users u
+        LEFT JOIN user_roles ur ON ur.user_id = u.id
+      `;
+      const result = await dbClient.query(query);
+      return result.rows;
+    } catch (_error) {
+      throw new Error("Error de base de datos");
+    }
+  }
+
+  async findById(id: string): Promise<PublicUserDTO | null> {
+    try {
+      const query = `
+        SELECT ${PUBLIC_USER_PROJECTION}
+        FROM users u
+        LEFT JOIN user_roles ur ON ur.user_id = u.id
+        WHERE u.id = $1
+      `;
+      const result = await dbClient.query(query, [id]);
+      return result.rows[0] || null;
+    } catch (_error) {
+      throw new Error("Error de base de datos");
+    }
   }
 }
