@@ -16,22 +16,27 @@ if (process.env.NODE_ENV === "test") {
 }
 
 const isTest = process.env.NODE_ENV === "test";
+const TEST_JWT_SECRET = "test-secret";
+
+if (isTest && !process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = TEST_JWT_SECRET;
+}
+
+export const JWT_SECRET = process.env.JWT_SECRET as string;
 
 const buildDbUrl = () => {
   const envUrl = process.env.DATABASE_URL;
   if (isTest) {
-    if (envUrl) {
-      try {
-        const u = new URL(envUrl);
-        if (u.hostname === "trivance-db") {
-          u.hostname = "localhost";
-        }
-        return u.toString();
-      } catch {
-        return "postgres://postgres:postgres@localhost:5432/trivance_db";
+    try {
+      const u = new URL(envUrl || "postgres://postgres:postgres@localhost:5432/trivance_db_test");
+      if (u.hostname === "trivance-db") {
+        u.hostname = "localhost";
       }
+      u.pathname = "/trivance_db_test";
+      return u.toString();
+    } catch {
+      return "postgres://postgres:postgres@localhost:5432/trivance_db_test";
     }
-    return "postgres://postgres:postgres@localhost:5432/trivance_db";
   }
   return envUrl || "postgres://postgres:postgres@trivance-db:5432/trivance_db";
 };
@@ -49,7 +54,7 @@ export const config: {
   DB_URL: buildDbUrl(),
   DB_USER: process.env.DB_USER || "postgres",
   DB_PASSWORD: process.env.DB_PASSWORD || "postgres",
-  DB_NAME: process.env.DB_NAME || "trivance_db",
+  DB_NAME: isTest ? "trivance_db_test" : process.env.DB_NAME || "trivance_db",
 };
 
 if (process.env.NODE_ENV === "production") {
