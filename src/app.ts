@@ -1,13 +1,21 @@
 import cookieParser from "cookie-parser";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 
 import "@config/constants";
 import { errorHandler } from "@middlewares/errorHandler";
 import { requestLogger } from "@middlewares/requestLogger";
+import { globalLimiter, signInLimiter, signUpLimiter } from "@middlewares/security/rateLimiters";
 import mainRouter from "@routes/index";
 
 const app = express();
+
+// One reverse proxy hop (nginx) sits between the client and the app.
+// Must precede ANY middleware that reads req.ip (helmet has no IP use, but the
+// rate limiters key on req.ip: without this they would bucket every user
+// under the nginx container IP). Assumes exactly one proxy level.
+app.set("trust proxy", 1);
 
 // CORS configuration
 const parseOrigins = (value?: string): string[] => {
@@ -85,6 +93,12 @@ const corsOptions = {
   ],
 };
 
+app.use(
+  helmet({
+    // Spec requires the stricter-by-design policy; helmet's default is no-referrer.
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  }),
+);
 app.use(cors(corsOptions));
 // Handle CORS preflight for all routes
 app.options("*", cors(corsOptions));
@@ -124,6 +138,16 @@ app.use(cookieParser(process.env.COOKIE_SECRET));
 if (process.env.NODE_ENV === "development") {
   app.use(requestLogger);
 }
+
+// Global request cap: 300 requests / minute / IP. Sits after body parsers so
+// malformed payloads (400) reject before consuming a global token, and before
+// the routes so every endpoint is covered.
+app.use(globalLimiter);
+
+// Stricter auth limits on top of the global cap (5 failed / 15 min per IP,
+// and 10 sign-ups / hour per IP). Mounted before the main router.
+app.use("/auth/sign-in", signInLimiter);
+app.use("/auth/sign-up", signUpLimiter);
 
 // Health check endpoint
 app.get("/health", (_req, res) => {
