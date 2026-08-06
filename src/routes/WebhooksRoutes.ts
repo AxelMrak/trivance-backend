@@ -42,9 +42,6 @@ router.post(
   mercadoPagoWebhookController.handle,
 );
 
-// Test route for Mercado Pago webhooks, does not require signature validation
-router.post("/mercadopago/test", express.json(), mercadoPagoWebhookController.handleTest);
-
 router.use(express.json()); // Ensure JSON body parsing is enabled for other routes
 
 export default router;

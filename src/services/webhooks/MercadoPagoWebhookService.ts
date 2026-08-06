@@ -16,24 +16,13 @@ export class MercadoPagoWebhookService {
 
     let paymentData: any;
 
-    // If live_mode is false, it's a test webhook. We should not call the API.
-    if (body.live_mode === false) {
-      console.log("Processing test webhook. Simulating payment data for ID:", body.data.id);
-      // For test webhooks, we simulate the payment data.
-      // We assume the payment is approved and the external_reference is the payment ID itself.
-      paymentData = {
-        status: "approved",
-        external_reference: body.data.id,
-      };
-    } else {
-      console.log("Processing live Mercado Pago webhook for payment ID:", body.data.id);
-      try {
-        const paymentResource = getPaymentResource();
-        paymentData = await paymentResource.get({ id: body.data.id });
-      } catch (err) {
-        console.error(`Error fetching payment with id ${body.data.id} from Mercado Pago:`, err);
-        throw new Error("Could not fetch payment details from Mercado Pago.");
-      }
+    console.log("Processing Mercado Pago webhook for payment ID:", body.data.id);
+    try {
+      const paymentResource = getPaymentResource();
+      paymentData = await paymentResource.get({ id: body.data.id });
+    } catch (err) {
+      console.error(`Error fetching payment with id ${body.data.id} from Mercado Pago:`, err);
+      throw new Error("Could not fetch payment details from Mercado Pago.");
     }
 
     const paymentStatus = paymentData?.status;
