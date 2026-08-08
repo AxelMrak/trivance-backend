@@ -16,6 +16,10 @@ beforeAll(() => {
   );
 });
 
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
 describe("MercadoPagoWebhookService", () => {
   const makeSvc = () => {
     const orderService = {
@@ -60,6 +64,20 @@ describe("MercadoPagoWebhookService", () => {
     const result = await service.processWebhook(payload as any);
 
     expect(orderService.getOrderByReference).toHaveBeenCalledWith("pref-456");
+    expect(orderService.updateOrder).toHaveBeenCalledWith("order-1", { status: "cancelled" });
+    expect(appointmentService.updateAppointment).toHaveBeenCalledWith("appt-1", {
+      status: "cancelled",
+    });
+    expect(result).toEqual({ orderId: "order-1", appointmentId: "appt-1", status: "cancelled" });
+  });
+
+  test("uses Mercado Pago status when live_mode is false", async () => {
+    const { service, orderService, appointmentService } = makeSvc();
+
+    const payload = { type: "payment", live_mode: false, data: { id: "pay-rejected" } };
+    const result = await service.processWebhook(payload as any);
+
+    expect(mpAdapter.getPaymentResource).toHaveBeenCalledTimes(1);
     expect(orderService.updateOrder).toHaveBeenCalledWith("order-1", { status: "cancelled" });
     expect(appointmentService.updateAppointment).toHaveBeenCalledWith("appt-1", {
       status: "cancelled",

@@ -15,11 +15,5 @@ const appointmentRepository = new AppointmentRepository();
 const orderController = new OrderController(orderService, appointmentRepository);
 
 router.get("/:id", AuthMiddleware, attachUserRole(), orderController.getById);
-router.post(
-  "/:id/demo-confirm",
-  AuthMiddleware,
-  attachUserRole(),
-  orderController.confirmForDemo,
-);
 
 export default router;

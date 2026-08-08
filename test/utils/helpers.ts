@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 
+import { config } from "@config/constants";
 import { getTestAgent } from "@test/setup";
 
 export const signInAndGetToken = async (email: string, password: string) => {
@@ -10,7 +11,6 @@ export const signInAndGetToken = async (email: string, password: string) => {
 };
 
 export const generateToken = (userId: string, role: number) => {
-  const secret = process.env.JWT_SECRET || "test-secret";
-  const token = jwt.sign({ userId, role }, secret, { expiresIn: "24h" });
+  const token = jwt.sign({ userId, role }, config.JWT_SECRET, { expiresIn: "24h" });
   return token;
 };

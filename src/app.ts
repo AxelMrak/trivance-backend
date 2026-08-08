@@ -2,6 +2,7 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import cors from "cors";
 
+import "@config/constants";
 import { errorHandler } from "@middlewares/errorHandler";
 import { requestLogger } from "@middlewares/requestLogger";
 import mainRouter from "@routes/index";

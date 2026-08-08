@@ -3,7 +3,6 @@ import crypto from "crypto";
 
 import { MercadoPagoWebhookService } from "@/services/webhooks/MercadoPagoWebhookService";
 
-const SHARED_SECRET = process.env.MP_WEBHOOK_SECRET!;
 export class MercadoPagoWebhookController {
   constructor(private service: MercadoPagoWebhookService) {}
 
@@ -35,7 +34,7 @@ export class MercadoPagoWebhookController {
       const dataID = bodyJson?.data?.id;
       const manifest = `id:${dataID};request-id:${requestId};ts:${ts};`;
 
-      const hmac = crypto.createHmac("sha256", SHARED_SECRET);
+      const hmac = crypto.createHmac("sha256", process.env.MP_WEBHOOK_SECRET!);
       hmac.update(manifest);
       const expectedSignature = hmac.digest("hex");
 
@@ -56,28 +55,6 @@ export class MercadoPagoWebhookController {
       if (!res.headersSent) {
         res.status(500).send({ error: "Internal server error" });
       }
-    }
-  };
-
-  /**
-   * Handles a test webhook without signature verification.
-   * This is useful for development and testing purposes.
-   */
-  handleTest = async (req: Request, res: Response): Promise<any> => {
-    try {
-      const body = req.body;
-      console.log("Processing test webhook with body:", body);
-
-      // Basic validation for the test payload
-      if (!body || typeof body.data?.id === "undefined") {
-        return res.status(400).json({ error: "Invalid test payload" });
-      }
-
-      const response = await this.service.processWebhook(body);
-      res.status(200).json(response);
-    } catch (error) {
-      console.error("Error processing test webhook:", error);
-      res.status(500).json({ error: "Internal server error" });
     }
   };
 }
