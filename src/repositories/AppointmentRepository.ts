@@ -1,6 +1,7 @@
 import { Appointment } from "@/entities/Appointment";
 import { dbClient } from "@/config/db";
 import { BaseRepository } from "@/repositories/BaseRepository";
+import { handleDatabaseError } from "@/errors/persistenceErrors";
 import {
   generateGetAppointmentByIdWithJoinsQuery,
   generateGetAppointmentsWithJoinsQuery,
@@ -34,8 +35,8 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
         `;
         const result = await dbClient.query(legacyQuery);
         return result.rows as any;
-      } catch (_e) {
-        throw new Error("Error de base de datos");
+      } catch (innerError) {
+        handleDatabaseError(innerError);
       }
     }
   }
@@ -63,8 +64,8 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
         `;
         const result = await dbClient.query(legacyQuery, [appointmentId]);
         return result.rows[0] || null;
-      } catch (_e) {
-        throw new Error("Error de base de datos");
+      } catch (innerError) {
+        handleDatabaseError(innerError);
       }
     }
   }
@@ -91,8 +92,8 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
         `;
         const result = await dbClient.query(legacy, [userId]);
         return result.rows as any;
-      } catch {
-        throw new Error("Error de base de datos");
+      } catch (innerError) {
+        handleDatabaseError(innerError);
       }
     }
   }

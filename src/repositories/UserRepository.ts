@@ -1,6 +1,7 @@
 import { BaseRepository } from "@repositories/BaseRepository";
 import { PublicUserDTO } from "@entities/User";
 import { dbClient } from "@config/db";
+import { handleDatabaseError } from "@/errors/persistenceErrors";
 
 const PUBLIC_USER_PROJECTION = `
   u.id,
@@ -28,8 +29,8 @@ export class UserRepository extends BaseRepository<PublicUserDTO> {
       `;
       const result = await dbClient.query(query);
       return result.rows;
-    } catch (_error) {
-      throw new Error("Error de base de datos");
+    } catch (error) {
+      handleDatabaseError(error);
     }
   }
 
@@ -43,8 +44,8 @@ export class UserRepository extends BaseRepository<PublicUserDTO> {
       `;
       const result = await dbClient.query(query, [id]);
       return result.rows[0] || null;
-    } catch (_error) {
-      throw new Error("Error de base de datos");
+    } catch (error) {
+      handleDatabaseError(error);
     }
   }
 }

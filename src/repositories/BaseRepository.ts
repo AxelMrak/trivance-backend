@@ -1,4 +1,5 @@
 import { dbClient } from "@/config/db";
+import { handleDatabaseError } from "@/errors/persistenceErrors";
 import {
   generateGetAllQuery,
   generateGetByIdQuery,
@@ -17,14 +18,13 @@ export class BaseRepository<T> {
     this.table = table;
   }
 
-  // TODO: IMPROVE ERROR HANDLING WITH BETTER MESSAGES AND REUSABLE ERRORS
   async findWithCondition(whereClause: string, values: any[] = []): Promise<T[]> {
     try {
       const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
       const result = await dbClient.query(query, values);
       return result.rows;
     } catch (error) {
-      throw new Error("Error de base de datos");
+      handleDatabaseError(error);
     }
   }
 
@@ -34,13 +34,11 @@ export class BaseRepository<T> {
       const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
       const result = await dbClient.query(query, values);
       if (result.rowCount === 0) {
-        throw new Error(
-          `No se encontró ningún registro con las condiciones: ${whereClauses.join(", ")}`,
-        );
+        return null;
       }
       return result.rows[0] || null;
     } catch (error) {
-      throw new Error("Error de base de datos");
+      handleDatabaseError(error);
     }
   }
 
@@ -53,8 +51,8 @@ export class BaseRepository<T> {
       const query = `SELECT 1 FROM ${this.table} WHERE id = $1 LIMIT 1`;
       const result = await dbClient.query(query, [id]);
       return (result.rowCount ?? 0) > 0;
-    } catch (_error) {
-      throw new Error("Error de base de datos");
+    } catch (error) {
+      handleDatabaseError(error);
     }
   }
 
@@ -63,8 +61,8 @@ export class BaseRepository<T> {
       const query = `SELECT 1 FROM ${this.table} WHERE ${field} = $1 LIMIT 1`;
       const result = await dbClient.query(query, [value]);
       return (result.rowCount ?? 0) > 0;
-    } catch (_error) {
-      throw new Error("Error de base de datos");
+    } catch (error) {
+      handleDatabaseError(error);
     }
   }
 
@@ -74,7 +72,7 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query);
       return result.rows;
     } catch (error) {
-      throw new Error("Error de base de datos");
+      handleDatabaseError(error);
     }
   }
 
@@ -84,7 +82,7 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [id]);
       return result.rows[0] || null;
     } catch (error) {
-      throw new Error("Error de base de datos");
+      handleDatabaseError(error);
     }
   }
 
@@ -94,7 +92,7 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [companyId]);
       return result.rows;
     } catch (error) {
-      throw new Error("Error de base de datos");
+      handleDatabaseError(error);
     }
   }
 
@@ -106,7 +104,7 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, values);
       return result.rows[0];
     } catch (error) {
-      throw new Error("Error de base de datos");
+      handleDatabaseError(error);
     }
   }
 
@@ -118,7 +116,7 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, values);
       return result.rows[0] || null;
     } catch (error) {
-      throw new Error("Error de base de datos");
+      handleDatabaseError(error);
     }
   }
 
@@ -128,7 +126,7 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [id]);
       return result.rows[0]?.id || null;
     } catch (error) {
-      throw new Error("Error de base de datos");
+      handleDatabaseError(error);
     }
   }
 
@@ -138,7 +136,7 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [value]);
       return result.rows[0] || null;
     } catch (error) {
-      throw new Error("Error de base de datos");
+      handleDatabaseError(error);
     }
   }
 
@@ -148,7 +146,7 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [value]);
       return result.rows[0]?.id || null;
     } catch (error) {
-      throw new Error("Error de base de datos");
+      handleDatabaseError(error);
     }
   }
 
@@ -158,7 +156,7 @@ export class BaseRepository<T> {
       const result = await dbClient.query(query, [value]);
       return result.rows[0]?.id || null;
     } catch (error) {
-      throw new Error("Error al eliminar registros");
+      handleDatabaseError(error);
     }
   }
 }

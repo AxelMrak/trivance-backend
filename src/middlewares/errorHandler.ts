@@ -1,15 +1,31 @@
 import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
+
 import { AppError } from "@/errors/httpErrors";
+
+
+function summarizeCause(cause: unknown): unknown {
+  if (!(cause instanceof Error)) return cause;
+  const causeError = cause as Error & { code?: unknown; constraint?: unknown };
+  return {
+    name: causeError.name,
+    message: causeError.message,
+    ...(typeof causeError.code === "string" && { code: causeError.code }),
+    ...(typeof causeError.constraint === "string" && { constraint: causeError.constraint }),
+  };
+}
 
 export const errorHandler: ErrorRequestHandler = (
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): void => {
+  const cause = err instanceof AppError ? err.cause : undefined;
+
   console.error(`[${new Date().toISOString()}] Error:`, {
     message: err.message,
     stack: err.stack,
+    ...(cause !== undefined && { cause: summarizeCause(cause) }),
     method: req.method,
     url: req.url,
     ip: req.ip,
