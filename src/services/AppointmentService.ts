@@ -10,6 +10,7 @@ import {
   InternalServerError,
   NotFoundError,
 } from "@/errors/httpErrors";
+import { handleDatabaseError } from "@/errors/persistenceErrors";
 import { CreatePaymentLinkResponse } from "@/entities/Response";
 import { UserRepository } from "@/repositories/UserRepository";
 import { JwtPayload } from "@/middlewares/authmiddleware";
@@ -43,8 +44,8 @@ export class AppointmentService {
         [appointment.client_id, userId],
       );
       return (rows?.length ?? 0) > 0;
-    } catch {
-      return false;
+    } catch (error) {
+      handleDatabaseError(error);
     }
   }
 
@@ -65,18 +66,14 @@ export class AppointmentService {
     for (const appt of list) {
       const item: any = { ...appt };
       if (include.service) {
-        try {
-          const service = await this.serviceHandlerService.getServiceById(appt.service_id);
-          if (service) item.service = service;
-          delete item.service_id;
-        } catch {}
+        const service = await this.serviceHandlerService.getServiceById(appt.service_id);
+        if (service) item.service = service;
+        delete item.service_id;
       }
       if (include.user) {
-        try {
-          const user = await this.userRepository.findById(appt.user_id);
-          if (user) item.user = { ...user, password: undefined } as any;
-          delete item.user_id;
-        } catch {}
+        const user = await this.userRepository.findById(appt.user_id);
+        if (user) item.user = { ...user, password: undefined } as any;
+        delete item.user_id;
       }
       if (include.client && appt.client_id) {
         try {
@@ -109,7 +106,9 @@ export class AppointmentService {
             item.client = client;
           }
           delete item.client_id;
-        } catch {}
+        } catch (error) {
+          handleDatabaseError(error);
+        }
       }
       enriched.push(item);
     }
@@ -162,25 +161,17 @@ export class AppointmentService {
     const response: any = { ...appointment };
 
     if (include.service) {
-      try {
-        const service = await this.serviceHandlerService.getServiceById(appointment.service_id);
-        if (service) response.service = service;
-        // Remove redundant FK when expanded
-        delete response.service_id;
-      } catch (_e) {
-        // Swallow include errors; keep base response intact
-      }
+      const service = await this.serviceHandlerService.getServiceById(appointment.service_id);
+      if (service) response.service = service;
+      // Remove redundant FK when expanded
+      delete response.service_id;
     }
 
     if (include.user) {
-      try {
-        const user = await this.userRepository.findById(appointment.user_id);
-        if (user) response.user = { ...user, password: undefined } as any;
-        // Remove redundant FK when expanded
-        delete response.user_id;
-      } catch (_e) {
-        // Swallow include errors; keep base response intact
-      }
+      const user = await this.userRepository.findById(appointment.user_id);
+      if (user) response.user = { ...user, password: undefined } as any;
+      // Remove redundant FK when expanded
+      delete response.user_id;
     }
 
     if (include.client && appointment.client_id) {
@@ -214,7 +205,9 @@ export class AppointmentService {
           response.client = client;
         }
         delete response.client_id;
-      } catch (_e) {}
+      } catch (error) {
+        handleDatabaseError(error);
+      }
     }
 
     return response;
@@ -224,7 +217,7 @@ export class AppointmentService {
     id: string,
     updatedData: Partial<Appointment>,
     currentUser?: JwtPayload,
-  ): Promise<Appointment | null> {
+  ): Promise<(Appointment & { warning?: string }) | null> {
     const dataToUpdate: Partial<Appointment> = { ...updatedData };
     const maybeStart: unknown = (updatedData as any).start_date;
     if (typeof maybeStart === "string") {
@@ -271,7 +264,9 @@ export class AppointmentService {
     const updated = await this.repository.update(id, dataToUpdate);
     if (!updated) return null;
 
-    // Fire-and-forget email notifications (TODO: integrate mailer endpoint)
+    // Email notifications are best-effort: a failure does not fail the update,
+    // but is logged internally and surfaced to the client as a warning.
+    let emailSent = true;
     try {
       if (typeof maybeStatus !== "undefined") {
         await EmailNotificationService.notifyStatusChanged(
@@ -284,22 +279,25 @@ export class AppointmentService {
         const startISO = new Date((dataToUpdate as any).start_date).toISOString();
         await EmailNotificationService.notifyDateChanged(id, existing.user_id, startISO);
       }
-    } catch (_e) {
-      // swallow email errors; do not block update
+    } catch (error) {
+      emailSent = false;
+      console.error("Failed to send appointment notification", {
+        appointmentId: id,
+        error,
+      });
     }
 
-    // Return enriched appointment to keep frontend state consistent
-    try {
-      const enriched = await this.getById(id, currentUser as any, { service: true, user: true });
-      if (enriched) return enriched as any;
-    } catch {}
+    if (!emailSent) {
+      return { ...updated, warning: "No se pudo enviar la notificación por email." };
+    }
+
     return updated;
   }
 
   async deleteAppointment(id: string): Promise<string | number | null> {
     const deletedAppointment = await this.repository.delete(id);
     if (!deletedAppointment) {
-      throw new Error("Appointment not found");
+      throw new NotFoundError("Turno no encontrado");
     }
     return deletedAppointment;
   }
@@ -314,12 +312,7 @@ export class AppointmentService {
       throw new BadRequestError("Servicio inválido");
     }
 
-    let service: any = null;
-    try {
-      service = await this.serviceHandlerService.getServiceById(serviceId);
-    } catch (_e) {
-      throw new BadRequestError("Servicio inválido");
-    }
+    const service = await this.serviceHandlerService.getServiceById(serviceId);
     if (!service) {
       throw new BadRequestError("Servicio inválido");
     }
@@ -329,31 +322,14 @@ export class AppointmentService {
     if (isNaN(startDate.getTime())) {
       throw new BadRequestError("Fecha de turno inválida");
     }
-    // Predeclare clientId so we can reference it before full resolution
-    let clientId: string | undefined = undefined;
     // Ensure the creator user exists to avoid FK errors (cheap existence check)
-    let creatorUserId: string | null = userId;
-    let userExists = await this.userRepository.existsById(creatorUserId);
-    if (!userExists && clientId) {
-      // Fallback: if creator not found but a client was provided, try to use the linked user of that client
-      try {
-        const { dbClient } = await import("@/config/db");
-        const { rows } = await dbClient.query("SELECT user_id FROM clients WHERE id = $1", [
-          clientId,
-        ]);
-        const linkedUserId = rows[0]?.user_id as string | undefined;
-        if (linkedUserId) {
-          const linkedExists = await this.userRepository.existsById(linkedUserId);
-          if (linkedExists) {
-            creatorUserId = linkedUserId;
-            userExists = true;
-          }
-        }
-      } catch {}
-    }
+    const creatorUserId = userId;
+    const userExists = await this.userRepository.existsById(creatorUserId);
     if (!userExists) {
       throw new BadRequestError("Usuario inválido");
     }
+
+    let clientId: string | undefined;
 
     // Resolve client_id: prefer payload client_id if valid; else map from creator if they are a client
     if (appointmentData.client_id) {
@@ -361,18 +337,15 @@ export class AppointmentService {
       try {
         const { rows } = await (
           await import("@/config/db")
-        ).dbClient.query("SELECT id FROM clients WHERE id = $1", [appointmentData.client_id]);
-        if (rows[0]?.id) clientId = rows[0].id;
-      } catch {}
+        ).dbClient.query("SELECT id FROM clients WHERE id = $1 OR user_id = $1 LIMIT 1", [
+          appointmentData.client_id,
+        ]);
+        clientId = rows[0]?.id;
+      } catch (error) {
+        handleDatabaseError(error);
+      }
       if (!clientId) {
-        try {
-          const { rows } = await (
-            await import("@/config/db")
-          ).dbClient.query("SELECT id FROM clients WHERE user_id = $1", [
-            appointmentData.client_id,
-          ]);
-          if (rows[0]?.id) clientId = rows[0].id;
-        } catch {}
+        throw new NotFoundError("Cliente no encontrado");
       }
     }
     if (!clientId) {
@@ -380,23 +353,9 @@ export class AppointmentService {
         const { rows } = await (
           await import("@/config/db")
         ).dbClient.query("SELECT id FROM clients WHERE user_id = $1", [userId]);
-        if (rows[0]?.id) clientId = rows[0].id;
-      } catch {}
-    }
-
-    // Ensure appointments.client_id column exists before including it
-    if (clientId) {
-      try {
-        const { dbClient } = await import("@/config/db");
-        const { rows } = await dbClient.query(
-          "SELECT 1 FROM information_schema.columns WHERE table_name = 'appointments' AND column_name = 'client_id' LIMIT 1",
-        );
-        const hasColumn = rows && rows.length > 0;
-        if (!hasColumn) {
-          clientId = undefined;
-        }
-      } catch {
-        clientId = undefined;
+        clientId = rows[0]?.id;
+      } catch (error) {
+        handleDatabaseError(error);
       }
     }
 
@@ -411,7 +370,7 @@ export class AppointmentService {
 
     const appointmentToCreate: Partial<Appointment> = {
       service_id: serviceId,
-      user_id: creatorUserId!,
+      user_id: creatorUserId,
       start_date: startDate,
       description: appointmentData.description || "",
       status: defaultStatus,
@@ -422,7 +381,7 @@ export class AppointmentService {
 
     const createdAppointment = await this.repository.create(appointmentToCreate);
     if (!createdAppointment) {
-      throw new Error("Failed to create appointment");
+      throw new InternalServerError("No se pudo crear el turno");
     }
 
     const newAppointment = await this.getById(createdAppointment.id, currentUser, {
@@ -432,7 +391,7 @@ export class AppointmentService {
     });
 
     if (!newAppointment) {
-      throw new Error("Failed to fetch new appointment");
+      throw new InternalServerError("No se pudo obtener el turno creado");
     }
 
     return newAppointment;
@@ -527,7 +486,6 @@ export class AppointmentService {
     const companyId = (user as any).company_id;
 
     // Query all appointments in company for the range (status != cancelled)
-    const { dbClient } = await import("@/config/db");
     const query = `
       SELECT a.start_date, s.duration
       FROM appointments a
@@ -537,7 +495,13 @@ export class AppointmentService {
         AND a.status <> 'cancelled'
         AND a.start_date >= $2 AND a.start_date < $3
     `;
-    const result = await dbClient.query(query, [companyId, start, end]);
+    let result: { rows: any[] };
+    try {
+      const { dbClient } = await import("@/config/db");
+      result = await dbClient.query(query, [companyId, start, end]);
+    } catch (error) {
+      handleDatabaseError(error);
+    }
 
     // Build occupied slots map: { 'YYYY-MM-DD': ['HH:00', ...] }
     const toMinutes = (d: any): number => {
@@ -588,8 +552,12 @@ export class AppointmentService {
 
     try {
       await EmailNotificationService.sendReminder(appt.id, appt.user_id);
-    } catch (_e) {
-      // TODO: optionally log the failure somewhere
+    } catch (error) {
+      console.error("Failed to send appointment reminder", {
+        appointmentId: appt.id,
+        error,
+      });
+      throw new InternalServerError("No se pudo enviar el recordatorio");
     }
     return { ok: true };
   }
