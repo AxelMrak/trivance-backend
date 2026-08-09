@@ -28,7 +28,6 @@ export const buildTestDbUrl = (envUrl = process.env.DATABASE_URL): string => {
     if (url.hostname === "trivance-db") {
       url.hostname = "localhost";
     }
-    url.pathname = "/trivance_db_test";
     return url.toString();
   } catch {
     return "postgres://postgres:postgres@localhost:5432/trivance_db_test";
@@ -44,6 +43,9 @@ const buildDbUrl = (): string => {
   return process.env.DATABASE_URL || "postgres://postgres:postgres@trivance-db:5432/trivance_db";
 };
 
+const dbNameFromUrl = (url: string): string =>
+  new URL(url).pathname.replace(/^\//, "");
+
 export const config: {
   PORT: number | string;
   NODE_ENV: string;
@@ -58,7 +60,7 @@ export const config: {
   DB_URL: buildDbUrl(),
   DB_USER: process.env.DB_USER || "postgres",
   DB_PASSWORD: process.env.DB_PASSWORD || "postgres",
-  DB_NAME: isTest ? "trivance_db_test" : process.env.DB_NAME || "trivance_db",
+  DB_NAME: isTest ? dbNameFromUrl(TEST_DATABASE_URL) : process.env.DB_NAME || "trivance_db",
   JWT_SECRET: process.env.JWT_SECRET as string,
 };
 
