@@ -10,7 +10,7 @@ export class UserController {
       const users = await this.userService.getUsers();
       res.json(users);
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 
@@ -26,7 +26,7 @@ export class UserController {
         res.status(404).json({ message: "Usuario no encontrado" });
       }
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 }

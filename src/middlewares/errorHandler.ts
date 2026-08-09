@@ -15,16 +15,18 @@ function summarizeCause(cause: unknown): unknown {
 }
 
 export const errorHandler: ErrorRequestHandler = (
-  err: Error,
+  err: unknown,
   req: Request,
   res: Response,
   _next: NextFunction,
 ): void => {
   const cause = err instanceof AppError ? err.cause : undefined;
+  const messageForLog =
+    err instanceof Error ? err.message : typeof err === "string" ? err : "Unknown error";
 
   console.error(`[${new Date().toISOString()}] Error:`, {
-    message: err.message,
-    stack: err.stack,
+    message: messageForLog,
+    ...(err instanceof Error && { stack: err.stack }),
     ...(cause !== undefined && { cause: summarizeCause(cause) }),
     method: req.method,
     url: req.url,
@@ -37,7 +39,7 @@ export const errorHandler: ErrorRequestHandler = (
   if (err instanceof AppError) {
     statusCode = err.statusCode;
     message = err.message;
-  } else {
+  } else if (err instanceof Error) {
     switch (err.name) {
       case "SyntaxError":
         statusCode = 400;
@@ -81,15 +83,17 @@ export const errorHandler: ErrorRequestHandler = (
       }
     }
   }
+  // Non-Error values (string, plain object): logged above, never leaked to the client.
 
   const errorResponse = {
     message,
     error: {
       message,
-      ...(process.env.NODE_ENV === "development" && {
-        details: err.message,
-        stack: err.stack,
-      }),
+      ...(process.env.NODE_ENV === "development" &&
+        err instanceof Error && {
+          details: err.message,
+          stack: err.stack,
+        }),
     },
     timestamp: new Date().toISOString(),
     path: req.url,
