@@ -116,9 +116,10 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
       const result = await dbClient.query(query, [serviceId, startDate]);
       const count = Number(result.rows[0]?.cnt || 0);
       return count === 0;
-    } catch (_e) {
-      // If DB fails, be conservative: assume no availability
-      return false;
+    } catch (error) {
+      // "No sé" no es lo mismo que "no libre": una caída de DB no debe decidir
+      // el status del turno en silencio. Propagar.
+      handleDatabaseError(error);
     }
   }
 }

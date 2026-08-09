@@ -2,7 +2,6 @@ import { DatabaseError } from "pg";
 
 import { AppError, BadRequestError, ConflictError, InternalServerError } from "@/errors/httpErrors";
 
-
 const UNIQUE_VIOLATION = "23505";
 const FOREIGN_KEY_VIOLATION = "23503";
 const NOT_NULL_VIOLATION = "23502";
@@ -10,7 +9,17 @@ const INVALID_TEXT_REPRESENTATION = "22P02";
 const NUMERIC_VALUE_OUT_OF_RANGE = "22003";
 const STRING_DATA_RIGHT_TRUNCATION = "22001";
 
+const UNDEFINED_TABLE = "42P01";
+const UNDEFINED_COLUMN = "42703";
+
 const CLIENT_EMAIL_CONSTRAINT = "uq_clients_email_company";
+
+export function isSchemaError(error: unknown): boolean {
+  return (
+    error instanceof DatabaseError &&
+    (error.code === UNDEFINED_TABLE || error.code === UNDEFINED_COLUMN)
+  );
+}
 
 export function mapDatabaseError(error: DatabaseError): AppError {
   const options = { cause: error };

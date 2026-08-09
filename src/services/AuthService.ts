@@ -70,7 +70,15 @@ export class AuthService {
         if (!client.address) updates.address = payload.address;
         await clientsRepo.update(client.id, updates);
       }
-    } catch {}
+    } catch (error) {
+      // Best-effort: el link es un efecto secundario del signUp, no debe romper
+      // el registro. Pero nunca en silencio: log con contexto.
+      console.error("Failed to link existing client to new user", {
+        userId: user.id,
+        email: payload.email,
+        error,
+      });
+    }
 
     return this.buildResponse({ ...user, role: level } as any, token);
   }

@@ -2,7 +2,6 @@ import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
 
 import { AppError } from "@/errors/httpErrors";
 
-
 function summarizeCause(cause: unknown): unknown {
   if (!(cause instanceof Error)) return cause;
   const causeError = cause as Error & { code?: unknown; constraint?: unknown };
@@ -71,16 +70,6 @@ export const errorHandler: ErrorRequestHandler = (
           message = err.message;
         }
         break;
-    }
-
-    if (err.message?.includes("duplicate key value violates unique constraint")) {
-      statusCode = 400;
-
-      if (err.message.includes("uq_clients_email_company")) {
-        message = "El correo electrónico ya existe y pertenece a otro cliente.";
-      } else {
-        message = "Los datos ingresados ya existen en otro cliente.";
-      }
     }
   }
   // Non-Error values (string, plain object): logged above, never leaked to the client.
