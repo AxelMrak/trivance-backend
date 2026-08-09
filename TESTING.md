@@ -149,6 +149,14 @@ Desde el root `trivance-infra`:
 docker compose -f docker-compose.test.yml down
 ```
 
+## Entorno de tests en CI
+
+`.env.test` es un archivo generado/local y **nunca se commitea**. CI lo genera en cada job a partir de las variables de entorno del job; localmente se crea desde `.env.example` si hace falta.
+
+- `test:ci` es el comando que corre CI: solo ejecuta Jest, sin Docker ni migrations.
+- `test` orquesta localmente (`test:db` + `test:ci`): levanta PostgreSQL, migra y corre la suite completa.
+- `lint:fix` es solo local y modifica archivos; CI usa `lint:check`.
+
 ## Regla principal
 
 ```text
