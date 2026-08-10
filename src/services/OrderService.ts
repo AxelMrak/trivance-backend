@@ -1,5 +1,6 @@
 import { Order } from "@/entities/Order";
 import { OrderRepository } from "@/repositories/OrderRepository";
+import { Db } from "@/config/db";
 
 export class OrderService {
   constructor(private repository: OrderRepository) {}
@@ -8,27 +9,23 @@ export class OrderService {
     return this.repository.findAll();
   }
 
-  async getById(id: string): Promise<Order | null> {
-    const order = await this.repository.findById(id);
-    if (!order) {
-      throw new Error("Orden no encontrada");
-    }
-    return order;
+  async getById(id: string, db?: Db): Promise<Order | null> {
+    return this.repository.findById(id, db);
   }
 
-  async createOrder(orderData: Partial<Order>): Promise<Order> {
+  async createOrder(orderData: Partial<Order>, db?: Db): Promise<Order> {
     if (!orderData) {
       throw new Error("Los datos del pedido son obligatorios para crear un pedido.");
     }
-    return this.repository.create(orderData);
+    return this.repository.create(orderData, db);
   }
 
-  async updateOrder(id: string, updatedData: Partial<Order>): Promise<Order | null> {
-    const existingOrder = await this.getById(id);
+  async updateOrder(id: string, updatedData: Partial<Order>, db?: Db): Promise<Order | null> {
+    const existingOrder = await this.getById(id, db);
     if (!existingOrder) {
       return null;
     }
-    return this.repository.update(id, updatedData);
+    return this.repository.update(id, updatedData, db);
   }
 
   async deleteOrder(id: string): Promise<string | number | null> {
