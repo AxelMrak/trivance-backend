@@ -10,7 +10,7 @@ describe("Appointments Availability - occupied slots endpoint", () => {
     const service = await createService({ company_id: client.company_id, duration: "01:00:00" });
     const start = new Date();
     start.setHours(10, 0, 0, 0);
-    const appt = await createAppointment({
+    await createAppointment({
       user_id: client.id,
       service_id: service.id,
       start_date: start,

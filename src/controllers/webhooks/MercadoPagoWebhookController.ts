@@ -46,7 +46,7 @@ export class MercadoPagoWebhookController {
       res.status(200).send({ status: "received" });
 
       // Process the webhook asynchronously
-      this.service.processWebhook(bodyJson).catch(error => {
+      this.service.processWebhook(bodyJson).catch((error) => {
         console.error("Error processing webhook asynchronously:", error);
       });
     } catch (error) {

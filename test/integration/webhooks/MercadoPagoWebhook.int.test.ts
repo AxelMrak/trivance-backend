@@ -5,16 +5,6 @@ import crypto from "crypto";
 import { MercadoPagoWebhookController } from "@/controllers/webhooks/MercadoPagoWebhookController";
 import { MercadoPagoWebhookService } from "@/services/webhooks/MercadoPagoWebhookService";
 
-// Mock implementation for the service
-const mockOrderService = {
-  getOrderByReference: jest.fn(),
-  updateOrder: jest.fn(),
-};
-
-const mockAppointmentService = {
-  updateAppointment: jest.fn(),
-};
-
 const mockMercadoPagoWebhookService: MercadoPagoWebhookService = {
   processWebhook: jest.fn(),
 } as any;
@@ -33,7 +23,11 @@ describe("MercadoPagoWebhookController Integration", () => {
     const controller = new MercadoPagoWebhookController(mockMercadoPagoWebhookService);
     app = express();
     // For the real endpoint, we need to use express.raw to get the buffer for signature verification
-    app.post("/api/webhooks/mercadopago", express.raw({ type: "application/json" }), controller.handle);
+    app.post(
+      "/api/webhooks/mercadopago",
+      express.raw({ type: "application/json" }),
+      controller.handle,
+    );
   });
 
   describe("POST /api/webhooks/mercadopago", () => {
@@ -59,12 +53,15 @@ describe("MercadoPagoWebhookController Integration", () => {
       const timestamp = Date.now().toString();
       const requestId = "test-request-001";
       const manifest = `id:${payload.data.id};request-id:${requestId};ts:${timestamp};`;
-      const validSignature = crypto.createHmac("sha256", TEST_SECRET).update(manifest).digest("hex");
+      const validSignature = crypto
+        .createHmac("sha256", TEST_SECRET)
+        .update(manifest)
+        .digest("hex");
       const signatureHeader = `ts=${timestamp},v1=${validSignature}`;
 
       // Mock the service to resolve after a short delay to test async behavior
       (mockMercadoPagoWebhookService.processWebhook as jest.Mock).mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ status: "processed" }), 50)),
+        () => new Promise((resolve) => setTimeout(() => resolve({ status: "processed" }), 50)),
       );
 
       const res = await request(app)
@@ -79,7 +76,7 @@ describe("MercadoPagoWebhookController Integration", () => {
       expect(res.body).toEqual({ status: "received" });
 
       // Wait for the async processing to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Check that the service was called
       expect(mockMercadoPagoWebhookService.processWebhook).toHaveBeenCalledWith(payload);
@@ -88,10 +85,12 @@ describe("MercadoPagoWebhookController Integration", () => {
 
   describe("POST /api/webhooks/mercadopago/test", () => {
     it("should return 404 because the unsigned test route was removed", async () => {
-      const res = await request(app).post("/api/webhooks/mercadopago/test").send({
-        type: "payment",
-        data: { id: "123456" },
-      });
+      const res = await request(app)
+        .post("/api/webhooks/mercadopago/test")
+        .send({
+          type: "payment",
+          data: { id: "123456" },
+        });
 
       expect(res.status).toBe(404);
     });

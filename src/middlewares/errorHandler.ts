@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
+
 import { AppError } from "@/errors/httpErrors";
 
 export const errorHandler: ErrorRequestHandler = (
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ): void => {
   console.error(`[${new Date().toISOString()}] Error:`, {
     message: err.message,
