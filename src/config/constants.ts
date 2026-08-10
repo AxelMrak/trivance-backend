@@ -43,8 +43,7 @@ const buildDbUrl = (): string => {
   return process.env.DATABASE_URL || "postgres://postgres:postgres@trivance-db:5432/trivance_db";
 };
 
-const dbNameFromUrl = (url: string): string =>
-  new URL(url).pathname.replace(/^\//, "");
+const dbNameFromUrl = (url: string): string => new URL(url).pathname.replace(/^\//, "");
 
 export const config: {
   PORT: number | string;
