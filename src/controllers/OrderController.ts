@@ -15,7 +15,10 @@ export class OrderController {
       const { id } = req.params;
       const currentUser = req.user;
       const includeParam = (req.query?.include as string) || "";
-      const includeList = includeParam.split(",").map((s) => s.trim()).filter(Boolean);
+      const includeList = includeParam
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
       const includeAppointment = includeList.includes("appointment");
 
       const order = await this.orderService.getById(id);
@@ -70,7 +73,11 @@ export class OrderController {
         }
       }
 
-      const base = { id: order.id, status: order.status, appointmentId: order.appointment_id } as any;
+      const base = {
+        id: order.id,
+        status: order.status,
+        appointmentId: order.appointment_id,
+      } as any;
       if (includeAppointment && (order as any).appointment) {
         base.appointment = (order as any).appointment;
       }

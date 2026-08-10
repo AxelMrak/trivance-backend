@@ -40,8 +40,8 @@ export class StatsController {
 
       // If service is included, drop service_id (normalized expansion as in appointments)
       if ((data as any).service) {
-        const { service, usage_count } = data as any;
-        res.status(200).json({ usage_count, service });
+        const { service, usage_count: usageCount } = data as any;
+        res.status(200).json({ usage_count: usageCount, service });
         return;
       }
 
