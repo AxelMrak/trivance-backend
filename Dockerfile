@@ -1,30 +1,27 @@
-# Stage 1: Build the application
 FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Copy package files and install all dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
-# Copy the rest of the application source code
 COPY . .
 
-# Build the TypeScript project
-RUN npm run build
+RUN npm run build && npm prune --production
 
-# Stage 2: Create the production image
 FROM node:18-alpine
+
+RUN addgroup -g 1001 -S appgroup && adduser -S appuser -u 1001 -G appgroup
 WORKDIR /app
 
-# Copy only production dependencies from the builder stage
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
+COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
+COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
+COPY --from=builder --chown=appuser:appgroup /app/package*.json ./
 
-# Copy the compiled code from the builder stage
-COPY --from=builder /app/dist ./dist
+USER 1001
 
-# Expose the port the app runs on
 EXPOSE 3001
 
-# Command to run the application (compiled output lives under dist/src)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "fetch('http://localhost:3001/health').catch(() => process.exit(1))"
+
 CMD ["node", "dist/src/index.js"]
