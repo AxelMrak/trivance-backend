@@ -1,0 +1,50 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Tech stack: TypeScript 5.6, Express 4.21 REST API, PostgreSQL (pg 8.15), node-pg-migrate, Zod 3.24 validation, JWT auth (jsonwebtoken), Mercado Pago SDK
+  Architecture: Layered — routes → controllers → services → repositories → queries, plus entities/middlewares/validations/config; path aliases @/*, @config/*, etc.
+  Testing: Jest 29 + ts-jest; unit (test/unit) and integration (test/integration, supertest against real test DB); strict TDD enabled
+  Style: ESLint airbnb-typescript/base + Prettier (double quotes, semicolons, printWidth 100)
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    - Follow existing layered patterns (route → controller → service → repository)
+    - Use path aliases; no relative imports across layers
+    - Write/update unit tests first (RED-GREEN-REFACTOR)
+    tdd: true
+    test_command: "npm test"
+  verify:
+    test_command: "npm test"
+    build_command: "npm run build"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
+
+testing:
+  strict_tdd: true
+  test_command: "npm test"
+  test_int_command: "npm run test:int"
+  migrate_test_command: "npm run migrate:test"
+  runner: "jest@29 (ts-jest preset, testEnvironment: node)"
+  layers:
+    unit: "test/unit — jest, no DB"
+    integration: "test/integration — supertest + real test DB (trivance_db_test)"
+    e2e: "none"
+  coverage: "available via `npm test -- --coverage`; no threshold configured"
+  quality:
+    lint: "npm run lint"
+    typecheck: "npm run typecheck"
+    formatter: "prettier via eslint-plugin-prettier (no standalone script)"
+  setup: "test/setup.ts — console silencing, getTestAgent() supertest helper, DB pool teardown; test/utils/factories.ts + helpers.ts"
