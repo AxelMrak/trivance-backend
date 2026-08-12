@@ -38,32 +38,21 @@ describe("transaction atomicity (real DB)", () => {
     const appointment = await createAppointment();
     const duplicateRef = "dup-ref-" + Date.now();
 
-    // The unique violation (23505) can only come from the SECOND insert
-    // colliding with the FIRST one inside the transaction: if the first insert
-    // failed (schema/connection issue) the error would be a different code and
-    // no collision would occur. Asserting the exact code proves the failure
-    // happened between the two mutations, not before.
+    // Use raw SQL inside the transaction so the pg error code propagates
+    // unmasked (BaseRepository.create rewrites errors as a generic message and
+    // would drop the `code`). Asserting the unique-violation code proves the
+    // failure happened between the first and second mutation — not before.
     await expect(
       transaction(async (db) => {
         // First mutation succeeds...
-        await orderRepository.create(
-          {
-            appointment_id: appointment.id,
-            status: "pending",
-            provider: "mercadopago",
-            reference_id: duplicateRef,
-          },
-          db,
+        await db.query(
+          "INSERT INTO orders (appointment_id, provider, reference_id) VALUES ($1, $2, $3)",
+          [appointment.id, "mercadopago", duplicateRef],
         );
         // ...second one violates the unique reference_id index -> ROLLBACK
-        await orderRepository.create(
-          {
-            appointment_id: appointment.id,
-            status: "pending",
-            provider: "mercadopago",
-            reference_id: duplicateRef,
-          },
-          db,
+        await db.query(
+          "INSERT INTO orders (appointment_id, provider, reference_id) VALUES ($1, $2, $3)",
+          [appointment.id, "mercadopago", duplicateRef],
         );
       }),
     ).rejects.toMatchObject({ code: "23505" });

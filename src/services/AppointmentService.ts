@@ -481,7 +481,8 @@ export class AppointmentService {
     const formattedTitle = `Turno para ${service.name} - ${formatDate(appointment.start_date)}`;
     const provider = PaymentServiceFactory.getProvider("mercadopago");
 
-    // Create the order with a temporary unique reference; we'll set it to order.id after create
+    // Create the order with a temporary unique reference; it is set to the
+    // order id inside the transaction below (see the atomic create + update).
     const { randomUUID } = await import("crypto");
     const tempRef = randomUUID();
     const orderToCreate: CreateOrderDto = {
