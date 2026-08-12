@@ -4,6 +4,7 @@ import { OrderRepository } from "@/repositories/OrderRepository";
 import { AppointmentService } from "@/services/AppointmentService";
 import { OrderService } from "@/services/OrderService";
 import { PaymentServiceFactory } from "@/services/payments/PaymentServiceFactory";
+import * as mpAdapter from "@/services/payments/mercadopagoClient";
 import { MercadoPagoWebhookService } from "@/services/webhooks/MercadoPagoWebhookService";
 
 type FakeClient = {
@@ -189,6 +190,20 @@ describe("MercadoPagoWebhookService.processWebhook", () => {
       return { rows: [], rowCount: 0 };
     }),
     release: jest.fn(async () => undefined),
+  });
+
+  beforeAll(() => {
+    jest.spyOn(mpAdapter, "getPaymentResource").mockImplementation(
+      () =>
+        ({
+          get: async ({ id }: { id: string }) =>
+            ({ id, status: "approved", external_reference: "pref-123" }) as any,
+        }) as any,
+    );
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   test("runs order + appointment status updates in the same transaction", async () => {
