@@ -21,6 +21,7 @@ import {
 import { EmailNotificationService } from "@/services/notifications/EmailNotificationService";
 import { ClientsPivotRepository } from "@/repositories/ClientsPivotRepository";
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
+import { transaction, Db } from "@/config/db";
 
 export class AppointmentService {
   constructor(
@@ -224,6 +225,7 @@ export class AppointmentService {
     id: string,
     updatedData: Partial<Appointment>,
     currentUser?: JwtPayload,
+    db?: Db,
   ): Promise<Appointment | null> {
     const dataToUpdate: Partial<Appointment> = { ...updatedData };
     const maybeStart: unknown = (updatedData as any).start_date;
@@ -235,8 +237,8 @@ export class AppointmentService {
       (dataToUpdate as any).start_date = parsed;
     }
 
-    // Load existing for permission checks across fields
-    const existing = await this.repository.findById(id);
+    // Load existing for permission checks across fields (same client when in a tx)
+    const existing = await this.repository.findById(id, db);
     if (!existing) {
       throw new NotFoundError("Turno no encontrado");
     }
@@ -268,10 +270,22 @@ export class AppointmentService {
       }
     }
 
-    const updated = await this.repository.update(id, dataToUpdate);
+    const updated = await this.repository.update(id, dataToUpdate, db);
     if (!updated) return null;
 
-    // Fire-and-forget email notifications (TODO: integrate mailer endpoint)
+    // Inside a transaction (e.g. the webhook unit of work) the enrichment reads
+    // below would hit the global pool on a DIFFERENT connection: the uncommitted
+    // row would be invisible and, with a single-connection pool, it would deadlock.
+    // The webhook ignores the return value, so return the updated row directly.
+    // Fire-and-forget emails are skipped too: external calls must NEVER run while
+    // a connection is held inside a transaction.
+    if (db) {
+      return updated;
+    }
+
+    // Fire-and-forget email notifications (TODO: integrate mailer endpoint).
+    // NOTE: keep this OUTSIDE any transaction once EmailNotificationService becomes
+    // a real HTTP call — external calls must never run while a connection is held.
     try {
       if (typeof maybeStatus !== "undefined") {
         await EmailNotificationService.notifyStatusChanged(
@@ -476,10 +490,20 @@ export class AppointmentService {
       provider: "mercadopago",
       reference_id: tempRef,
     };
-    const createdOrder = await this.orderService.createOrder(orderToCreate);
-    if (!createdOrder) {
-      throw new InternalServerError("Fallo al crear el pedido asociado al turno");
-    }
+    // Create order + set its stable reference atomically (both local mutations on
+    // one connection). The Mercado Pago call stays OUTSIDE the transaction: no
+    // HTTP inside transaction(), and if it fails after commit the order keeps its
+    // stable reference (idempotency/outbox is deferred to a later milestone).
+    const createdOrder = await transaction(async (db) => {
+      const order = await this.orderService.createOrder(orderToCreate, db);
+      if (!order) {
+        throw new InternalServerError("Fallo al crear el pedido asociado al turno");
+      }
+      const updated = await this.orderService.updateOrder(order.id, {
+        reference_id: order.id,
+      }, db);
+      return updated ?? order;
+    });
 
     const paymentResponse = (await provider.createPaymentLink({
       id: appointment.id,
@@ -491,11 +515,6 @@ export class AppointmentService {
     if (!paymentResponse) {
       throw new InternalServerError("Fallo al crear link de pago");
     }
-
-    // Ensure the order has a stable reference that matches Mercado Pago external_reference
-    await this.orderService.updateOrder(createdOrder.id, {
-      reference_id: createdOrder.id,
-    });
 
     const response = {
       orderId: createdOrder.id,
