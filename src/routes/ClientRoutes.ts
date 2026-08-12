@@ -3,6 +3,7 @@ import { Router } from "express";
 import { ClientController } from "@controllers/ClientController";
 import { ClientService } from "@services/ClientService";
 import { ClientsRepository } from "@/repositories/ClientsRepository";
+import { UserRepository } from "@/repositories/UserRepository";
 import AuthMiddleware from "@/middlewares/authmiddleware";
 import { attachUserRole, requireMinRole } from "@/middlewares/roleMiddleware";
 import { validateClientCreate, validateClientUpdate } from "@/middlewares/validation";
@@ -11,7 +12,7 @@ const router = Router();
 
 const clientsRepository = new ClientsRepository();
 const clientService = new ClientService(clientsRepository);
-const clientController = new ClientController(clientService);
+const clientController = new ClientController(clientService, new UserRepository());
 
 router.get(
   "/getAll",
