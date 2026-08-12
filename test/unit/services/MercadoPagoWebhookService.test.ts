@@ -1,7 +1,15 @@
 import { MercadoPagoWebhookService } from "@/services/webhooks/MercadoPagoWebhookService";
 import * as mpAdapter from "@/services/payments/mercadopagoClient";
+import { dbClient } from "@/config/db";
+
+let fakeClient: { query: jest.Mock; release: jest.Mock };
 
 beforeAll(() => {
+  fakeClient = {
+    query: jest.fn(async () => ({ rows: [], rowCount: 0 })),
+    release: jest.fn(async () => undefined),
+  };
+  jest.spyOn(dbClient as any, "connect").mockResolvedValue(fakeClient as any);
   jest.spyOn(mpAdapter, "getPaymentResource").mockImplementation(
     () =>
       ({
@@ -50,10 +58,17 @@ describe("MercadoPagoWebhookService", () => {
     const result = await service.processWebhook(payload as any);
 
     expect(orderService.getOrderByReference).toHaveBeenCalledWith("pref-123");
-    expect(orderService.updateOrder).toHaveBeenCalledWith("order-1", { status: "paid" });
-    expect(appointmentService.updateAppointment).toHaveBeenCalledWith("appt-1", {
-      status: "confirmed",
-    });
+    expect(orderService.updateOrder).toHaveBeenCalledWith(
+      "order-1",
+      { status: "paid" },
+      fakeClient,
+    );
+    expect(appointmentService.updateAppointment).toHaveBeenCalledWith(
+      "appt-1",
+      { status: "confirmed" },
+      undefined,
+      fakeClient,
+    );
     expect(result).toEqual({ orderId: "order-1", appointmentId: "appt-1", status: "paid" });
   });
 
@@ -64,10 +79,17 @@ describe("MercadoPagoWebhookService", () => {
     const result = await service.processWebhook(payload as any);
 
     expect(orderService.getOrderByReference).toHaveBeenCalledWith("pref-456");
-    expect(orderService.updateOrder).toHaveBeenCalledWith("order-1", { status: "cancelled" });
-    expect(appointmentService.updateAppointment).toHaveBeenCalledWith("appt-1", {
-      status: "cancelled",
-    });
+    expect(orderService.updateOrder).toHaveBeenCalledWith(
+      "order-1",
+      { status: "cancelled" },
+      fakeClient,
+    );
+    expect(appointmentService.updateAppointment).toHaveBeenCalledWith(
+      "appt-1",
+      { status: "cancelled" },
+      undefined,
+      fakeClient,
+    );
     expect(result).toEqual({ orderId: "order-1", appointmentId: "appt-1", status: "cancelled" });
   });
 
