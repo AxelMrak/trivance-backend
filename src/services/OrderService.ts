@@ -1,5 +1,6 @@
 import { Order } from "@/entities/Order";
 import { OrderRepository } from "@/repositories/OrderRepository";
+import { Db } from "@/config/db";
 
 export class OrderService {
   constructor(private repository: OrderRepository) {}
@@ -16,19 +17,21 @@ export class OrderService {
     return order;
   }
 
-  async createOrder(orderData: Partial<Order>): Promise<Order> {
+  async createOrder(orderData: Partial<Order>, db?: Db): Promise<Order> {
     if (!orderData) {
       throw new Error("Los datos del pedido son obligatorios para crear un pedido.");
     }
-    return this.repository.create(orderData);
+    return this.repository.create(orderData, db);
   }
 
-  async updateOrder(id: string, updatedData: Partial<Order>): Promise<Order | null> {
-    const existingOrder = await this.getById(id);
+  async updateOrder(id: string, updatedData: Partial<Order>, db?: Db): Promise<Order | null> {
+    // Inside a transaction the existence read must run on the same client so it
+    // sees the uncommitted state; otherwise it hits the global pool.
+    const existingOrder = db ? await this.repository.findById(id, db) : await this.getById(id);
     if (!existingOrder) {
-      return null;
+      throw new Error("Orden no encontrada");
     }
-    return this.repository.update(id, updatedData);
+    return this.repository.update(id, updatedData, db);
   }
 
   async deleteOrder(id: string): Promise<string | number | null> {
