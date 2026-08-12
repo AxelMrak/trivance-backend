@@ -107,8 +107,8 @@ export class ClientService {
 
   async createClient(
     data: Pick<ClientDTO, "name" | "email" | "phone" | "address">,
+    companyId: string | null = null,
   ): Promise<ClientDTO> {
-    const companyId = process.env.COMPANY_ID || null;
     const created = await this.clientsRepository.create({
       company_id: companyId,
       name: data.name || null,

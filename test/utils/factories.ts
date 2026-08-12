@@ -78,20 +78,25 @@ export const createUser = async (overrides: Partial<User> = {}): Promise<User> =
       [user.id, userData.role],
     );
   } catch {}
-  // try to create clients pivot if role is CLIENT
-  try {
-    if (user.role === 1) {
-      await dbClient.query(
-        "INSERT INTO clients (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
-        [user.id],
-      );
-    }
-  } catch {}
+  if (userData.role === UserRole.CLIENT) {
+    await dbClient.query(
+      "INSERT INTO clients (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
+      [user.id],
+    );
+  }
   // We attach the plain password to the user object so that we can use it in tests for logging in.
   (user as any).plainPassword = password;
   (user as any).role = userData.role;
 
   return user;
+};
+
+export const createClient = async (
+  overrides: Partial<User> = {},
+): Promise<{ user: User; client: any }> => {
+  const user = await createUser({ role: UserRole.CLIENT, ...overrides });
+  const { rows } = await dbClient.query("SELECT * FROM clients WHERE user_id = $1", [user.id]);
+  return { user, client: rows[0] };
 };
 
 /**
