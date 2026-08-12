@@ -1,6 +1,7 @@
 import { OrderService } from "@/services/OrderService";
 import { AppointmentService } from "@/services/AppointmentService";
 import { getPaymentResource } from "@/services/payments/mercadopagoClient";
+import { transaction } from "@/config/db";
 
 export class MercadoPagoWebhookService {
   constructor(
@@ -65,8 +66,6 @@ export class MercadoPagoWebhookService {
           ? "cancelled"
           : "pending";
 
-    await this.orderService.updateOrder(order.id, { status: updatedStatus });
-
     const appointmentStatus =
       updatedStatus === "paid"
         ? "confirmed"
@@ -74,8 +73,17 @@ export class MercadoPagoWebhookService {
           ? "cancelled"
           : "pending";
 
-    await this.appointmentService.updateAppointment(order.appointment_id, {
-      status: appointmentStatus,
+    // Order and appointment state must change atomically: a paid order must never
+    // be left with a pending appointment (or vice versa). The provider HTTP call
+    // above stays OUTSIDE this transaction.
+    await transaction(async (db) => {
+      await this.orderService.updateOrder(order.id, { status: updatedStatus }, db);
+      await this.appointmentService.updateAppointment(
+        order.appointment_id,
+        { status: appointmentStatus },
+        undefined,
+        db,
+      );
     });
 
     return {
