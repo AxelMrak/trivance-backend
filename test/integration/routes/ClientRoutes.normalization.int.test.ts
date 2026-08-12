@@ -47,7 +47,7 @@ describe("Clients normalization - standalone clients and linking on signup", () 
       phone: "1100000000",
       address: "Calle Falsa 123",
     });
-    expect(signupRes.status).toBe(200);
+    expect(signupRes.status).toBe(201);
 
     // fetch client and verify user_id linked
     const getClientRes = await getTestAgent()

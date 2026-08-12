@@ -27,19 +27,23 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(payload.password, 10);
-    const companyId = process.env.COMPANY_ID || "";
+    const userRole = UserRole.CLIENT;
+
+    const clientsRepo = new ClientsRepository();
+    const existingClient = await clientsRepo.findByEmail(payload.email);
+    const companyId = existingClient?.company_id ?? process.env.COMPANY_ID ?? null;
+
     if (!companyId) {
       throw new Error("El ID de la empresa no está configurado");
     }
-    const userRole = UserRole.CLIENT;
 
     const user = await this.repository.create({
-      company_id: companyId,
       name: payload.name,
       email: payload.email,
       phone: payload.phone,
       address: payload.address,
       password: hashedPassword,
+      ...(companyId ? { company_id: companyId } : {}),
     });
 
     if (!user) {
@@ -58,19 +62,18 @@ export class AuthService {
       ip_address: ipAddress,
     });
 
-    // Link existing client by email (if present and not linked)
-    try {
-      const clientsRepo = new ClientsRepository();
-      const client = await clientsRepo.findByEmail(payload.email, companyId);
-      if (client) {
-        const updates: any = { user_id: client.user_id ?? user.id };
-        if (!client.name) updates.name = payload.name;
-        if (!client.email) updates.email = payload.email;
-        if (!client.phone) updates.phone = payload.phone;
-        if (!client.address) updates.address = payload.address;
-        await clientsRepo.update(client.id, updates);
+    if (existingClient) {
+      try {
+        const updates: any = { user_id: existingClient.user_id ?? user.id };
+        if (!existingClient.name) updates.name = payload.name;
+        if (!existingClient.email) updates.email = payload.email;
+        if (!existingClient.phone) updates.phone = payload.phone;
+        if (!existingClient.address) updates.address = payload.address;
+        await clientsRepo.update(existingClient.id, updates);
+      } catch (err) {
+        console.error("Error linking client on signup:", err);
       }
-    } catch {}
+    }
 
     return this.buildResponse({ ...user, role: level } as any, token);
   }
