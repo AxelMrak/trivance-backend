@@ -1,4 +1,5 @@
 import { Appointment, AppointmentCreateDTO } from "@/entities/Appointment";
+import { Db, transaction } from "@/config/db";
 import { OrderService } from "@/services/OrderService";
 import { CreateOrderDto } from "@/entities/Order";
 import { ServiceHandlerService } from "@services/ServiceHandlerService";
@@ -224,6 +225,7 @@ export class AppointmentService {
     id: string,
     updatedData: Partial<Appointment>,
     currentUser?: JwtPayload,
+    db?: Db,
   ): Promise<Appointment | null> {
     const dataToUpdate: Partial<Appointment> = { ...updatedData };
     const maybeStart: unknown = (updatedData as any).start_date;
@@ -236,7 +238,7 @@ export class AppointmentService {
     }
 
     // Load existing for permission checks across fields
-    const existing = await this.repository.findById(id);
+    const existing = await this.repository.findById(id, db);
     if (!existing) {
       throw new NotFoundError("Turno no encontrado");
     }
@@ -268,7 +270,7 @@ export class AppointmentService {
       }
     }
 
-    const updated = await this.repository.update(id, dataToUpdate);
+    const updated = await this.repository.update(id, dataToUpdate, db);
     if (!updated) return null;
 
     // Fire-and-forget email notifications (TODO: integrate mailer endpoint)
@@ -476,10 +478,15 @@ export class AppointmentService {
       provider: "mercadopago",
       reference_id: tempRef,
     };
-    const createdOrder = await this.orderService.createOrder(orderToCreate);
-    if (!createdOrder) {
-      throw new InternalServerError("Fallo al crear el pedido asociado al turno");
-    }
+    const createdOrder = await transaction(async (db) => {
+      const order = await this.orderService.createOrder(orderToCreate, db);
+      if (!order) {
+        throw new InternalServerError("Fallo al crear el pedido asociado al turno");
+      }
+      // Set the stable reference atomically with the insert: both commit or both roll back
+      await this.orderService.updateOrder(order.id, { reference_id: order.id }, db);
+      return order;
+    });
 
     const paymentResponse = (await provider.createPaymentLink({
       id: appointment.id,
@@ -491,11 +498,6 @@ export class AppointmentService {
     if (!paymentResponse) {
       throw new InternalServerError("Fallo al crear link de pago");
     }
-
-    // Ensure the order has a stable reference that matches Mercado Pago external_reference
-    await this.orderService.updateOrder(createdOrder.id, {
-      reference_id: createdOrder.id,
-    });
 
     const response = {
       orderId: createdOrder.id,

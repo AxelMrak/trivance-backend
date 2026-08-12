@@ -1,5 +1,5 @@
 import { Appointment } from "@/entities/Appointment";
-import { dbClient } from "@/config/db";
+import { dbClient, Db } from "@/config/db";
 import { BaseRepository } from "@/repositories/BaseRepository";
 import {
   generateGetAppointmentByIdWithJoinsQuery,
@@ -11,10 +11,11 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     super("appointments");
   }
 
-  async getCompanyAppointments(): Promise<Appointment[]> {
+  async getCompanyAppointments(db?: Db): Promise<Appointment[]> {
+    const executor = db ?? dbClient;
     try {
       const query = generateGetAppointmentsWithJoinsQuery();
-      const result = await dbClient.query(query);
+      const result = await executor.query(query);
       return result.rows;
     } catch (error) {
       // Fallback for environments without new columns (e.g., client_id not migrated yet)
@@ -32,7 +33,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
           FROM appointments a
           ORDER BY a.start_date DESC
         `;
-        const result = await dbClient.query(legacyQuery);
+        const result = await executor.query(legacyQuery);
         return result.rows as any;
       } catch (_e) {
         throw new Error("Error de base de datos");
@@ -40,10 +41,11 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     }
   }
 
-  async getAppointmentByIdWithJoins(appointmentId: string): Promise<Appointment | null> {
+  async getAppointmentByIdWithJoins(appointmentId: string, db?: Db): Promise<Appointment | null> {
+    const executor = db ?? dbClient;
     try {
       const query = generateGetAppointmentByIdWithJoinsQuery();
-      const result = await dbClient.query(query, [appointmentId]);
+      const result = await executor.query(query, [appointmentId]);
       return result.rows[0] || null;
     } catch (error) {
       // Fallback for environments without new columns
@@ -61,7 +63,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
           FROM appointments a
           WHERE a.id = $1
         `;
-        const result = await dbClient.query(legacyQuery, [appointmentId]);
+        const result = await executor.query(legacyQuery, [appointmentId]);
         return result.rows[0] || null;
       } catch (_e) {
         throw new Error("Error de base de datos");
@@ -69,7 +71,8 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     }
   }
 
-  async getUserAppointments(userId: string): Promise<Appointment[]> {
+  async getUserAppointments(userId: string, db?: Db): Promise<Appointment[]> {
+    const executor = db ?? dbClient;
     try {
       const query = `
         SELECT a.id, a.user_id, a.client_id, a.service_id, a.status, a.description, a.start_date, a.created_at, a.updated_at
@@ -78,7 +81,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
         WHERE (c.user_id = $1) OR (a.client_id IS NULL AND a.user_id = $1)
         ORDER BY a.start_date DESC
       `;
-      const result = await dbClient.query(query, [userId]);
+      const result = await executor.query(query, [userId]);
       return result.rows;
     } catch (_e) {
       // Fallback if clients table or client_id is not available yet
@@ -89,7 +92,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
           WHERE a.user_id = $1
           ORDER BY a.start_date DESC
         `;
-        const result = await dbClient.query(legacy, [userId]);
+        const result = await executor.query(legacy, [userId]);
         return result.rows as any;
       } catch {
         throw new Error("Error de base de datos");
@@ -97,7 +100,8 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     }
   }
 
-  async isSlotAvailable(serviceId: string, startDate: Date): Promise<boolean> {
+  async isSlotAvailable(serviceId: string, startDate: Date, db?: Db): Promise<boolean> {
+    const executor = db ?? dbClient;
     try {
       const query = `
         WITH new_service AS (
@@ -112,7 +116,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
           AND tsrange(a.start_date, a.start_date + s.duration::interval, '[)') &&
               tsrange($2::timestamp, $2::timestamp + ns.duration::interval, '[)')
       `;
-      const result = await dbClient.query(query, [serviceId, startDate]);
+      const result = await executor.query(query, [serviceId, startDate]);
       const count = Number(result.rows[0]?.cnt || 0);
       return count === 0;
     } catch (_e) {

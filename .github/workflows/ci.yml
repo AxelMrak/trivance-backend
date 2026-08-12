@@ -39,7 +39,7 @@ jobs:
           DATABASE_URL: postgres://postgres@localhost:5432/trivance_db_test
 
       - name: Lint and typecheck
-        run: npm run lint:check && npm run typecheck
+        run: npm run lint && npm run typecheck
 
       - name: Run tests
         run: npm run test:ci

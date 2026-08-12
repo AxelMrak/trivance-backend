@@ -404,8 +404,13 @@ async function seedAppointments({ perService = 2 } = {}) {
   }
 }
 
-// Orchestrator
-(async function seedDb() {
+async function seedDb() {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isProduction) {
+    throw new Error("Database seeding is disabled in production.");
+  }
+
   try {
     await client.connect();
     console.log("✅ Connected to the database");
@@ -417,20 +422,31 @@ async function seedAppointments({ perService = 2 } = {}) {
     await seedUsers();
     const serviceIds = await seedServices();
     await ensureStandaloneClients();
+
     if (serviceIds.length) await seedAppointments({ perService: 2 });
 
     await client.query("COMMIT");
     console.log("✅ Seeding complete");
     process.exit(0);
+
   } catch (err) {
     console.error("❌ Error during seeding:", err);
+
     try {
       await client.query("ROLLBACK");
-    } catch {}
-    process.exit(1);
+    } catch {
+      console.error("❌ Error during rollback:", err);
+    }
+
+    process.exitCode = 1;
   } finally {
     try {
       await client.end();
-    } catch {}
+      console.log("✅ Database connection closed");
+    } catch {
+      console.error("❌ Error closing the database connection:", err);
+    }
   }
-})();
+}
+
+seedDb();

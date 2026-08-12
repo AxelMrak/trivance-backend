@@ -1,6 +1,7 @@
 import { OrderService } from "@/services/OrderService";
 import { AppointmentService } from "@/services/AppointmentService";
 import { getPaymentResource } from "@/services/payments/mercadopagoClient";
+import { transaction } from "@/config/db";
 
 export class MercadoPagoWebhookService {
   constructor(
@@ -54,23 +55,28 @@ export class MercadoPagoWebhookService {
           ? "cancelled"
           : "pending";
 
-    await this.orderService.updateOrder(order.id, { status: updatedStatus });
+    return transaction(async (db) => {
+      await this.orderService.updateOrder(order.id, { status: updatedStatus }, db);
 
-    const appointmentStatus =
-      updatedStatus === "paid"
-        ? "confirmed"
-        : updatedStatus === "cancelled"
-          ? "cancelled"
-          : "pending";
+      const appointmentStatus =
+        updatedStatus === "paid"
+          ? "confirmed"
+          : updatedStatus === "cancelled"
+            ? "cancelled"
+            : "pending";
 
-    await this.appointmentService.updateAppointment(order.appointment_id, {
-      status: appointmentStatus,
+      await this.appointmentService.updateAppointment(
+        order.appointment_id,
+        { status: appointmentStatus },
+        undefined,
+        db,
+      );
+
+      return {
+        orderId: order.id,
+        appointmentId: order.appointment_id,
+        status: updatedStatus,
+      };
     });
-
-    return {
-      orderId: order.id,
-      appointmentId: order.appointment_id,
-      status: updatedStatus,
-    };
   }
 }
