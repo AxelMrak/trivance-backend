@@ -25,9 +25,9 @@ describe("permissions deny by default", () => {
   });
 
   it("allows staff to edit own appointment status", () => {
-    expect(
-      canEditAppointmentStatus({ userId: "staff-1", role: RoleLevel.STAFF }, "staff-1"),
-    ).toBe(true);
+    expect(canEditAppointmentStatus({ userId: "staff-1", role: RoleLevel.STAFF }, "staff-1")).toBe(
+      true,
+    );
   });
 
   it("denies client to edit appointment status", () => {
