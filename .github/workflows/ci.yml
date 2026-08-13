@@ -30,8 +30,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Create app role
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          psql -h localhost -U postgres -d trivance_db_test -v ON_ERROR_STOP=1 <<'SQL'
+          REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+          DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'trivance_app') THEN CREATE ROLE trivance_app LOGIN PASSWORD 'trivance_app_dev' NOSUPERUSER NOCREATEDB NOCREATEROLE; END IF; END $$;
+          GRANT USAGE ON SCHEMA public TO trivance_app;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO trivance_app;
+          ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO trivance_app;
+          SQL
+
       - name: Prepare test env
-        run: printf 'NODE_ENV=test\nDATABASE_URL=postgres://postgres@localhost:5432/trivance_db_test\n' > .env.test
+        run: printf 'NODE_ENV=test\nDATABASE_URL=postgres://trivance_app:trivance_app_dev@localhost:5432/trivance_db_test\n' > .env.test
 
       - name: Run migrations
         run: npm run migrate:test
@@ -44,4 +56,4 @@ jobs:
       - name: Run tests
         run: npm run test:ci
         env:
-          DATABASE_URL: postgres://postgres@localhost:5432/trivance_db_test
+          DATABASE_URL: postgres://trivance_app:trivance_app_dev@localhost:5432/trivance_db_test
