@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { dbClient } from "@/config/db";
 
+import { dbClient } from "@/config/db";
 import { AppointmentController } from "@controllers/AppointmentController";
 import { AppointmentService } from "@/services/AppointmentService";
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
@@ -31,6 +31,7 @@ const appointmentService = new AppointmentService(
   userRepository,
   clientsPivotRepository,
   clientsRepository,
+  serviceRepository,
 );
 const appointmentController = new AppointmentController(appointmentService);
 

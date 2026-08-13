@@ -88,6 +88,17 @@ export class ClientsRepository {
     return rows[0] || null;
   }
 
+  async getWithUsersByIds(ids: string[]): Promise<any[]> {
+    const { rows } = await dbClient.query(
+      `SELECT c.*, u.id as u_id, u.name as u_name, u.email as u_email, u.phone as u_phone, u.address as u_address
+       FROM clients c
+       LEFT JOIN users u ON u.id = c.user_id
+       WHERE c.id = ANY($1::uuid[])`,
+      [ids],
+    );
+    return rows;
+  }
+
   async getUserIdByClientId(clientId: string): Promise<string | null> {
     const { rows } = await dbClient.query("SELECT user_id FROM clients WHERE id = $1", [clientId]);
     return (rows[0]?.user_id as string | undefined) ?? null;
@@ -101,5 +112,21 @@ export class ClientsRepository {
   async findIdByUserId(userId: string): Promise<string | null> {
     const { rows } = await dbClient.query("SELECT id FROM clients WHERE user_id = $1", [userId]);
     return (rows[0]?.id as string | undefined) ?? null;
+  }
+
+  async searchByTerm(companyId: string, like: string, limit: number): Promise<any[]> {
+    const { rows } = await dbClient.query(
+      `SELECT c.id, COALESCE(c.name, cu.name) as name, COALESCE(c.email, cu.email) as email
+       FROM clients c
+       LEFT JOIN users cu ON cu.id = c.user_id
+       LEFT JOIN user_roles ur ON ur.user_id = cu.id
+       WHERE (c.company_id = $1 OR cu.company_id = $1)
+         AND ($2 = '%%' OR COALESCE(c.name, cu.name) ILIKE $2 OR COALESCE(c.email, cu.email) ILIKE $2)
+         AND (c.user_id IS NULL OR ur.role_level = 1)
+       ORDER BY name NULLS LAST
+       LIMIT $3`,
+      [companyId, like, limit],
+    );
+    return rows;
   }
 }

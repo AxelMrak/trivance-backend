@@ -152,6 +152,7 @@ describe("AppointmentService.createPaymentLink", () => {
       {} as any,
       {} as any,
       {} as any,
+      {} as any,
     );
 
     try {

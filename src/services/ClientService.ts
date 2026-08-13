@@ -1,4 +1,5 @@
 import { ClientsRepository, ClientEntity } from "@/repositories/ClientsRepository";
+import { UserRepository } from "@/repositories/UserRepository";
 
 type ClientDTO = {
   id: string;
@@ -23,7 +24,10 @@ const toDTO = (c: ClientEntity): ClientDTO => ({
 });
 
 export class ClientService {
-  constructor(private clientsRepository: ClientsRepository) {}
+  constructor(
+    private clientsRepository: ClientsRepository,
+    private userRepository: UserRepository,
+  ) {}
 
   async getAllClients(): Promise<ClientDTO[]> {
     const list = await this.clientsRepository.findAll();
@@ -31,16 +35,9 @@ export class ClientService {
     let usersById = new Map<string, any>();
     let rolesByUserId = new Map<string, number>();
     if (userIds.length) {
-      const { dbClient } = await import("@/config/db");
-      const { rows: users } = await dbClient.query(
-        "SELECT id, name, email, phone, address FROM users WHERE id = ANY($1::uuid[])",
-        [userIds],
-      );
+      const users = await this.userRepository.findPublicByIds(userIds);
       usersById = new Map(users.map((u: any) => [u.id, u]));
-      const { rows: roles } = await dbClient.query(
-        "SELECT user_id, role_level FROM user_roles WHERE user_id = ANY($1::uuid[])",
-        [userIds],
-      );
+      const roles = await this.userRepository.findRolesByUserIds(userIds);
       rolesByUserId = new Map(roles.map((r: any) => [r.user_id, r.role_level]));
     }
     // Filter: only standalone clients (user_id IS NULL) or user linked with CLIENT role (1)
@@ -62,12 +59,7 @@ export class ClientService {
     if (!client) return null;
     const dto = toDTO(client);
     if (client.user_id) {
-      const { dbClient } = await import("@/config/db");
-      const { rows } = await dbClient.query(
-        "SELECT id, name, email, phone, address FROM users WHERE id = $1",
-        [client.user_id],
-      );
-      const user = rows[0];
+      const user = await this.userRepository.findPublicById(client.user_id);
       dto.name = dto.name ?? user?.name ?? null;
       dto.email = dto.email ?? user?.email ?? null;
       dto.phone = dto.phone ?? user?.phone ?? null;
@@ -87,12 +79,7 @@ export class ClientService {
     // enrich like getClientByID
     const dto = toDTO(updated);
     if (updated.user_id) {
-      const { dbClient } = await import("@/config/db");
-      const { rows } = await dbClient.query(
-        "SELECT id, name, email, phone, address FROM users WHERE id = $1",
-        [updated.user_id],
-      );
-      const user = rows[0];
+      const user = await this.userRepository.findPublicById(updated.user_id);
       dto.name = dto.name ?? user?.name ?? null;
       dto.email = dto.email ?? user?.email ?? null;
       dto.phone = dto.phone ?? user?.phone ?? null;
