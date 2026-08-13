@@ -111,7 +111,7 @@ export class AppointmentController {
     try {
       const { id } = req.params;
       const userId = req.user!.userId;
-      const paymentLink = await this.appointmentService.createPaymentLink(id, userId);
+      const paymentLink = await this.appointmentService.createPaymentLink(id, userId, req.user);
       res.status(200).json(paymentLink);
     } catch (error) {
       next(error);

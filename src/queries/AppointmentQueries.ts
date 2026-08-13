@@ -1,5 +1,4 @@
 export const generateGetAppointmentsWithJoinsQuery = (): string => {
-  // Normalized response: only appointment fields, no nested user/service objects
   return `
     SELECT
       a.id,
@@ -12,12 +11,13 @@ export const generateGetAppointmentsWithJoinsQuery = (): string => {
       a.created_at,
       a.updated_at
     FROM appointments a
+    JOIN services s ON s.id = a.service_id
+    WHERE s.company_id = $1
     ORDER BY a.start_date DESC
   `;
 };
 
 export const generateGetAppointmentByIdWithJoinsQuery = (): string => {
-  // Normalized response: only appointment fields, no nested user/service objects
   return `
     SELECT
       a.id,
@@ -30,6 +30,7 @@ export const generateGetAppointmentByIdWithJoinsQuery = (): string => {
       a.created_at,
       a.updated_at
     FROM appointments a
-    WHERE a.id = $1
+    JOIN services s ON s.id = a.service_id
+    WHERE a.id = $1 AND s.company_id = $2
   `;
 };

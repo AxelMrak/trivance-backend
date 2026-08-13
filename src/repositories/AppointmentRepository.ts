@@ -11,11 +11,11 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     super("appointments");
   }
 
-  async getCompanyAppointments(db?: Db): Promise<Appointment[]> {
+  async getCompanyAppointments(companyId: string, db?: Db): Promise<Appointment[]> {
     const executor = db ?? dbClient;
     try {
       const query = generateGetAppointmentsWithJoinsQuery();
-      const result = await executor.query(query);
+      const result = await executor.query(query, [companyId]);
       return result.rows;
     } catch (error) {
       // Fallback for environments without new columns (e.g., client_id not migrated yet)
@@ -31,9 +31,11 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
             a.created_at,
             a.updated_at
           FROM appointments a
+          JOIN services s ON s.id = a.service_id
+          WHERE s.company_id = $1
           ORDER BY a.start_date DESC
         `;
-        const result = await executor.query(legacyQuery);
+        const result = await executor.query(legacyQuery, [companyId]);
         return result.rows as any;
       } catch (_e) {
         throw new Error("Error de base de datos");
@@ -41,11 +43,15 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     }
   }
 
-  async getAppointmentByIdWithJoins(appointmentId: string, db?: Db): Promise<Appointment | null> {
+  async getAppointmentByIdWithJoins(
+    appointmentId: string,
+    companyId: string,
+    db?: Db,
+  ): Promise<Appointment | null> {
     const executor = db ?? dbClient;
     try {
       const query = generateGetAppointmentByIdWithJoinsQuery();
-      const result = await executor.query(query, [appointmentId]);
+      const result = await executor.query(query, [appointmentId, companyId]);
       return result.rows[0] || null;
     } catch (error) {
       // Fallback for environments without new columns
@@ -61,9 +67,10 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
             a.created_at,
             a.updated_at
           FROM appointments a
-          WHERE a.id = $1
+          JOIN services s ON s.id = a.service_id
+          WHERE a.id = $1 AND s.company_id = $2
         `;
-        const result = await executor.query(legacyQuery, [appointmentId]);
+        const result = await executor.query(legacyQuery, [appointmentId, companyId]);
         return result.rows[0] || null;
       } catch (_e) {
         throw new Error("Error de base de datos");
