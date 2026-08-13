@@ -1,17 +1,18 @@
 import app from "@/app";
+import { logger } from "@/utils/logger";
 import { config } from "@config/constants";
 import { dbClient } from "@config/db";
 
 const PORT = config.PORT;
 
 const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Server running on port ${PORT}`);
 });
 
 server.on("error", (error: Error) => {
   const err = error as NodeJS.ErrnoException;
   const detail = err.code ? ` (${err.code})` : "";
-  console.error(`Server failed to start${detail}:`, err.message);
+  logger.error(`Server failed to start${detail}:`, err.message);
   process.exit(1);
 });
 
@@ -26,10 +27,10 @@ function finish(exitCode: number): void {
 function shutdown(signal: string, exitCode = 0): void {
   if (stopping) return;
   stopping = true;
-  console.log(`${signal} received, shutting down`);
+  logger.info(`${signal} received, shutting down`);
 
   force = setTimeout(() => {
-    console.error("Forced shutdown after timeout");
+    logger.error("Forced shutdown after timeout");
     process.exit(1);
   }, 10_000);
   force.unref();
@@ -39,7 +40,7 @@ function shutdown(signal: string, exitCode = 0): void {
       .end()
       .then(() => finish(exitCode))
       .catch((err: Error) => {
-        console.error("Error closing database pool:", err.message);
+        logger.error("Error closing database pool:", err.message);
         finish(1);
       });
   });
@@ -48,7 +49,7 @@ function shutdown(signal: string, exitCode = 0): void {
 }
 
 function fatal(reason: string, err: unknown): void {
-  console.error(reason, err);
+  logger.error(reason, err);
   shutdown("fatal", 1);
 }
 
