@@ -50,13 +50,13 @@ export class AppointmentService {
   }
 
   async getAll(
-    currentUser?: { userId: string; role: number },
+    currentUser?: { userId: string; role: number; company_id?: string },
     include?: { service?: boolean; user?: boolean; client?: boolean },
   ): Promise<Array<Appointment & { service?: any; user?: any; client?: any }>> {
     const list =
       currentUser && currentUser.role < 2
         ? await this.repository.getUserAppointments(currentUser.userId)
-        : await this.repository.getCompanyAppointments();
+        : await this.repository.getCompanyAppointments(currentUser?.company_id ?? "");
 
     if (!include || (!include.service && !include.user && !include.client)) {
       return list as any;
@@ -119,12 +119,16 @@ export class AppointmentService {
 
   async getById(
     id: string,
-    currentUser?: { userId: string; role: number },
+    currentUser?: { userId: string; role: number; company_id?: string },
     include?: { service?: boolean; user?: boolean; client?: boolean },
   ): Promise<Appointment | (Appointment & { service?: any; user?: any; client?: any }) | null> {
+    const companyId = currentUser?.company_id ?? "";
+    if (!companyId) {
+      throw new NotFoundError("Turno no encontrado");
+    }
     let appointment;
     try {
-      appointment = await this.repository.getAppointmentByIdWithJoins(id);
+      appointment = await this.repository.getAppointmentByIdWithJoins(id, companyId);
     } catch (error: any) {
       throw new InternalServerError("Error en la base de datos al buscar el turno");
     }
@@ -443,12 +447,13 @@ export class AppointmentService {
   async createPaymentLink(
     appointmentId: string,
     userId: string,
+    currentUser?: { userId: string; role: number; company_id?: string },
   ): Promise<CreatePaymentLinkResponse> {
     if (!appointmentId) {
       throw new BadRequestError("Falta el ID del turno");
     }
 
-    const appointment = await this.getById(appointmentId);
+    const appointment = await this.getById(appointmentId, currentUser);
     if (!appointment) {
       throw new NotFoundError("Turno no encontrado");
     }

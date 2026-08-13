@@ -154,7 +154,11 @@ describe("AppointmentService.createPaymentLink", () => {
     );
 
     try {
-      const result = await appointmentService.createPaymentLink("appt-1", "user-1");
+      const result = await appointmentService.createPaymentLink("appt-1", "user-1", {
+        userId: "user-1",
+        role: 5,
+        company_id: "company-1",
+      });
 
       expect(result.orderId).toBe("order-1");
       expect(result.paymentLink).toBe("https://pay.example.com/checkout");

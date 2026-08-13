@@ -8,7 +8,7 @@ describe("Services Endpoints - Basic", () => {
 
   beforeEach(async () => {
     user = await createUser();
-    token = generateToken(user.id, user.role as any);
+    token = generateToken(user.id, user.role as any, user.company_id);
   });
 
   it("POST  /services/create • valid payload • returns 201 with entity", async () => {

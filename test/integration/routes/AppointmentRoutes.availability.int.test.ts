@@ -6,7 +6,7 @@ import { UserRole } from "@/entities/User";
 describe("Appointments Availability - occupied slots endpoint", () => {
   it("returns occupied slots for the given month for client", async () => {
     const client = await createUser({ role: UserRole.CLIENT });
-    const token = generateToken(client.id, UserRole.CLIENT);
+    const token = generateToken(client.id, UserRole.CLIENT, client.company_id);
     const service = await createService({ company_id: client.company_id, duration: "01:00:00" });
     const start = new Date();
     start.setHours(10, 0, 0, 0);

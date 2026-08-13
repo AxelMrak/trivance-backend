@@ -31,7 +31,10 @@ export class OrderController {
         // If we are going to include the appointment, prefer loading via the byId helper
         // to avoid duplicate DB queries; otherwise a lean find is enough.
         const appt = includeAppointment
-          ? await this.appointmentRepository.getAppointmentByIdWithJoins(order.appointment_id)
+          ? await this.appointmentRepository.getAppointmentByIdWithJoins(
+              order.appointment_id,
+              (currentUser as any)?.company_id ?? "",
+            )
           : await this.appointmentRepository.findById(order.appointment_id);
         if (!appt) {
           // If appointment cannot be loaded, restrict to staff+

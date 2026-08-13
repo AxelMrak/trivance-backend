@@ -22,7 +22,7 @@ describe("Appointments permissions and client linkage", () => {
       service_id: service.id,
     });
 
-    const token = generateToken(staffManager.id, UserRole.MANAGER);
+    const token = generateToken(staffManager.id, UserRole.MANAGER, staffManager.company_id);
     const res = await getTestAgent()
       .put(`/appointments/update/${appointment.id}`)
       .set("Authorization", `Bearer ${token}`)
@@ -48,7 +48,7 @@ describe("Appointments permissions and client linkage", () => {
       ).rows[0]?.id,
       service_id: service.id,
     });
-    const token = generateToken(staff.id, UserRole.STAFF);
+    const token = generateToken(staff.id, UserRole.STAFF, staff.company_id);
 
     const res = await getTestAgent()
       .put(`/appointments/update/${appointment.id}`)
@@ -70,7 +70,7 @@ describe("Appointments permissions and client linkage", () => {
       ).rows[0]?.id,
       service_id: service.id,
     });
-    const token = generateToken(clientUser.id, UserRole.CLIENT);
+    const token = generateToken(clientUser.id, UserRole.CLIENT, clientUser.company_id);
 
     const okRes = await getTestAgent()
       .put(`/appointments/update/${appointment.id}`)
@@ -94,7 +94,7 @@ describe("Appointments permissions and client linkage", () => {
       await import("@/config/db")
     ).dbClient.query("SELECT id FROM clients WHERE user_id = $1", [clientUser.id]);
     const clientId = rows[0].id;
-    const token = generateToken(staff.id, UserRole.STAFF);
+    const token = generateToken(staff.id, UserRole.STAFF, staff.company_id);
 
     const createRes = await getTestAgent()
       .post("/appointments/create")
