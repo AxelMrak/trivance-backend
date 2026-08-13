@@ -1,4 +1,4 @@
-import { dbClient, Db } from "@/config/db";
+import { Db } from "@/config/db";
 import {
   generateGetAllQuery,
   generateGetByIdQuery,
@@ -11,15 +11,18 @@ import {
 } from "@queries/BaseQueries";
 
 export class BaseRepository<T> {
+  protected db: Db;
+
   protected table: string;
 
-  constructor(table: string) {
+  constructor(db: Db, table: string) {
+    this.db = db;
     this.table = table;
   }
 
   // TODO: IMPROVE ERROR HANDLING WITH BETTER MESSAGES AND REUSABLE ERRORS
   async findWithCondition(whereClause: string, values: any[] = [], db?: Db): Promise<T[]> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
       const result = await executor.query(query, values);
@@ -34,7 +37,7 @@ export class BaseRepository<T> {
     values: any[] = [],
     db?: Db,
   ): Promise<T | null> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const whereClause = whereClauses.join(" AND ");
       const query = `SELECT * FROM ${this.table} WHERE ${whereClause}`;
@@ -55,7 +58,7 @@ export class BaseRepository<T> {
   }
 
   async existsById(id: string, db?: Db): Promise<boolean> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = `SELECT 1 FROM ${this.table} WHERE id = $1 LIMIT 1`;
       const result = await executor.query(query, [id]);
@@ -66,7 +69,7 @@ export class BaseRepository<T> {
   }
 
   async existsByField(field: string, value: any, db?: Db): Promise<boolean> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = `SELECT 1 FROM ${this.table} WHERE ${field} = $1 LIMIT 1`;
       const result = await executor.query(query, [value]);
@@ -77,7 +80,7 @@ export class BaseRepository<T> {
   }
 
   async findAll(db?: Db): Promise<T[]> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = generateGetAllQuery(this.table);
       const result = await executor.query(query);
@@ -88,7 +91,7 @@ export class BaseRepository<T> {
   }
 
   async findById(id: string, db?: Db): Promise<T | null> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = generateGetByIdQuery(this.table);
       const result = await executor.query(query, [id]);
@@ -99,7 +102,7 @@ export class BaseRepository<T> {
   }
 
   async findByCompanyId(companyId: string, db?: Db): Promise<T[]> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = generateGetByCompanyIdQuery(this.table);
       const result = await executor.query(query, [companyId]);
@@ -110,7 +113,7 @@ export class BaseRepository<T> {
   }
 
   async create(data: Partial<T>, db?: Db): Promise<T> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const columns = Object.keys(data);
       const query = generateCreateQuery(this.table, columns);
@@ -123,7 +126,7 @@ export class BaseRepository<T> {
   }
 
   async update(id: string, data: Partial<T>, db?: Db): Promise<T | null> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const columns = Object.keys(data);
       const query = generateUpdateQuery(this.table, columns);
@@ -136,7 +139,7 @@ export class BaseRepository<T> {
   }
 
   async delete(id: string, db?: Db): Promise<number | string | null> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = generateDeleteQuery(this.table);
       const result = await executor.query(query, [id]);
@@ -147,7 +150,7 @@ export class BaseRepository<T> {
   }
 
   async findByField(field: string, value: string, db?: Db): Promise<T | null> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = generateFindByFieldQuery(this.table, field);
       const result = await executor.query(query, [value]);
@@ -158,7 +161,7 @@ export class BaseRepository<T> {
   }
 
   async deleteByField(field: string, value: string, db?: Db): Promise<number | string | null> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = generateDeleteByFieldQuery(this.table, field);
       const result = await executor.query(query, [value]);
@@ -169,7 +172,7 @@ export class BaseRepository<T> {
   }
 
   async deleteAllbyField(field: string, value: string, db?: Db): Promise<number | string | null> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = `DELETE FROM ${this.table} WHERE ${field} = $1 RETURNING id`;
       const result = await executor.query(query, [value]);

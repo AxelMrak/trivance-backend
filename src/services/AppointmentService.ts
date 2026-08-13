@@ -21,7 +21,9 @@ import {
 } from "@/utils/permissions";
 import { EmailNotificationService } from "@/services/notifications/EmailNotificationService";
 import { ClientsPivotRepository } from "@/repositories/ClientsPivotRepository";
+import { ClientsRepository } from "@/repositories/ClientsRepository";
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
+import { ServiceRepository } from "@/repositories/ServiceRepository";
 
 export class AppointmentService {
   constructor(
@@ -30,6 +32,8 @@ export class AppointmentService {
     private orderService: OrderService,
     private userRepository: UserRepository,
     private clientsPivotRepository: ClientsPivotRepository,
+    private clientsRepository: ClientsRepository,
+    private serviceRepository: ServiceRepository,
   ) {}
 
   private async isUserLinkedClientForAppointment(
@@ -38,79 +42,80 @@ export class AppointmentService {
   ): Promise<boolean> {
     if (!appointment.client_id) return false;
     try {
-      const { dbClient } = await import("@/config/db");
-      const { rows } = await dbClient.query(
-        "SELECT 1 FROM clients WHERE id = $1 AND user_id = $2 LIMIT 1",
-        [appointment.client_id, userId],
-      );
-      return (rows?.length ?? 0) > 0;
+      return await this.clientsRepository.isLinkedToUser(appointment.client_id, userId);
     } catch {
       return false;
     }
   }
 
   async getAll(
-    currentUser?: { userId: string; role: number },
+    currentUser?: { userId: string; role: number; company_id?: string },
     include?: { service?: boolean; user?: boolean; client?: boolean },
   ): Promise<Array<Appointment & { service?: any; user?: any; client?: any }>> {
     const list =
       currentUser && currentUser.role < 2
         ? await this.repository.getUserAppointments(currentUser.userId)
-        : await this.repository.getCompanyAppointments();
+        : await this.repository.getCompanyAppointments(currentUser?.company_id ?? "");
 
     if (!include || (!include.service && !include.user && !include.client)) {
       return list as any;
     }
 
+    const serviceIds = [...new Set(list.map((a) => a.service_id).filter(Boolean))] as string[];
+    const userIds = [...new Set(list.map((a) => a.user_id).filter(Boolean))] as string[];
+    const clientIds = [...new Set(list.map((a) => a.client_id).filter(Boolean))] as string[];
+
+    let servicesById = new Map<string, any>();
+    let usersById = new Map<string, any>();
+    let clientsById = new Map<string, any>();
+    try {
+      const [services, users, clients] = await Promise.all([
+        include.service && serviceIds.length ? this.serviceRepository.findByIds(serviceIds) : [],
+        include.user && userIds.length ? this.userRepository.findPublicByIds(userIds) : [],
+        include.client && clientIds.length
+          ? this.clientsRepository.getWithUsersByIds(clientIds)
+          : [],
+      ]);
+      servicesById = new Map(services.map((s) => [s.id, s]));
+      usersById = new Map(users.map((u) => [u.id, u]));
+      clientsById = new Map(clients.map((c) => [c.id, c]));
+    } catch {}
+
     const enriched = [] as Array<Appointment & { service?: any; user?: any; client?: any }>;
     for (const appt of list) {
       const item: any = { ...appt };
       if (include.service) {
-        try {
-          const service = await this.serviceHandlerService.getServiceById(appt.service_id);
-          if (service) item.service = service;
-          delete item.service_id;
-        } catch {}
+        const service = servicesById.get(appt.service_id);
+        if (service) item.service = service;
+        delete item.service_id;
       }
       if (include.user) {
-        try {
-          const user = await this.userRepository.findById(appt.user_id);
-          if (user) item.user = { ...user, password: undefined } as any;
-          delete item.user_id;
-        } catch {}
+        const user = usersById.get(appt.user_id);
+        if (user) item.user = { ...user, password: undefined } as any;
+        delete item.user_id;
       }
       if (include.client && appt.client_id) {
-        try {
-          const { dbClient } = await import("@/config/db");
-          const { rows } = await dbClient.query(
-            `SELECT c.*, u.id as u_id, u.name as u_name, u.email as u_email, u.phone as u_phone, u.address as u_address
-             FROM clients c
-             LEFT JOIN users u ON u.id = c.user_id
-             WHERE c.id = $1`,
-            [appt.client_id],
-          );
-          const row = rows[0];
-          if (row) {
-            const client: any = {
-              id: row.id,
-              name: row.name,
-              email: row.email,
-              phone: row.phone,
-              address: row.address,
+        const row = clientsById.get(appt.client_id);
+        if (row) {
+          const client: any = {
+            id: row.id,
+            name: row.name,
+            email: row.email,
+            phone: row.phone,
+            address: row.address,
+          };
+          if (row.u_id) {
+            client.user = {
+              id: row.u_id,
+              name: row.u_name,
+              email: row.u_email,
+              phone: row.u_phone,
+              address: row.u_address,
             };
-            if (row.u_id) {
-              client.user = {
-                id: row.u_id,
-                name: row.u_name,
-                email: row.u_email,
-                phone: row.u_phone,
-                address: row.u_address,
-              };
-            }
-            item.client = client;
           }
-          delete item.client_id;
-        } catch {}
+          item.client = client;
+        }
+        delete item.client_id;
       }
       enriched.push(item);
     }
@@ -119,12 +124,16 @@ export class AppointmentService {
 
   async getById(
     id: string,
-    currentUser?: { userId: string; role: number },
+    currentUser?: { userId: string; role: number; company_id?: string },
     include?: { service?: boolean; user?: boolean; client?: boolean },
   ): Promise<Appointment | (Appointment & { service?: any; user?: any; client?: any }) | null> {
+    const companyId = currentUser?.company_id ?? "";
+    if (!companyId) {
+      throw new NotFoundError("Turno no encontrado");
+    }
     let appointment;
     try {
-      appointment = await this.repository.getAppointmentByIdWithJoins(id);
+      appointment = await this.repository.getAppointmentByIdWithJoins(id, companyId);
     } catch (error: any) {
       throw new InternalServerError("Error en la base de datos al buscar el turno");
     }
@@ -186,15 +195,7 @@ export class AppointmentService {
 
     if (include.client && appointment.client_id) {
       try {
-        const { dbClient } = await import("@/config/db");
-        const { rows } = await dbClient.query(
-          `SELECT c.*, u.id as u_id, u.name as u_name, u.email as u_email, u.phone as u_phone, u.address as u_address
-           FROM clients c
-           LEFT JOIN users u ON u.id = c.user_id
-           WHERE c.id = $1`,
-          [appointment.client_id],
-        );
-        const row = rows[0];
+        const row = await this.clientsRepository.getWithUser(appointment.client_id);
         if (row) {
           const client: any = {
             id: row.id,
@@ -339,11 +340,7 @@ export class AppointmentService {
     if (!userExists && clientId) {
       // Fallback: if creator not found but a client was provided, try to use the linked user of that client
       try {
-        const { dbClient } = await import("@/config/db");
-        const { rows } = await dbClient.query("SELECT user_id FROM clients WHERE id = $1", [
-          clientId,
-        ]);
-        const linkedUserId = rows[0]?.user_id as string | undefined;
+        const linkedUserId = await this.clientsRepository.getUserIdByClientId(clientId);
         if (linkedUserId) {
           const linkedExists = await this.userRepository.existsById(linkedUserId);
           if (linkedExists) {
@@ -361,39 +358,27 @@ export class AppointmentService {
     if (appointmentData.client_id) {
       // Accept either clients.id or users.id
       try {
-        const { rows } = await (
-          await import("@/config/db")
-        ).dbClient.query("SELECT id FROM clients WHERE id = $1", [appointmentData.client_id]);
-        if (rows[0]?.id) clientId = rows[0].id;
+        const found = await this.clientsRepository.findIdByClientId(appointmentData.client_id);
+        if (found) clientId = found;
       } catch {}
       if (!clientId) {
         try {
-          const { rows } = await (
-            await import("@/config/db")
-          ).dbClient.query("SELECT id FROM clients WHERE user_id = $1", [
-            appointmentData.client_id,
-          ]);
-          if (rows[0]?.id) clientId = rows[0].id;
+          const found = await this.clientsRepository.findIdByUserId(appointmentData.client_id);
+          if (found) clientId = found;
         } catch {}
       }
     }
     if (!clientId) {
       try {
-        const { rows } = await (
-          await import("@/config/db")
-        ).dbClient.query("SELECT id FROM clients WHERE user_id = $1", [userId]);
-        if (rows[0]?.id) clientId = rows[0].id;
+        const found = await this.clientsRepository.findIdByUserId(userId);
+        if (found) clientId = found;
       } catch {}
     }
 
     // Ensure appointments.client_id column exists before including it
     if (clientId) {
       try {
-        const { dbClient } = await import("@/config/db");
-        const { rows } = await dbClient.query(
-          "SELECT 1 FROM information_schema.columns WHERE table_name = 'appointments' AND column_name = 'client_id' LIMIT 1",
-        );
-        const hasColumn = rows && rows.length > 0;
+        const hasColumn = await this.repository.hasClientIdColumn();
         if (!hasColumn) {
           clientId = undefined;
         }
@@ -443,12 +428,13 @@ export class AppointmentService {
   async createPaymentLink(
     appointmentId: string,
     userId: string,
+    currentUser?: { userId: string; role: number; company_id?: string },
   ): Promise<CreatePaymentLinkResponse> {
     if (!appointmentId) {
       throw new BadRequestError("Falta el ID del turno");
     }
 
-    const appointment = await this.getById(appointmentId);
+    const appointment = await this.getById(appointmentId, currentUser);
     if (!appointment) {
       throw new NotFoundError("Turno no encontrado");
     }
@@ -529,17 +515,7 @@ export class AppointmentService {
     const companyId = (user as any).company_id;
 
     // Query all appointments in company for the range (status != cancelled)
-    const { dbClient } = await import("@/config/db");
-    const query = `
-      SELECT a.start_date, s.duration
-      FROM appointments a
-      JOIN services s ON s.id = a.service_id
-      JOIN users u ON u.id = a.user_id
-      WHERE u.company_id = $1
-        AND a.status <> 'cancelled'
-        AND a.start_date >= $2 AND a.start_date < $3
-    `;
-    const result = await dbClient.query(query, [companyId, start, end]);
+    const result = await this.repository.getAvailableSlotsInRange(companyId, start, end);
 
     // Build occupied slots map: { 'YYYY-MM-DD': ['HH:00', ...] }
     const toMinutes = (d: any): number => {
@@ -554,7 +530,7 @@ export class AppointmentService {
       return 60;
     };
     const occupied: Record<string, Set<string>> = {};
-    for (const row of result.rows) {
+    for (const row of result) {
       const d = new Date(row.start_date);
       const minutes = toMinutes(row.duration);
       const slots = Math.max(1, Math.ceil(minutes / 60));

@@ -8,7 +8,7 @@ describe("Clients normalization - standalone clients and linking on signup", () 
     const manager = await createUser({
       /* role column removed, using pivot */
     });
-    const token = generateToken(manager.id, UserRole.MANAGER);
+    const token = generateToken(manager.id, UserRole.MANAGER, manager.company_id);
 
     const res = await getTestAgent()
       .post("/clients/create")
@@ -27,7 +27,7 @@ describe("Clients normalization - standalone clients and linking on signup", () 
 
   it("signup links existing client by email to the new user", async () => {
     const admin = await createUser({});
-    const token = generateToken(admin.id, UserRole.MANAGER);
+    const token = generateToken(admin.id, UserRole.MANAGER, admin.company_id);
     const email = `linkme_${Date.now()}@client.com`;
 
     // create standalone client

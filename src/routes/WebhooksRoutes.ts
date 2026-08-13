@@ -1,6 +1,7 @@
 import { Router } from "express";
 import express from "express";
 
+import { dbClient } from "@/config/db";
 import { OrderService } from "@/services/OrderService";
 import { AppointmentService } from "@/services/AppointmentService";
 import { OrderRepository } from "@/repositories/OrderRepository";
@@ -11,21 +12,25 @@ import { MercadoPagoWebhookService } from "@/services/webhooks/MercadoPagoWebhoo
 import { MercadoPagoWebhookController } from "@/controllers/webhooks/MercadoPagoWebhookController";
 import { UserRepository } from "@/repositories/UserRepository";
 import { ClientsPivotRepository } from "@/repositories/ClientsPivotRepository";
+import { ClientsRepository } from "@/repositories/ClientsRepository";
 
 const router = Router();
-const serviceRepository = new ServiceRepository();
+const serviceRepository = new ServiceRepository(dbClient);
 const serviceHandlerService = new ServiceHandlerService(serviceRepository);
-const orderRepository = new OrderRepository();
+const orderRepository = new OrderRepository(dbClient);
 const orderService = new OrderService(orderRepository);
-const appointmentRepository = new AppointmentRepository();
-const userRepository = new UserRepository();
+const appointmentRepository = new AppointmentRepository(dbClient);
+const userRepository = new UserRepository(dbClient);
 const clientsPivotRepository = new ClientsPivotRepository();
+const clientsRepository = new ClientsRepository();
 const appointmentService = new AppointmentService(
   appointmentRepository,
   serviceHandlerService,
   orderService,
   userRepository,
   clientsPivotRepository,
+  clientsRepository,
+  serviceRepository,
 );
 
 const mercadoPagoWebhookService = new MercadoPagoWebhookService(orderService, appointmentService);

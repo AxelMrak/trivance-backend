@@ -12,7 +12,7 @@ describe("Stats Endpoints - Basic", () => {
     user = await createUser();
     serviceA = await createService({ company_id: user.company_id });
     serviceB = await createService({ company_id: user.company_id });
-    token = generateToken(user.id, user.role as any);
+    token = generateToken(user.id, user.role as any, user.company_id);
 
     // Create some appointments for stats
     await createAppointment({
