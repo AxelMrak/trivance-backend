@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { dbClient } from "@/config/db";
 
 import { AppointmentController } from "@controllers/AppointmentController";
 import { AppointmentService } from "@/services/AppointmentService";
@@ -12,21 +13,24 @@ import { OrderRepository } from "@/repositories/OrderRepository";
 import { ServiceRepository } from "@/repositories/ServiceRepository";
 import { UserRepository } from "@/repositories/UserRepository";
 import { ClientsPivotRepository } from "@/repositories/ClientsPivotRepository";
+import { ClientsRepository } from "@/repositories/ClientsRepository";
 
 const router = Router();
-const appointmentRepository = new AppointmentRepository();
-const serviceRepository = new ServiceRepository();
+const appointmentRepository = new AppointmentRepository(dbClient);
+const serviceRepository = new ServiceRepository(dbClient);
 const serviceHandlerService = new ServiceHandlerService(serviceRepository);
-const orderRepository = new OrderRepository();
+const orderRepository = new OrderRepository(dbClient);
 const orderService = new OrderService(orderRepository);
-const userRepository = new UserRepository();
+const userRepository = new UserRepository(dbClient);
 const clientsPivotRepository = new ClientsPivotRepository();
+const clientsRepository = new ClientsRepository();
 const appointmentService = new AppointmentService(
   appointmentRepository,
   serviceHandlerService,
   orderService,
   userRepository,
   clientsPivotRepository,
+  clientsRepository,
 );
 const appointmentController = new AppointmentController(appointmentService);
 

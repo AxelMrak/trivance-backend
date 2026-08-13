@@ -1,5 +1,5 @@
 import { Appointment } from "@/entities/Appointment";
-import { dbClient, Db } from "@/config/db";
+import { Db } from "@/config/db";
 import { BaseRepository } from "@/repositories/BaseRepository";
 import {
   generateGetAppointmentByIdWithJoinsQuery,
@@ -7,12 +7,12 @@ import {
 } from "@/queries/AppointmentQueries";
 
 export class AppointmentRepository extends BaseRepository<Appointment> {
-  constructor() {
-    super("appointments");
+  constructor(db: Db) {
+    super(db, "appointments");
   }
 
   async getCompanyAppointments(companyId: string, db?: Db): Promise<Appointment[]> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = generateGetAppointmentsWithJoinsQuery();
       const result = await executor.query(query, [companyId]);
@@ -48,7 +48,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     companyId: string,
     db?: Db,
   ): Promise<Appointment | null> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = generateGetAppointmentByIdWithJoinsQuery();
       const result = await executor.query(query, [appointmentId, companyId]);
@@ -79,7 +79,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
   }
 
   async getUserAppointments(userId: string, db?: Db): Promise<Appointment[]> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = `
         SELECT a.id, a.user_id, a.client_id, a.service_id, a.status, a.description, a.start_date, a.created_at, a.updated_at
@@ -108,7 +108,7 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
   }
 
   async isSlotAvailable(serviceId: string, startDate: Date, db?: Db): Promise<boolean> {
-    const executor = db ?? dbClient;
+    const executor = db ?? this.db;
     try {
       const query = `
         WITH new_service AS (
@@ -130,5 +130,31 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
       // If DB fails, be conservative: assume no availability
       return false;
     }
+  }
+
+  async getAvailableSlotsInRange(
+    companyId: string,
+    from: Date,
+    to: Date,
+  ): Promise<Array<{ start_date: Date; duration: string }>> {
+    const query = `
+      SELECT a.start_date, s.duration
+      FROM appointments a
+      JOIN services s ON s.id = a.service_id
+      JOIN users u ON u.id = a.user_id
+      WHERE u.company_id = $1
+        AND a.status <> 'cancelled'
+        AND a.start_date >= $2 AND a.start_date < $3
+      ORDER BY a.start_date ASC
+    `;
+    const { rows } = await this.db.query(query, [companyId, from, to]);
+    return rows;
+  }
+
+  async hasClientIdColumn(): Promise<boolean> {
+    const { rows } = await this.db.query(
+      "SELECT 1 FROM information_schema.columns WHERE table_name = 'appointments' AND column_name = 'client_id' LIMIT 1",
+    );
+    return (rows?.length ?? 0) > 0;
   }
 }

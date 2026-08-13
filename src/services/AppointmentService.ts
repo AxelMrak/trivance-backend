@@ -21,6 +21,7 @@ import {
 } from "@/utils/permissions";
 import { EmailNotificationService } from "@/services/notifications/EmailNotificationService";
 import { ClientsPivotRepository } from "@/repositories/ClientsPivotRepository";
+import { ClientsRepository } from "@/repositories/ClientsRepository";
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
 
 export class AppointmentService {
@@ -30,6 +31,7 @@ export class AppointmentService {
     private orderService: OrderService,
     private userRepository: UserRepository,
     private clientsPivotRepository: ClientsPivotRepository,
+    private clientsRepository: ClientsRepository,
   ) {}
 
   private async isUserLinkedClientForAppointment(
@@ -38,12 +40,7 @@ export class AppointmentService {
   ): Promise<boolean> {
     if (!appointment.client_id) return false;
     try {
-      const { dbClient } = await import("@/config/db");
-      const { rows } = await dbClient.query(
-        "SELECT 1 FROM clients WHERE id = $1 AND user_id = $2 LIMIT 1",
-        [appointment.client_id, userId],
-      );
-      return (rows?.length ?? 0) > 0;
+      return await this.clientsRepository.isLinkedToUser(appointment.client_id, userId);
     } catch {
       return false;
     }
@@ -81,15 +78,7 @@ export class AppointmentService {
       }
       if (include.client && appt.client_id) {
         try {
-          const { dbClient } = await import("@/config/db");
-          const { rows } = await dbClient.query(
-            `SELECT c.*, u.id as u_id, u.name as u_name, u.email as u_email, u.phone as u_phone, u.address as u_address
-             FROM clients c
-             LEFT JOIN users u ON u.id = c.user_id
-             WHERE c.id = $1`,
-            [appt.client_id],
-          );
-          const row = rows[0];
+          const row = await this.clientsRepository.getWithUser(appt.client_id);
           if (row) {
             const client: any = {
               id: row.id,
@@ -190,15 +179,7 @@ export class AppointmentService {
 
     if (include.client && appointment.client_id) {
       try {
-        const { dbClient } = await import("@/config/db");
-        const { rows } = await dbClient.query(
-          `SELECT c.*, u.id as u_id, u.name as u_name, u.email as u_email, u.phone as u_phone, u.address as u_address
-           FROM clients c
-           LEFT JOIN users u ON u.id = c.user_id
-           WHERE c.id = $1`,
-          [appointment.client_id],
-        );
-        const row = rows[0];
+        const row = await this.clientsRepository.getWithUser(appointment.client_id);
         if (row) {
           const client: any = {
             id: row.id,
@@ -343,11 +324,7 @@ export class AppointmentService {
     if (!userExists && clientId) {
       // Fallback: if creator not found but a client was provided, try to use the linked user of that client
       try {
-        const { dbClient } = await import("@/config/db");
-        const { rows } = await dbClient.query("SELECT user_id FROM clients WHERE id = $1", [
-          clientId,
-        ]);
-        const linkedUserId = rows[0]?.user_id as string | undefined;
+        const linkedUserId = await this.clientsRepository.getUserIdByClientId(clientId);
         if (linkedUserId) {
           const linkedExists = await this.userRepository.existsById(linkedUserId);
           if (linkedExists) {
@@ -365,39 +342,27 @@ export class AppointmentService {
     if (appointmentData.client_id) {
       // Accept either clients.id or users.id
       try {
-        const { rows } = await (
-          await import("@/config/db")
-        ).dbClient.query("SELECT id FROM clients WHERE id = $1", [appointmentData.client_id]);
-        if (rows[0]?.id) clientId = rows[0].id;
+        const found = await this.clientsRepository.findIdByClientId(appointmentData.client_id);
+        if (found) clientId = found;
       } catch {}
       if (!clientId) {
         try {
-          const { rows } = await (
-            await import("@/config/db")
-          ).dbClient.query("SELECT id FROM clients WHERE user_id = $1", [
-            appointmentData.client_id,
-          ]);
-          if (rows[0]?.id) clientId = rows[0].id;
+          const found = await this.clientsRepository.findIdByUserId(appointmentData.client_id);
+          if (found) clientId = found;
         } catch {}
       }
     }
     if (!clientId) {
       try {
-        const { rows } = await (
-          await import("@/config/db")
-        ).dbClient.query("SELECT id FROM clients WHERE user_id = $1", [userId]);
-        if (rows[0]?.id) clientId = rows[0].id;
+        const found = await this.clientsRepository.findIdByUserId(userId);
+        if (found) clientId = found;
       } catch {}
     }
 
     // Ensure appointments.client_id column exists before including it
     if (clientId) {
       try {
-        const { dbClient } = await import("@/config/db");
-        const { rows } = await dbClient.query(
-          "SELECT 1 FROM information_schema.columns WHERE table_name = 'appointments' AND column_name = 'client_id' LIMIT 1",
-        );
-        const hasColumn = rows && rows.length > 0;
+        const hasColumn = await this.repository.hasClientIdColumn();
         if (!hasColumn) {
           clientId = undefined;
         }
@@ -534,17 +499,7 @@ export class AppointmentService {
     const companyId = (user as any).company_id;
 
     // Query all appointments in company for the range (status != cancelled)
-    const { dbClient } = await import("@/config/db");
-    const query = `
-      SELECT a.start_date, s.duration
-      FROM appointments a
-      JOIN services s ON s.id = a.service_id
-      JOIN users u ON u.id = a.user_id
-      WHERE u.company_id = $1
-        AND a.status <> 'cancelled'
-        AND a.start_date >= $2 AND a.start_date < $3
-    `;
-    const result = await dbClient.query(query, [companyId, start, end]);
+    const result = await this.repository.getAvailableSlotsInRange(companyId, start, end);
 
     // Build occupied slots map: { 'YYYY-MM-DD': ['HH:00', ...] }
     const toMinutes = (d: any): number => {
@@ -559,7 +514,7 @@ export class AppointmentService {
       return 60;
     };
     const occupied: Record<string, Set<string>> = {};
-    for (const row of result.rows) {
+    for (const row of result) {
       const d = new Date(row.start_date);
       const minutes = toMinutes(row.duration);
       const slots = Math.max(1, Math.ceil(minutes / 60));
