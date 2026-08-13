@@ -9,7 +9,7 @@ describe("Clients Endpoints - Basic", () => {
 
   beforeEach(async () => {
     authUser = await createUser();
-    token = generateToken(authUser.id, authUser.role as any);
+    token = generateToken(authUser.id, authUser.role as any, authUser.company_id);
   });
 
   it("GET  /clients/getAll • returns 200 and array", async () => {

@@ -18,7 +18,7 @@ describe("Users Endpoints - Basic", () => {
     async (path) => {
       const user = await createUser({ role: UserRole.STAFF });
       const resolvedPath = path.includes("%s") ? path.replace("%s", user.id) : path;
-      const token = generateToken(user.id, UserRole.STAFF);
+      const token = generateToken(user.id, UserRole.STAFF, user.company_id);
 
       const res = await getTestAgent().get(resolvedPath).set("Authorization", `Bearer ${token}`);
 
@@ -30,7 +30,7 @@ describe("Users Endpoints - Basic", () => {
     const manager = await createUser({ role: UserRole.MANAGER });
     // Factories create separate companies; tenancy isolation is out of this fix's scope.
     await createUser({ role: UserRole.STAFF });
-    const token = generateToken(manager.id, UserRole.MANAGER);
+    const token = generateToken(manager.id, UserRole.MANAGER, manager.company_id);
 
     const res = await getTestAgent().get("/users/getAll").set("Authorization", `Bearer ${token}`);
 
@@ -48,7 +48,7 @@ describe("Users Endpoints - Basic", () => {
     const manager = await createUser({ role: UserRole.MANAGER });
     // The target belongs to another factory-created company by design; this endpoint is not tenant-isolated yet.
     const target = await createUser({ role: UserRole.ADMIN });
-    const token = generateToken(manager.id, UserRole.MANAGER);
+    const token = generateToken(manager.id, UserRole.MANAGER, manager.company_id);
 
     const res = await getTestAgent()
       .get(`/users/get/${target.id}`)

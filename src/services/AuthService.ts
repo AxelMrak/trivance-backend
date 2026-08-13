@@ -54,7 +54,7 @@ export class AuthService {
     const roleSvc = new RoleService();
     await roleSvc.assignRole(user.id, Number(userRole));
     const level = (await roleSvc.getRoleLevelForUser(user.id)) ?? Number(userRole);
-    const token = this.generateToken(user.id, level);
+    const token = this.generateToken(user.id, level, user.company_id);
     await this.sessionRepo.create({
       user_id: user.id,
       token,
@@ -92,7 +92,7 @@ export class AuthService {
 
     const roleSvc = new RoleService();
     const level = (await roleSvc.getRoleLevelForUser(user.id)) ?? UserRole.GUEST;
-    const token = this.generateToken(user.id, level);
+    const token = this.generateToken(user.id, level, user.company_id);
     await this.sessionRepo.create({
       user_id: user.id,
       token,
@@ -128,8 +128,13 @@ export class AuthService {
     };
   }
 
-  private generateToken(userId: string, role: number): string {
-    return jwt.sign({ userId, role }, config.JWT_SECRET, { expiresIn: "24h" });
+  private generateToken(userId: string, role: number, companyId: string): string {
+    if (!companyId) {
+      throw new Error("No se puede emitir token sin empresa");
+    }
+    return jwt.sign({ userId, role, company_id: companyId }, config.JWT_SECRET, {
+      expiresIn: "24h",
+    });
   }
 
   /**
