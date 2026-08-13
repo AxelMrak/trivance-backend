@@ -1,9 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 
 import { ClientService } from "@services/ClientService";
+import { UserRepository } from "@/repositories/UserRepository";
 
 export class ClientController {
-  constructor(private clientService: ClientService) {}
+  constructor(
+    private clientService: ClientService,
+    private userRepository: UserRepository,
+  ) {}
 
   getAllClients = async (_req: Request, res: Response, next: NextFunction) => {
     try {
@@ -62,7 +66,12 @@ export class ClientController {
 
   createClient = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const created = await this.clientService.createClient(req.body);
+      const userId = (req as any).user?.userId as string | undefined;
+      const user = userId ? await this.userRepository.findById(userId) : null;
+      const created = await this.clientService.createClient(
+        req.body,
+        (user as any)?.company_id ?? null,
+      );
       res.status(201).json(created);
     } catch (error) {
       next(error);
