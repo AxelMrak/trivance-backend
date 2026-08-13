@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { dbClient } from "@/config/db";
 import authMiddleware from "@middlewares/authmiddleware";
 import { attachUserRole, requireMinRole } from "@/middlewares/roleMiddleware";
 import { validateServiceCreate, validateServiceUpdate } from "@middlewares/validation";
@@ -9,9 +10,9 @@ import { ServiceController } from "@/controllers/ServiceController";
 import { UserRepository } from "@/repositories/UserRepository";
 
 const router = Router();
-const serviceRepository = new ServiceRepository();
+const serviceRepository = new ServiceRepository(dbClient);
 const serviceHandlerService = new ServiceHandlerService(serviceRepository);
-const userRepo = new UserRepository();
+const userRepo = new UserRepository(dbClient);
 const serviceController = new ServiceController(serviceHandlerService, userRepo);
 
 router.post(

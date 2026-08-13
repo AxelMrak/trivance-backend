@@ -15,7 +15,7 @@ export const canEditAppointmentStatus = (
   user: { userId: string; role: number } | undefined,
   appointmentOwnerId: string,
 ): boolean => {
-  if (!user) return true; // system/internal flows
+  if (!user) return false;
   // Managers and above can edit regardless of ownership
   if (typeof user.role === "number" && user.role >= RoleLevel.MANAGER) return true;
   if (!isStaffOrHigher(user.role)) return false;
@@ -26,7 +26,7 @@ export const canEditAppointmentDate = (
   user: { userId: string; role: number } | undefined,
   appointmentOwnerId: string,
 ): boolean => {
-  if (!user) return true; // system/internal flows
+  if (!user) return false;
   if (typeof user.role === "number" && user.role >= RoleLevel.MANAGER) return true;
   if (!isStaffOrHigher(user.role)) return false;
   return user.userId === appointmentOwnerId;
