@@ -1,5 +1,6 @@
 import { Preference } from "mercadopago";
 
+import { logger } from "@/utils/logger";
 import { mercadoPagoClient } from "@/config/mercadopago";
 
 export class PaymentService {
@@ -14,7 +15,6 @@ export class PaymentService {
     const preference = new Preference(this.mercadopagoClient);
 
     const siteUrlRaw = (await process.env.SITE_URL) || "http://localhost";
-    console.log("SITE_URL:", siteUrlRaw);
     const siteUrl = siteUrlRaw.replace(/\/$/, "");
     if (!siteUrl) {
       throw new Error("Configuración inválida: SITE_URL no está definida para generar back_urls");
@@ -40,9 +40,8 @@ export class PaymentService {
     };
 
     const response: any = await preference.create({ body: payload });
-    console.log("Payment link created:", response);
     if (!response) {
-      console.error("Failed to create payment link:", response);
+      logger.error("Failed to create payment link:", response);
       throw new Error("Fallo al crear el link de pago");
     }
 
