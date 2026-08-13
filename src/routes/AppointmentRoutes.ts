@@ -31,6 +31,7 @@ const appointmentService = new AppointmentService(
   userRepository,
   clientsPivotRepository,
   clientsRepository,
+  serviceRepository,
 );
 const appointmentController = new AppointmentController(appointmentService);
 

@@ -23,6 +23,7 @@ import { EmailNotificationService } from "@/services/notifications/EmailNotifica
 import { ClientsPivotRepository } from "@/repositories/ClientsPivotRepository";
 import { ClientsRepository } from "@/repositories/ClientsRepository";
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
+import { ServiceRepository } from "@/repositories/ServiceRepository";
 
 export class AppointmentService {
   constructor(
@@ -32,6 +33,7 @@ export class AppointmentService {
     private userRepository: UserRepository,
     private clientsPivotRepository: ClientsPivotRepository,
     private clientsRepository: ClientsRepository,
+    private serviceRepository: ServiceRepository,
   ) {}
 
   private async isUserLinkedClientForAppointment(
@@ -59,47 +61,63 @@ export class AppointmentService {
       return list as any;
     }
 
+    const serviceIds = [...new Set(list.map((a) => a.service_id).filter(Boolean))] as string[];
+    const userIds = [...new Set(list.map((a) => a.user_id).filter(Boolean))] as string[];
+    const clientIds = [...new Set(list.map((a) => a.client_id).filter(Boolean))] as string[];
+
+    let servicesById = new Map<string, any>();
+    let usersById = new Map<string, any>();
+    let clientsById = new Map<string, any>();
+    try {
+      const [services, users, clients] = await Promise.all([
+        include.service && serviceIds.length
+          ? this.serviceRepository.findByIds(serviceIds)
+          : [],
+        include.user && userIds.length ? this.userRepository.findPublicByIds(userIds) : [],
+        include.client && clientIds.length
+          ? this.clientsRepository.getWithUsersByIds(clientIds)
+          : [],
+      ]);
+      servicesById = new Map(services.map((s) => [s.id, s]));
+      usersById = new Map(users.map((u) => [u.id, u]));
+      clientsById = new Map(clients.map((c) => [c.id, c]));
+    } catch {}
+
     const enriched = [] as Array<Appointment & { service?: any; user?: any; client?: any }>;
     for (const appt of list) {
       const item: any = { ...appt };
       if (include.service) {
-        try {
-          const service = await this.serviceHandlerService.getServiceById(appt.service_id);
-          if (service) item.service = service;
-          delete item.service_id;
-        } catch {}
+        const service = servicesById.get(appt.service_id);
+        if (service) item.service = service;
+        delete item.service_id;
       }
       if (include.user) {
-        try {
-          const user = await this.userRepository.findById(appt.user_id);
-          if (user) item.user = { ...user, password: undefined } as any;
-          delete item.user_id;
-        } catch {}
+        const user = usersById.get(appt.user_id);
+        if (user) item.user = { ...user, password: undefined } as any;
+        delete item.user_id;
       }
       if (include.client && appt.client_id) {
-        try {
-          const row = await this.clientsRepository.getWithUser(appt.client_id);
-          if (row) {
-            const client: any = {
-              id: row.id,
-              name: row.name,
-              email: row.email,
-              phone: row.phone,
-              address: row.address,
+        const row = clientsById.get(appt.client_id);
+        if (row) {
+          const client: any = {
+            id: row.id,
+            name: row.name,
+            email: row.email,
+            phone: row.phone,
+            address: row.address,
+          };
+          if (row.u_id) {
+            client.user = {
+              id: row.u_id,
+              name: row.u_name,
+              email: row.u_email,
+              phone: row.u_phone,
+              address: row.u_address,
             };
-            if (row.u_id) {
-              client.user = {
-                id: row.u_id,
-                name: row.u_name,
-                email: row.u_email,
-                phone: row.u_phone,
-                address: row.u_address,
-              };
-            }
-            item.client = client;
           }
-          delete item.client_id;
-        } catch {}
+          item.client = client;
+        }
+        delete item.client_id;
       }
       enriched.push(item);
     }

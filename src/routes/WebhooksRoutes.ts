@@ -30,6 +30,7 @@ const appointmentService = new AppointmentService(
   userRepository,
   clientsPivotRepository,
   clientsRepository,
+  serviceRepository,
 );
 
 const mercadoPagoWebhookService = new MercadoPagoWebhookService(orderService, appointmentService);
