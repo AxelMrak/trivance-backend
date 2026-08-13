@@ -68,4 +68,38 @@ export class ClientsRepository {
     const { rowCount } = await dbClient.query(`DELETE FROM ${this.table} WHERE id = $1`, [id]);
     return (rowCount ?? 0) > 0;
   }
+
+  async isLinkedToUser(clientId: string, userId: string): Promise<boolean> {
+    const { rows } = await dbClient.query(
+      "SELECT 1 FROM clients WHERE id = $1 AND user_id = $2 LIMIT 1",
+      [clientId, userId],
+    );
+    return (rows?.length ?? 0) > 0;
+  }
+
+  async getWithUser(clientId: string): Promise<any | null> {
+    const { rows } = await dbClient.query(
+      `SELECT c.*, u.id as u_id, u.name as u_name, u.email as u_email, u.phone as u_phone, u.address as u_address
+       FROM clients c
+       LEFT JOIN users u ON u.id = c.user_id
+       WHERE c.id = $1`,
+      [clientId],
+    );
+    return rows[0] || null;
+  }
+
+  async getUserIdByClientId(clientId: string): Promise<string | null> {
+    const { rows } = await dbClient.query("SELECT user_id FROM clients WHERE id = $1", [clientId]);
+    return (rows[0]?.user_id as string | undefined) ?? null;
+  }
+
+  async findIdByClientId(clientId: string): Promise<string | null> {
+    const { rows } = await dbClient.query("SELECT id FROM clients WHERE id = $1", [clientId]);
+    return (rows[0]?.id as string | undefined) ?? null;
+  }
+
+  async findIdByUserId(userId: string): Promise<string | null> {
+    const { rows } = await dbClient.query("SELECT id FROM clients WHERE user_id = $1", [userId]);
+    return (rows[0]?.id as string | undefined) ?? null;
+  }
 }

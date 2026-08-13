@@ -140,15 +140,16 @@ describe("AppointmentService.createPaymentLink", () => {
       }),
     } as any);
 
-    const orderService = new OrderService(new OrderRepository());
+    const orderService = new OrderService(new OrderRepository(dbClient));
     const createSpy = jest.spyOn(orderService, "createOrder");
     const updateSpy = jest.spyOn(orderService, "updateOrder");
     const appointmentService = new AppointmentService(
-      new AppointmentRepository(),
+      new AppointmentRepository(dbClient),
       {
         getServiceById: jest.fn(async () => ({ id: "svc-1", name: "Corte", price: 1500 })),
       } as any,
       orderService,
+      {} as any,
       {} as any,
       {} as any,
     );

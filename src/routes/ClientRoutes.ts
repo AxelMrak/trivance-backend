@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { dbClient } from "@/config/db";
 
 import { ClientController } from "@controllers/ClientController";
 import { ClientService } from "@services/ClientService";
@@ -12,7 +13,7 @@ const router = Router();
 
 const clientsRepository = new ClientsRepository();
 const clientService = new ClientService(clientsRepository);
-const clientController = new ClientController(clientService, new UserRepository());
+const clientController = new ClientController(clientService, new UserRepository(dbClient));
 
 router.get(
   "/getAll",
