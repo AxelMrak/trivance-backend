@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { dbClient } from "@/config/db";
 
+import { dbClient } from "@/config/db";
 import AuthMiddleware from "@/middlewares/authmiddleware";
 import { attachUserRole } from "@/middlewares/roleMiddleware";
 import { StatsController } from "@/controllers/StatsController";

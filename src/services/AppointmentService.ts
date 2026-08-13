@@ -70,9 +70,7 @@ export class AppointmentService {
     let clientsById = new Map<string, any>();
     try {
       const [services, users, clients] = await Promise.all([
-        include.service && serviceIds.length
-          ? this.serviceRepository.findByIds(serviceIds)
-          : [],
+        include.service && serviceIds.length ? this.serviceRepository.findByIds(serviceIds) : [],
         include.user && userIds.length ? this.userRepository.findPublicByIds(userIds) : [],
         include.client && clientIds.length
           ? this.clientsRepository.getWithUsersByIds(clientIds)

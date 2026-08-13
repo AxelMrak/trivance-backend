@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { dbClient } from "@/config/db";
 
+import { dbClient } from "@/config/db";
 import { ClientController } from "@controllers/ClientController";
 import { ClientService } from "@services/ClientService";
 import { ClientsRepository } from "@/repositories/ClientsRepository";

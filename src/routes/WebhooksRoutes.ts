@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { dbClient } from "@/config/db";
 import express from "express";
 
+import { dbClient } from "@/config/db";
 import { OrderService } from "@/services/OrderService";
 import { AppointmentService } from "@/services/AppointmentService";
 import { OrderRepository } from "@/repositories/OrderRepository";

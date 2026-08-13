@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { dbClient } from "@/config/db";
 
+import { dbClient } from "@/config/db";
 import { OrderService } from "@/services/OrderService";
 import { OrderRepository } from "@/repositories/OrderRepository";
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
@@ -14,7 +14,11 @@ const router = Router();
 const orderRepository = new OrderRepository(dbClient);
 const orderService = new OrderService(orderRepository);
 const appointmentRepository = new AppointmentRepository(dbClient);
-const orderController = new OrderController(orderService, appointmentRepository, new ClientsRepository());
+const orderController = new OrderController(
+  orderService,
+  appointmentRepository,
+  new ClientsRepository(),
+);
 
 router.get("/:id", AuthMiddleware, attachUserRole(), orderController.getById);
 
