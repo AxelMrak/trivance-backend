@@ -157,4 +157,43 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
     );
     return (rows?.length ?? 0) > 0;
   }
+
+  async searchByTerm(
+    scope: { type: "client"; userId: string } | { type: "company"; companyId: string },
+    like: string,
+    limit: number,
+  ): Promise<any[]> {
+    if (scope.type === "client") {
+      const { rows } = await this.db.query(
+        `SELECT a.id, a.start_date, a.status, s.name as service_name,
+                COALESCE(cu.name, u.name) as client_name
+         FROM appointments a
+         JOIN services s ON s.id = a.service_id
+         JOIN users u ON u.id = a.user_id
+         LEFT JOIN clients c ON c.id = a.client_id
+         LEFT JOIN users cu ON cu.id = c.user_id
+         WHERE (a.user_id = $1 OR c.user_id = $1)
+           AND ($2 = '%%' OR s.name ILIKE $2 OR a.description ILIKE $2 OR cu.name ILIKE $2)
+         ORDER BY a.start_date DESC
+         LIMIT $3`,
+        [scope.userId, like, limit],
+      );
+      return rows;
+    }
+    const { rows } = await this.db.query(
+      `SELECT a.id, a.start_date, a.status, s.name as service_name,
+              COALESCE(cu.name, u.name) as client_name
+       FROM appointments a
+       JOIN services s ON s.id = a.service_id
+       JOIN users u ON u.id = a.user_id
+       LEFT JOIN clients c ON c.id = a.client_id
+       LEFT JOIN users cu ON cu.id = c.user_id
+       WHERE u.company_id = $1
+         AND ($2 = '%%' OR s.name ILIKE $2 OR a.description ILIKE $2 OR cu.name ILIKE $2 OR u.name ILIKE $2)
+       ORDER BY a.start_date DESC
+       LIMIT $3`,
+      [scope.companyId, like, limit],
+    );
+    return rows;
+  }
 }

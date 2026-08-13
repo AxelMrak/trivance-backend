@@ -12,7 +12,7 @@ import { validateClientCreate, validateClientUpdate } from "@/middlewares/valida
 const router = Router();
 
 const clientsRepository = new ClientsRepository();
-const clientService = new ClientService(clientsRepository);
+const clientService = new ClientService(clientsRepository, new UserRepository(dbClient));
 const clientController = new ClientController(clientService, new UserRepository(dbClient));
 
 router.get(

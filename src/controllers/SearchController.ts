@@ -1,9 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 
 import { UserRepository } from "@/repositories/UserRepository";
+import { ServiceRepository } from "@/repositories/ServiceRepository";
+import { AppointmentRepository } from "@/repositories/AppointmentRepository";
+import { ClientsRepository } from "@/repositories/ClientsRepository";
 
 export class SearchController {
-  constructor(private userRepository: UserRepository) {}
+  constructor(
+    private userRepository: UserRepository,
+    private serviceRepository: ServiceRepository,
+    private appointmentRepository: AppointmentRepository,
+    private clientsRepository: ClientsRepository,
+  ) {}
 
   globalSearch = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -16,72 +24,28 @@ export class SearchController {
       if (!user) return res.status(401).json({ message: "Usuario inválido" });
       const companyId = (user as any).company_id;
 
-      const { dbClient } = await import("@/config/db");
       const like = `%${q}%`;
 
-      // Services for company
-      const servicesPromise = dbClient.query(
-        "SELECT id, name, description FROM services WHERE company_id = $1 AND ($2 = '%%' OR name ILIKE $2 OR description ILIKE $2) ORDER BY name LIMIT $3",
-        [companyId, like, limit],
-      );
+      const servicesPromise = this.serviceRepository.searchByTerm(companyId, like, limit);
 
-      // Appointments: filter by role
-      let apptQuery: string;
-      let apptParams: any[];
-      if ((auth.role ?? 0) < 2) {
-        // Clients: only own appointments (as creator or linked client)
-        apptQuery = `
-          SELECT a.id, a.start_date, a.status, s.name as service_name,
-                 COALESCE(cu.name, u.name) as client_name
-          FROM appointments a
-          JOIN services s ON s.id = a.service_id
-          JOIN users u ON u.id = a.user_id
-          LEFT JOIN clients c ON c.id = a.client_id
-          LEFT JOIN users cu ON cu.id = c.user_id
-          WHERE (a.user_id = $1 OR c.user_id = $1)
-            AND ($2 = '%%' OR s.name ILIKE $2 OR a.description ILIKE $2 OR cu.name ILIKE $2)
-          ORDER BY a.start_date DESC
-          LIMIT $3
-        `;
-        apptParams = [auth.userId, like, limit];
-      } else {
-        // Staff+: all company appointments
-        apptQuery = `
-          SELECT a.id, a.start_date, a.status, s.name as service_name,
-                 COALESCE(cu.name, u.name) as client_name
-          FROM appointments a
-          JOIN services s ON s.id = a.service_id
-          JOIN users u ON u.id = a.user_id
-          LEFT JOIN clients c ON c.id = a.client_id
-          LEFT JOIN users cu ON cu.id = c.user_id
-          WHERE u.company_id = $1
-            AND ($2 = '%%' OR s.name ILIKE $2 OR a.description ILIKE $2 OR cu.name ILIKE $2 OR u.name ILIKE $2)
-          ORDER BY a.start_date DESC
-          LIMIT $3
-        `;
-        apptParams = [companyId, like, limit];
-      }
-      // Clients for staff+
-      let clientsRows: any[] = [];
-      if ((auth.role ?? 0) >= 2) {
-        const clientsQuery = `
-          SELECT c.id, COALESCE(c.name, cu.name) as name, COALESCE(c.email, cu.email) as email
-          FROM clients c
-          LEFT JOIN users cu ON cu.id = c.user_id
-          LEFT JOIN user_roles ur ON ur.user_id = cu.id
-          WHERE (c.company_id = $1 OR cu.company_id = $1)
-            AND ($2 = '%%' OR COALESCE(c.name, cu.name) ILIKE $2 OR COALESCE(c.email, cu.email) ILIKE $2)
-            AND (c.user_id IS NULL OR ur.role_level = 1)
-          ORDER BY name NULLS LAST
-          LIMIT $3
-        `;
-        const { rows } = await dbClient.query(clientsQuery, [companyId, like, limit]);
-        clientsRows = rows;
-      }
+      const apptsPromise =
+        (auth.role ?? 0) < 2
+          ? this.appointmentRepository.searchByTerm(
+              { type: "client", userId: auth.userId },
+              like,
+              limit,
+            )
+          : this.appointmentRepository.searchByTerm({ type: "company", companyId }, like, limit);
 
-      const [servicesRes, apptsRes] = await Promise.all([
+      const clientsPromise =
+        (auth.role ?? 0) >= 2
+          ? this.clientsRepository.searchByTerm(companyId, like, limit)
+          : Promise.resolve([]);
+
+      const [servicesRes, apptsRes, clientsRows] = await Promise.all([
         servicesPromise,
-        dbClient.query(apptQuery, apptParams),
+        apptsPromise,
+        clientsPromise,
       ]);
 
       const results: Array<{
@@ -99,7 +63,7 @@ export class SearchController {
             : s === "cancelled"
               ? "Cancelado"
               : s;
-      for (const s of servicesRes.rows) {
+      for (const s of servicesRes) {
         results.push({
           type: "Servicio",
           id: s.id,
@@ -107,7 +71,7 @@ export class SearchController {
           subtitle: s.description || "Servicio",
         });
       }
-      for (const a of apptsRes.rows) {
+      for (const a of apptsRes) {
         const date = new Date(a.start_date);
         const dateStr = date.toLocaleString("es-AR", { dateStyle: "medium", timeStyle: "short" });
         results.push({
