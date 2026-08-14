@@ -1,11 +1,32 @@
 import { Preference } from "mercadopago";
 
 import { mercadoPagoClient } from "@/config/mercadopago";
-import { PaymentProvider } from "@/entities/PaymentProvider";
+import { PaymentProvider, PaymentData, PaymentStatus } from "@/entities/PaymentProvider";
+import { getPaymentResource } from "@/services/payments/mercadopagoClient";
+import { toCents } from "@/utils/money";
 import { InternalServerError } from "@/errors/httpErrors";
+import { DEFAULT_PAYMENT_CURRENCY } from "@/config/constants";
 
 export class MercadoPagoService implements PaymentProvider {
   private preference = new Preference(mercadoPagoClient);
+
+  async getPayment(id: string): Promise<PaymentData | null> {
+    const payment = await getPaymentResource().get({ id });
+    if (!payment || !payment.status || !payment.external_reference) {
+      return null;
+    }
+    if (payment.transaction_amount == null || payment.currency_id == null) {
+      return null;
+    }
+    return {
+      id: String(payment.id),
+      status: payment.status as PaymentStatus,
+      externalReference: payment.external_reference,
+      transactionAmountCents: toCents(payment.transaction_amount),
+      currencyId: payment.currency_id,
+      liveMode: payment.live_mode === true,
+    };
+  }
 
   async createPaymentLink(item: {
     id: string;
@@ -35,7 +56,7 @@ export class MercadoPagoService implements PaymentProvider {
           title: item.title,
           quantity: 1,
           unit_price: Number(item.price),
-          currency_id: "ARS",
+          currency_id: DEFAULT_PAYMENT_CURRENCY,
         },
       ],
       external_reference: item.orderId,

@@ -1,6 +1,7 @@
 import { MercadoPagoWebhookService } from "@/services/webhooks/MercadoPagoWebhookService";
-import * as mpAdapter from "@/services/payments/mercadopagoClient";
 import { dbClient } from "@/config/db";
+import { toCents } from "@/utils/money";
+import { PaymentData, PaymentStatus } from "@/entities/PaymentProvider";
 
 let fakeClient: { query: jest.Mock; release: jest.Mock };
 
@@ -10,115 +11,128 @@ beforeAll(() => {
     release: jest.fn(async () => undefined),
   };
   jest.spyOn(dbClient as any, "connect").mockResolvedValue(fakeClient as any);
-  jest.spyOn(mpAdapter, "getPaymentResource").mockImplementation(
-    () =>
-      ({
-        get: async ({ id }: { id: string }) => {
-          if (id === "pay-approved")
-            return { id, status: "approved", external_reference: "pref-123" } as any;
-          if (id === "pay-rejected")
-            return { id, status: "rejected", external_reference: "pref-456" } as any;
-          return { id, status: "pending", external_reference: "pref-789" } as any;
-        },
-      }) as any,
-  );
 });
 
-beforeEach(() => {
-  jest.clearAllMocks();
+afterAll(() => {
+  jest.restoreAllMocks();
 });
 
 describe("MercadoPagoWebhookService", () => {
   const makeSvc = () => {
-    const orderService = {
-      getOrderByReference: jest.fn(async (ref: string) => {
+    const orderRepository = {
+      findByReference: jest.fn(async (ref: string) => {
         if (["pref-123", "pref-456", "pref-789", "999"].includes(ref)) {
-          return { id: "order-1", appointment_id: "appt-1", reference_id: ref } as any;
+          return {
+            id: "order-1",
+            appointment_id: "appt-1",
+            reference_id: ref,
+            status: "pending",
+            amount: 10000,
+            currency: "ARS",
+          };
         }
-        throw new Error("Orden no encontrada para la referencia dada");
+        return undefined;
       }),
-      updateOrder: jest.fn(async () => ({})),
+      update: jest.fn(async () => ({})),
     } as any;
 
-    const appointmentService = {
-      updateAppointment: jest.fn(async () => ({})),
+    const appointmentRepository = { update: jest.fn(async () => ({})) } as any;
+    const paymentEventRepository = {
+      insert: jest.fn(async () => ({})),
+      findByPaymentId: jest.fn(async () => undefined),
+    } as any;
+
+    const provider = {
+      getPayment: jest.fn(async (id: string): Promise<PaymentData | null> => {
+        const byId: Record<string, { status: PaymentStatus; ref: string }> = {
+          "pay-approved": { status: "approved", ref: "pref-123" },
+          "pay-rejected": { status: "rejected", ref: "pref-456" },
+          "pay-cancelled": { status: "cancelled", ref: "pref-456" },
+        };
+        const entry = byId[id] ?? { status: "pending" as PaymentStatus, ref: "pref-789" };
+        return {
+          id,
+          status: entry.status,
+          externalReference: entry.ref,
+          transactionAmountCents: toCents(10000),
+          currencyId: "ARS",
+          liveMode: false,
+        };
+      }),
     } as any;
 
     return {
-      service: new MercadoPagoWebhookService(orderService, appointmentService),
-      orderService,
-      appointmentService,
+      service: new MercadoPagoWebhookService(
+        orderRepository,
+        appointmentRepository,
+        paymentEventRepository,
+        provider,
+      ),
+      orderRepository,
+      appointmentRepository,
+      paymentEventRepository,
+      provider,
     };
   };
 
   test("fetches payment by id and confirms appointment when approved", async () => {
-    const { service, orderService, appointmentService } = makeSvc();
+    const { service, orderRepository, appointmentRepository, provider } = makeSvc();
 
     const payload = { type: "payment", data: { id: "pay-approved" } };
     const result = await service.processWebhook(payload as any);
 
-    expect(orderService.getOrderByReference).toHaveBeenCalledWith("pref-123");
-    expect(orderService.updateOrder).toHaveBeenCalledWith(
-      "order-1",
-      { status: "paid" },
-      fakeClient,
-    );
-    expect(appointmentService.updateAppointment).toHaveBeenCalledWith(
+    expect(provider.getPayment).toHaveBeenCalledWith("pay-approved");
+    expect(orderRepository.findByReference).toHaveBeenCalledWith("pref-123");
+    expect(orderRepository.update).toHaveBeenCalledWith("order-1", { status: "paid" }, fakeClient);
+    expect(appointmentRepository.update).toHaveBeenCalledWith(
       "appt-1",
       { status: "confirmed" },
-      undefined,
       fakeClient,
     );
-    expect(result).toEqual({ orderId: "order-1", appointmentId: "appt-1", status: "paid" });
+    expect(result).toEqual({ status: "processed" });
   });
 
   test("maps rejected payments to cancelled and cancels appointment", async () => {
-    const { service, orderService, appointmentService } = makeSvc();
+    const { service, orderRepository, appointmentRepository } = makeSvc();
 
     const payload = { type: "payment", data: { id: "pay-rejected" } };
     const result = await service.processWebhook(payload as any);
 
-    expect(orderService.getOrderByReference).toHaveBeenCalledWith("pref-456");
-    expect(orderService.updateOrder).toHaveBeenCalledWith(
+    expect(orderRepository.update).toHaveBeenCalledWith(
       "order-1",
       { status: "cancelled" },
       fakeClient,
     );
-    expect(appointmentService.updateAppointment).toHaveBeenCalledWith(
+    expect(appointmentRepository.update).toHaveBeenCalledWith(
       "appt-1",
       { status: "cancelled" },
-      undefined,
       fakeClient,
     );
-    expect(result).toEqual({ orderId: "order-1", appointmentId: "appt-1", status: "cancelled" });
+    expect(result).toEqual({ status: "processed" });
   });
 
-  test("uses Mercado Pago status when live_mode is false", async () => {
-    const { service, orderService, appointmentService } = makeSvc();
+  test("maps cancelled payments to cancelled and cancels appointment", async () => {
+    const { service, orderRepository, appointmentRepository } = makeSvc();
 
-    const payload = { type: "payment", live_mode: false, data: { id: "pay-rejected" } };
-    const result = await service.processWebhook(payload as any);
+    const payload = { type: "payment", data: { id: "pay-cancelled" } };
+    const result = await service.processWebhook(payload);
 
-    expect(mpAdapter.getPaymentResource).toHaveBeenCalledTimes(1);
-    expect(orderService.updateOrder).toHaveBeenCalledWith(
+    expect(orderRepository.update).toHaveBeenCalledWith(
       "order-1",
       { status: "cancelled" },
       fakeClient,
     );
-    expect(appointmentService.updateAppointment).toHaveBeenCalledWith(
+    expect(appointmentRepository.update).toHaveBeenCalledWith(
       "appt-1",
       { status: "cancelled" },
-      undefined,
       fakeClient,
     );
-    expect(result).toEqual({ orderId: "order-1", appointmentId: "appt-1", status: "cancelled" });
+    expect(result).toEqual({ status: "processed" });
   });
 
-  test("returns a message when webhook is not a processable payment notification", async () => {
+  test("ignores payment notifications that are not processable", async () => {
     const { service } = makeSvc();
     const result = await service.processWebhook({} as any);
-    expect(result).toEqual({
-      message: "Webhook not processed: not a payment notification.",
-    });
+    expect(result).toEqual({ status: "ignored", reason: "not_payment" });
   });
 });

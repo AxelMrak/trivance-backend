@@ -6,6 +6,8 @@ export interface Order {
   provider: string;
   reference_id: string;
   status: OrderStatus;
+  amount?: string | number;
+  currency?: string;
   created_at: string;
   updated_at: string;
 }
