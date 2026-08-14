@@ -74,6 +74,7 @@ describe("transaction()", () => {
 
       expect(client.query).toHaveBeenCalledWith("ROLLBACK");
       expect(client.release).toHaveBeenCalledTimes(1);
+      expect(client.release).toHaveBeenCalledWith(expect.any(Error));
     } finally {
       connectSpy.mockRestore();
     }
