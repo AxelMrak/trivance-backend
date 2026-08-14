@@ -4,7 +4,8 @@ import { OrderRepository } from "@/repositories/OrderRepository";
 import { AppointmentService } from "@/services/AppointmentService";
 import { OrderService } from "@/services/OrderService";
 import { PaymentServiceFactory } from "@/services/payments/PaymentServiceFactory";
-import * as mpAdapter from "@/services/payments/mercadopagoClient";
+import { PaymentData } from "@/entities/PaymentProvider";
+import { toCents } from "@/utils/money";
 import { MercadoPagoWebhookService } from "@/services/webhooks/MercadoPagoWebhookService";
 
 type FakeClient = {
@@ -99,7 +100,6 @@ describe("AppointmentService.createPaymentLink", () => {
       description: "",
     };
 
-    // Client handed out by connect() — represents the transaction connection.
     const client = makeClient();
     client.query = jest.fn(async (sql: string) => {
       if (sql === "BEGIN") {
@@ -115,13 +115,12 @@ describe("AppointmentService.createPaymentLink", () => {
         events.push("UPDATE_ORDER");
         return { rows: [orderRow], rowCount: 1 };
       } else if (sql.includes("FROM orders")) {
-        // Existence read inside the transaction must see the just-created row
         return { rows: [orderRow], rowCount: 1 };
       }
       return { rows: [], rowCount: 0 };
     });
     const connectSpy = jest.spyOn(dbClient as any, "connect").mockResolvedValue(client as any);
-    // Pool-level queries (appointment lookups outside the transaction).
+
     const poolQuerySpy = jest.spyOn(dbClient as any, "query").mockImplementation((async (
       sql: string,
     ) => {
@@ -165,13 +164,12 @@ describe("AppointmentService.createPaymentLink", () => {
       expect(result.orderId).toBe("order-1");
       expect(result.paymentLink).toBe("https://pay.example.com/checkout");
 
-      // createOrder and updateOrder must run INSIDE the transaction (same client)…
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({ appointment_id: "appt-1", reference_id: expect.any(String) }),
         client,
       );
       expect(updateSpy).toHaveBeenCalledWith("order-1", { reference_id: "order-1" }, client);
-      // …and the HTTP call to the provider must happen AFTER the commit.
+
       const order = (name: string) => events.indexOf(name);
       expect(order("BEGIN")).toBeGreaterThanOrEqual(0);
       expect(order("BEGIN")).toBeLessThan(order("CREATE_ORDER"));
@@ -198,47 +196,59 @@ describe("MercadoPagoWebhookService.processWebhook", () => {
     release: jest.fn(async () => undefined),
   });
 
-  beforeAll(() => {
-    jest.spyOn(mpAdapter, "getPaymentResource").mockImplementation(
-      () =>
-        ({
-          get: async ({ id }: { id: string }) =>
-            ({ id, status: "approved", external_reference: "pref-123" }) as any,
-        }) as any,
-    );
-  });
-
-  beforeEach(() => {
-    jest.clearAllMocks();
+  const makePaymentData = (): PaymentData => ({
+    id: "pay-1",
+    status: "approved",
+    externalReference: "ref-1",
+    transactionAmountCents: toCents(10000),
+    currencyId: "ARS",
+    liveMode: false,
   });
 
   test("runs order + appointment status updates in the same transaction", async () => {
     const events: string[] = [];
     const client = makeFakeClient(events);
     const connectSpy = jest.spyOn(dbClient as any, "connect").mockResolvedValue(client as any);
-    const orderService = {
-      getOrderByReference: jest.fn(async () => ({ id: "order-1", appointment_id: "appt-1" })),
-      updateOrder: jest.fn(async () => ({})),
+    const orderRepository = {
+      findByReference: jest.fn(async () => ({
+        id: "order-1",
+        appointment_id: "appt-1",
+        reference_id: "ref-1",
+        status: "pending",
+        amount: 10000,
+        currency: "ARS",
+      })),
+      update: jest.fn(async () => ({})),
     } as any;
-    const appointmentService = {
-      updateAppointment: jest.fn(async () => ({})),
+    const appointmentRepository = { update: jest.fn(async () => ({})) } as any;
+    const paymentEventRepository = {
+      insert: jest.fn(async () => ({})),
+      findByPaymentId: jest.fn(async () => undefined),
     } as any;
-    const svc = new MercadoPagoWebhookService(orderService, appointmentService);
+    const provider = { getPayment: jest.fn(async () => makePaymentData()) } as any;
+    const svc = new MercadoPagoWebhookService(
+      orderRepository,
+      appointmentRepository,
+      paymentEventRepository,
+      provider,
+    );
 
     try {
       const result = await svc.processWebhook({
         type: "payment",
         data: { id: "pay-1" },
-        live_mode: false,
       } as any);
 
-      expect(result).toEqual({ orderId: "order-1", appointmentId: "appt-1", status: "paid" });
-      // Both updates must use the SAME transaction client.
-      expect(orderService.updateOrder).toHaveBeenCalledWith("order-1", { status: "paid" }, client);
-      expect(appointmentService.updateAppointment).toHaveBeenCalledWith(
+      expect(result).toEqual({ status: "processed" });
+
+      expect(orderRepository.update).toHaveBeenCalledWith("order-1", { status: "paid" }, client);
+      expect(appointmentRepository.update).toHaveBeenCalledWith(
         "appt-1",
         { status: "confirmed" },
-        undefined,
+        client,
+      );
+      expect(paymentEventRepository.insert).toHaveBeenCalledWith(
+        expect.objectContaining({ payment_id: "pay-1", order_id: "order-1", event: "process" }),
         client,
       );
       expect(events).toEqual(["BEGIN", "COMMIT"]);
@@ -252,27 +262,42 @@ describe("MercadoPagoWebhookService.processWebhook", () => {
     const events: string[] = [];
     const client = makeFakeClient(events);
     const connectSpy = jest.spyOn(dbClient as any, "connect").mockResolvedValue(client as any);
-    const orderService = {
-      getOrderByReference: jest.fn(async () => ({ id: "order-1", appointment_id: "appt-1" })),
-      updateOrder: jest.fn(async () => ({})),
+    const orderRepository = {
+      findByReference: jest.fn(async () => ({
+        id: "order-1",
+        appointment_id: "appt-1",
+        reference_id: "ref-1",
+        status: "pending",
+        amount: 10000,
+        currency: "ARS",
+      })),
+      update: jest.fn(async () => ({})),
     } as any;
-    const appointmentService = {
-      updateAppointment: jest.fn(async () => {
+    const appointmentRepository = {
+      update: jest.fn(async () => {
         throw new Error("appointment update failed");
       }),
     } as any;
-    const svc = new MercadoPagoWebhookService(orderService, appointmentService);
+    const paymentEventRepository = {
+      insert: jest.fn(async () => ({})),
+      findByPaymentId: jest.fn(async () => undefined),
+    } as any;
+    const provider = { getPayment: jest.fn(async () => makePaymentData()) } as any;
+    const svc = new MercadoPagoWebhookService(
+      orderRepository,
+      appointmentRepository,
+      paymentEventRepository,
+      provider,
+    );
 
     try {
       await expect(
-        svc.processWebhook({ type: "payment", data: { id: "pay-1" }, live_mode: false } as any),
+        svc.processWebhook({ type: "payment", data: { id: "pay-1" } } as any),
       ).rejects.toThrow("appointment update failed");
-
-      expect(orderService.updateOrder).toHaveBeenCalledWith("order-1", { status: "paid" }, client);
-      expect(appointmentService.updateAppointment).toHaveBeenCalledWith(
+      expect(orderRepository.update).toHaveBeenCalledWith("order-1", { status: "paid" }, client);
+      expect(appointmentRepository.update).toHaveBeenCalledWith(
         "appt-1",
         { status: "confirmed" },
-        undefined,
         client,
       );
       expect(events).toEqual(["BEGIN", "ROLLBACK"]);
