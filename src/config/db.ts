@@ -16,15 +16,20 @@ dbClient.on("error", (err) => {
 
 export async function transaction<T>(work: (db: Db) => Promise<T>): Promise<T> {
   const client = await dbClient.connect();
+  let rollbackError: unknown;
   try {
     await client.query("BEGIN");
     const result = await work(client);
     await client.query("COMMIT");
     return result;
   } catch (cause) {
-    await client.query("ROLLBACK").catch(() => {});
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackCause) {
+      rollbackError = rollbackCause;
+    }
     throw cause;
   } finally {
-    client.release();
+    client.release(rollbackError as Error | undefined);
   }
 }
