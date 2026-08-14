@@ -72,8 +72,6 @@ describe("transaction()", () => {
       ).rejects.toThrow("work failed");
 
       expect(client.query).toHaveBeenCalledWith("ROLLBACK");
-      // The rollback error must be passed to release() so pg DESTROYS the
-      // connection instead of returning it to the pool with an open transaction.
       expect(client.release).toHaveBeenCalledTimes(1);
       expect(client.release).toHaveBeenCalledWith(expect.any(Error));
     } finally {
