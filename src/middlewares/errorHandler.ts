@@ -66,9 +66,6 @@ export const errorHandler: ErrorRequestHandler = (
         message = "Unauthorized - Invalid Token";
         break;
       default:
-        if (err.message) {
-          message = err.message;
-        }
         break;
     }
   }
@@ -76,6 +73,7 @@ export const errorHandler: ErrorRequestHandler = (
 
   const errorResponse = {
     message,
+    ...(err instanceof AppError && err.code ? { code: err.code } : {}),
     error: {
       message,
       ...(process.env.NODE_ENV === "development" &&
