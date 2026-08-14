@@ -11,9 +11,22 @@ const POSTGRES_ERROR_CODE = {
   STRING_DATA_RIGHT_TRUNCATION: "22001",
 } as const;
 
+const POSTGRES_ERROR = {
+  UNDEFINED_TABLE: "42P01",
+  UNDEFINED_COLUMN: "42703",
+} as const;
+
 const POSTGRES_CONSTRAINT = {
   CLIENT_EMAIL: "uq_clients_email_company",
 } as const;
+
+export function isSchemaError(error: unknown): boolean {
+  return (
+    error instanceof DatabaseError &&
+    (error.code === POSTGRES_ERROR.UNDEFINED_TABLE ||
+      error.code === POSTGRES_ERROR.UNDEFINED_COLUMN)
+  );
+}
 
 export function mapDatabaseError(error: DatabaseError): AppError {
   const options = { cause: error };

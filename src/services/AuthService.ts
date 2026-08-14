@@ -27,23 +27,19 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(payload.password, 10);
-    const userRole = UserRole.CLIENT;
-
-    const clientsRepo = new ClientsRepository();
-    const existingClient = await clientsRepo.findByEmail(payload.email);
-    const companyId = existingClient?.company_id ?? process.env.COMPANY_ID ?? null;
-
+    const companyId = process.env.COMPANY_ID || "";
     if (!companyId) {
       throw new Error("El ID de la empresa no está configurado");
     }
+    const userRole = UserRole.CLIENT;
 
     const user = await this.repository.create({
+      company_id: companyId,
       name: payload.name,
       email: payload.email,
       phone: payload.phone,
       address: payload.address,
       password: hashedPassword,
-      ...(companyId ? { company_id: companyId } : {}),
     });
 
     if (!user) {
@@ -54,7 +50,7 @@ export class AuthService {
     const roleSvc = new RoleService();
     await roleSvc.assignRole(user.id, Number(userRole));
     const level = (await roleSvc.getRoleLevelForUser(user.id)) ?? Number(userRole);
-    const token = this.generateToken(user.id, level, user.company_id);
+    const token = this.generateToken(user.id, level);
     await this.sessionRepo.create({
       user_id: user.id,
       token,
@@ -62,17 +58,26 @@ export class AuthService {
       ip_address: ipAddress,
     });
 
-    if (existingClient) {
-      try {
-        const updates: any = { user_id: existingClient.user_id ?? user.id };
-        if (!existingClient.name) updates.name = payload.name;
-        if (!existingClient.email) updates.email = payload.email;
-        if (!existingClient.phone) updates.phone = payload.phone;
-        if (!existingClient.address) updates.address = payload.address;
-        await clientsRepo.update(existingClient.id, updates);
-      } catch (err) {
-        console.error("Error linking client on signup:", err);
+    // Link existing client by email (if present and not linked)
+    try {
+      const clientsRepo = new ClientsRepository();
+      const client = await clientsRepo.findByEmail(payload.email, companyId);
+      if (client) {
+        const updates: any = { user_id: client.user_id ?? user.id };
+        if (!client.name) updates.name = payload.name;
+        if (!client.email) updates.email = payload.email;
+        if (!client.phone) updates.phone = payload.phone;
+        if (!client.address) updates.address = payload.address;
+        await clientsRepo.update(client.id, updates);
       }
+    } catch (error) {
+      // Best-effort: el link es un efecto secundario del signUp, no debe romper
+      // el registro. Pero nunca en silencio: log con contexto.
+      console.error("Failed to link existing client to new user", {
+        userId: user.id,
+        email: payload.email,
+        error,
+      });
     }
 
     return this.buildResponse({ ...user, role: level } as any, token);
@@ -92,7 +97,7 @@ export class AuthService {
 
     const roleSvc = new RoleService();
     const level = (await roleSvc.getRoleLevelForUser(user.id)) ?? UserRole.GUEST;
-    const token = this.generateToken(user.id, level, user.company_id);
+    const token = this.generateToken(user.id, level);
     await this.sessionRepo.create({
       user_id: user.id,
       token,
@@ -128,13 +133,8 @@ export class AuthService {
     };
   }
 
-  private generateToken(userId: string, role: number, companyId: string): string {
-    if (!companyId) {
-      throw new Error("No se puede emitir token sin empresa");
-    }
-    return jwt.sign({ userId, role, company_id: companyId }, config.JWT_SECRET, {
-      expiresIn: "24h",
-    });
+  private generateToken(userId: string, role: number): string {
+    return jwt.sign({ userId, role }, config.JWT_SECRET, { expiresIn: "24h" });
   }
 
   /**

@@ -71,16 +71,6 @@ export const errorHandler: ErrorRequestHandler = (
         }
         break;
     }
-
-    if (err.message?.includes("duplicate key value violates unique constraint")) {
-      statusCode = 400;
-
-      if (err.message.includes("uq_clients_email_company")) {
-        message = "El correo electrónico ya existe y pertenece a otro cliente.";
-      } else {
-        message = "Los datos ingresados ya existen en otro cliente.";
-      }
-    }
   }
   // Non-Error values (string, plain object): logged above, never leaked to the client.
 
