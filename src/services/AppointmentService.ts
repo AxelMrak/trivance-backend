@@ -13,6 +13,7 @@ import {
 } from "@/errors/httpErrors";
 import { CreatePaymentLinkResponse } from "@/entities/Response";
 import { UserRepository } from "@/repositories/UserRepository";
+import { DEFAULT_PAYMENT_CURRENCY } from "@/config/constants";
 import { JwtPayload } from "@/middlewares/authmiddleware";
 import {
   canEditAppointmentDate,
@@ -463,7 +464,11 @@ export class AppointmentService {
       status: "pending",
       provider: "mercadopago",
       reference_id: tempRef,
+      currency: DEFAULT_PAYMENT_CURRENCY,
     };
+    if (service.price != null) {
+      orderToCreate.amount = service.price;
+    }
     const createdOrder = await transaction(async (db) => {
       const order = await this.orderService.createOrder(orderToCreate, db);
       if (!order) {

@@ -63,8 +63,12 @@ export const config: {
   JWT_SECRET: process.env.JWT_SECRET as string,
 };
 
+export const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET || "";
+export const MP_WEBHOOK_TOLERANCE_S = 300;
+export const DEFAULT_PAYMENT_CURRENCY = "ARS";
+
 if (process.env.NODE_ENV === "production") {
-  const requiredVars = ["DB_URL", "JWT_SECRET"];
+  const requiredVars = ["DB_URL", "JWT_SECRET", "MP_WEBHOOK_SECRET"];
   const optionalVars = ["DB_USER", "DB_PASSWORD", "DB_NAME"];
   requiredVars.forEach((varName) => {
     if (!process.env[varName]) {

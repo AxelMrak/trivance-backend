@@ -169,3 +169,45 @@ export const createAppointment = async (
 
   return rows[0];
 };
+
+export interface OrderRow {
+  id: string;
+  appointment_id: string;
+  provider: string;
+  reference_id: string;
+  status: string;
+  amount?: number;
+  currency?: string;
+}
+
+export const createOrderRow = async (opts: {
+  appointment: { id: string };
+  reference?: string;
+  status?: string;
+  amount?: number;
+  currency?: string;
+}): Promise<OrderRow> => {
+  const reference = opts.reference ?? `ref-${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+  const status = opts.status ?? "pending";
+  if (opts.amount !== undefined || opts.currency !== undefined) {
+    const { rows } = await dbClient.query(
+      `INSERT INTO orders (appointment_id, provider, reference_id, status, amount, currency)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [
+        opts.appointment.id,
+        "mercadopago",
+        reference,
+        status,
+        opts.amount ?? 10000,
+        opts.currency ?? "ARS",
+      ],
+    );
+    return rows[0] as OrderRow;
+  }
+  const { rows } = await dbClient.query(
+    `INSERT INTO orders (appointment_id, provider, reference_id, status)
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [opts.appointment.id, "mercadopago", reference, status],
+  );
+  return rows[0] as OrderRow;
+};
