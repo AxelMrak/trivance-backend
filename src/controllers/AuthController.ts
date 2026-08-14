@@ -33,7 +33,7 @@ export class AuthController {
 
       res.status(201).json({ user: data?.user });
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 
@@ -56,7 +56,7 @@ export class AuthController {
 
       res.status(200).json({ user: data.user });
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 
@@ -67,7 +67,7 @@ export class AuthController {
       res.clearCookie("token");
       res.status(200).json({ message: "Se cerró sesión exitosamente" });
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 
@@ -87,7 +87,7 @@ export class AuthController {
 
       res.status(200).json({ user });
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 }

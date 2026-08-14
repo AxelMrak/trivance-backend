@@ -1,20 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 
 import { ClientService } from "@services/ClientService";
-import { UserRepository } from "@/repositories/UserRepository";
 
 export class ClientController {
-  constructor(
-    private clientService: ClientService,
-    private userRepository: UserRepository,
-  ) {}
+  constructor(private clientService: ClientService) {}
 
   getAllClients = async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const clients = await this.clientService.getAllClients();
       res.json(clients);
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 
@@ -29,7 +25,7 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 
@@ -45,7 +41,7 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 
@@ -60,21 +56,16 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 
   createClient = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = (req as any).user?.userId as string | undefined;
-      const user = userId ? await this.userRepository.findById(userId) : null;
-      const created = await this.clientService.createClient(
-        req.body,
-        (user as any)?.company_id ?? null,
-      );
+      const created = await this.clientService.createClient(req.body);
       res.status(201).json(created);
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 }
