@@ -13,6 +13,7 @@ import {
 import { handleDatabaseError } from "@/errors/persistenceErrors";
 import { CreatePaymentLinkResponse } from "@/entities/Response";
 import { UserRepository } from "@/repositories/UserRepository";
+import { DEFAULT_PAYMENT_CURRENCY } from "@/config/constants";
 import { JwtPayload } from "@/middlewares/authmiddleware";
 import {
   canEditAppointmentDate,
@@ -434,11 +435,20 @@ export class AppointmentService {
       status: "pending",
       provider: "mercadopago",
       reference_id: tempRef,
+      currency: DEFAULT_PAYMENT_CURRENCY,
     };
-    const createdOrder = await this.orderService.createOrder(orderToCreate);
-    if (!createdOrder) {
-      throw new InternalServerError("Fallo al crear el pedido asociado al turno");
+    if (service.price != null) {
+      orderToCreate.amount = service.price;
     }
+    const createdOrder = await transaction(async (db) => {
+      const order = await this.orderService.createOrder(orderToCreate, db);
+      if (!order) {
+        throw new InternalServerError("Fallo al crear el pedido asociado al turno");
+      }
+      // Set the stable reference atomically with the insert: both commit or both roll back
+      await this.orderService.updateOrder(order.id, { reference_id: order.id }, db);
+      return order;
+    });
 
     const paymentResponse = (await provider.createPaymentLink({
       id: appointment.id,
