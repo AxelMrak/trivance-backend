@@ -9,6 +9,7 @@ export interface AuthRequest extends Request {
 export type JwtPayload = {
   userId: string;
   role: number;
+  company_id: string;
 };
 
 const AuthMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -26,6 +27,9 @@ const AuthMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => 
 
   try {
     const decoded = jwt.verify(token, config.JWT_SECRET) as JwtPayload;
+    if (!decoded.company_id) {
+      return res.status(401).json({ message: "Token invalido" });
+    }
     req.user = decoded;
     next();
   } catch {

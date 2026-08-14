@@ -10,7 +10,9 @@ export const signInAndGetToken = async (email: string, password: string) => {
   return token;
 };
 
-export const generateToken = (userId: string, role: number) => {
-  const token = jwt.sign({ userId, role }, config.JWT_SECRET, { expiresIn: "24h" });
+export const generateToken = (userId: string, role: number, companyId: string) => {
+  const token = jwt.sign({ userId, role, company_id: companyId }, config.JWT_SECRET, {
+    expiresIn: "24h",
+  });
   return token;
 };

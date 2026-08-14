@@ -6,7 +6,7 @@ export class ServiceHandlerService {
   constructor(private repository: ServiceRepository) {}
 
   async createService(payload: ServiceRequest, companyID?: string) {
-    const resolvedCompany = companyID || process.env.COMPANY_ID || "";
+    const resolvedCompany = companyID || "";
 
     if (!resolvedCompany) {
       throw new Error("Company ID is not set");
@@ -33,8 +33,7 @@ export class ServiceHandlerService {
     return service || null;
   }
 
-  async getAllCompanyServices(): Promise<Service[]> {
-    const companyID = process.env.COMPANY_ID || "";
+  async getAllCompanyServices(companyID?: string): Promise<Service[]> {
     if (!companyID) {
       throw new Error("El ID de la empresa no está configurado");
     }

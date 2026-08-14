@@ -34,9 +34,13 @@ export class ServiceController {
     }
   };
 
-  getAllCompanyServices = async (_req: Request, res: Response, next: NextFunction) => {
+  getAllCompanyServices = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const services = await this.serviceHandlerService.getAllCompanyServices();
+      const userId = (req as any).user?.userId as string | undefined;
+      const user = userId ? await this.userRepository.findById(userId) : null;
+      const services = await this.serviceHandlerService.getAllCompanyServices(
+        (user as any)?.company_id,
+      );
       return res.status(200).json(services);
     } catch (error) {
       next(error);

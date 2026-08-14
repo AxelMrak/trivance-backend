@@ -11,7 +11,7 @@ describe("Appointments Endpoints - Basic", () => {
   beforeEach(async () => {
     user = await createUser();
     service = await createService({ company_id: user.company_id, requires_deposit: false });
-    token = generateToken(user.id, user.role as any);
+    token = generateToken(user.id, user.role as any, user.company_id);
   });
 
   it("POST  /appointments/create • valid payload without deposit • returns 201 confirmed", async () => {
@@ -181,7 +181,7 @@ describe("Appointments Endpoints - Basic", () => {
 
   it("PUT  /appointments/update/:id • client cannot change status • returns 403", async () => {
     const client = await createUser({ role: UserRole.CLIENT, company_id: user.company_id });
-    const clientToken = generateToken(client.id, client.role as any);
+    const clientToken = generateToken(client.id, client.role as any, client.company_id);
     const appt = await createAppointment({ user_id: client.id, service_id: service.id });
     const res = await getTestAgent()
       .put(`/appointments/update/${appt.id}`)
@@ -192,7 +192,7 @@ describe("Appointments Endpoints - Basic", () => {
 
   it("PUT  /appointments/update/:id • staff can change status for own appointment • returns 200", async () => {
     const staff = await createUser({ role: UserRole.STAFF, company_id: user.company_id });
-    const staffToken = generateToken(staff.id, staff.role as any);
+    const staffToken = generateToken(staff.id, staff.role as any, staff.company_id);
     const appt = await createAppointment({ user_id: staff.id, service_id: service.id });
 
     const res = await getTestAgent()
@@ -206,7 +206,7 @@ describe("Appointments Endpoints - Basic", () => {
 
   it("PUT  /appointments/update/:id • staff cannot change status for others' appointment • returns 403", async () => {
     const staff = await createUser({ role: UserRole.STAFF, company_id: user.company_id });
-    const staffToken = generateToken(staff.id, staff.role as any);
+    const staffToken = generateToken(staff.id, staff.role as any, staff.company_id);
     const appt = await createAppointment({ user_id: user.id, service_id: service.id });
 
     const res = await getTestAgent()

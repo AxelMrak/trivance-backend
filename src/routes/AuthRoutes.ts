@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { dbClient } from "@/config/db";
 import { AuthController } from "@controllers/AuthController";
 import { AuthService } from "@services/AuthService";
 import { AuthRepository } from "@repositories/AuthRepository";
@@ -8,8 +9,8 @@ import { validateUserCreate, validateUserSignIn } from "@middlewares/validation"
 import authMiddleware from "@middlewares/authmiddleware";
 
 const router = Router();
-const sessionRepository = new SessionRepository();
-const authRepository = new AuthRepository();
+const sessionRepository = new SessionRepository(dbClient);
+const authRepository = new AuthRepository(dbClient);
 const authService = new AuthService(authRepository, sessionRepository);
 const authController = new AuthController(authService);
 

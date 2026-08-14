@@ -1,10 +1,10 @@
 import { BaseRepository } from "@repositories/BaseRepository";
 import { User } from "@entities/User";
-import { dbClient } from "@/config/db";
+import { Db } from "@/config/db";
 
 export class ClientRepository extends BaseRepository<User> {
-  constructor() {
-    super("users");
+  constructor(db: Db) {
+    super(db, "users");
   }
 
   async findClientsByRole(roleLevel: number): Promise<User[]> {
@@ -16,7 +16,7 @@ export class ClientRepository extends BaseRepository<User> {
         JOIN user_roles ur ON ur.user_id = u.id
         WHERE ur.role_level = $1
       `;
-      const result = await dbClient.query(query, [roleLevel]);
+      const result = await this.db.query(query, [roleLevel]);
       return result.rows;
     } catch (_e) {
       // Fallback to users table when pivots are not available
@@ -34,7 +34,7 @@ export class ClientRepository extends BaseRepository<User> {
         JOIN user_roles ur ON ur.user_id = u.id
         WHERE u.id = $1 AND ur.role_level = $2
       `;
-      const result = await dbClient.query(query, [id, roleLevel]);
+      const result = await this.db.query(query, [id, roleLevel]);
       return result.rows[0] || null;
     } catch (_e) {
       return this.findOneWithConditions(["id = $1", "role = $2"], [id, roleLevel]);

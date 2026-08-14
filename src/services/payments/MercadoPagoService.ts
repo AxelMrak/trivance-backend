@@ -21,7 +21,6 @@ export class MercadoPagoService implements PaymentProvider {
       } as any;
     }
     const siteUrlRaw = (await process.env.SITE_URL) || "http://localhost";
-    console.log("SITE_URL:", siteUrlRaw);
     const siteUrl = siteUrlRaw.replace(/\/$/, "");
     if (!siteUrl) {
       throw new InternalServerError(

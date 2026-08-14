@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { dbClient } from "@/config/db";
 import AuthMiddleware from "@/middlewares/authmiddleware";
 import { attachUserRole } from "@/middlewares/roleMiddleware";
 import { StatsController } from "@/controllers/StatsController";
@@ -12,8 +13,8 @@ import { ServiceHandlerService } from "@/services/ServiceHandlerService";
 const router = Router();
 
 const statsRepository = new StatsRepository();
-const userRepository = new UserRepository();
-const serviceRepository = new ServiceRepository();
+const userRepository = new UserRepository(dbClient);
+const serviceRepository = new ServiceRepository(dbClient);
 const serviceHandlerService = new ServiceHandlerService(serviceRepository);
 const statsService = new StatsService(statsRepository, userRepository, serviceHandlerService);
 const statsController = new StatsController(statsService);

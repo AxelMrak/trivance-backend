@@ -100,10 +100,17 @@ describe("MercadoPagoWebhookService", () => {
     const result = await service.processWebhook(payload as any);
 
     expect(mpAdapter.getPaymentResource).toHaveBeenCalledTimes(1);
-    expect(orderService.updateOrder).toHaveBeenCalledWith("order-1", { status: "cancelled" });
-    expect(appointmentService.updateAppointment).toHaveBeenCalledWith("appt-1", {
-      status: "cancelled",
-    });
+    expect(orderService.updateOrder).toHaveBeenCalledWith(
+      "order-1",
+      { status: "cancelled" },
+      fakeClient,
+    );
+    expect(appointmentService.updateAppointment).toHaveBeenCalledWith(
+      "appt-1",
+      { status: "cancelled" },
+      undefined,
+      fakeClient,
+    );
     expect(result).toEqual({ orderId: "order-1", appointmentId: "appt-1", status: "cancelled" });
   });
 

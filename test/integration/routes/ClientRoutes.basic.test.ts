@@ -1,4 +1,4 @@
-import { createUser } from "@test/utils/factories";
+import { createClient, createUser } from "@test/utils/factories";
 import { getTestAgent } from "@test/setup";
 import { generateToken } from "@test/utils/helpers";
 import { UserRole } from "@/entities/User";
@@ -9,7 +9,7 @@ describe("Clients Endpoints - Basic", () => {
 
   beforeEach(async () => {
     authUser = await createUser();
-    token = generateToken(authUser.id, authUser.role as any);
+    token = generateToken(authUser.id, authUser.role as any, authUser.company_id);
   });
 
   it("GET  /clients/getAll • returns 200 and array", async () => {
@@ -24,7 +24,7 @@ describe("Clients Endpoints - Basic", () => {
   });
 
   it("GET  /clients/get/:id • existing client • returns 200 with entity", async () => {
-    const client = await createUser({ role: UserRole.CLIENT, company_id: authUser.company_id });
+    const { client } = await createClient({ company_id: authUser.company_id });
 
     const res = await getTestAgent()
       .get(`/clients/get/${client.id}`)
@@ -35,7 +35,7 @@ describe("Clients Endpoints - Basic", () => {
   });
 
   it("PUT  /clients/update/:id • updates allowed fields • returns 200", async () => {
-    const client = await createUser({ role: UserRole.CLIENT, company_id: authUser.company_id });
+    const { client } = await createClient({ company_id: authUser.company_id });
     const res = await getTestAgent()
       .put(`/clients/update/${client.id}`)
       .set("Authorization", `Bearer ${token}`)
@@ -46,7 +46,7 @@ describe("Clients Endpoints - Basic", () => {
   });
 
   it("DELETE /clients/delete/:id • existing client • returns 204 (no content)", async () => {
-    const client = await createUser({ role: UserRole.CLIENT, company_id: authUser.company_id });
+    const { client } = await createClient({ company_id: authUser.company_id });
     const res = await getTestAgent()
       .delete(`/clients/delete/${client.id}`)
       .set("Authorization", `Bearer ${token}`);

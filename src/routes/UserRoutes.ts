@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { dbClient } from "@/config/db";
 import { UserController } from "@controllers/UserController";
 import { UserService } from "@services/UserService";
 import { UserRepository } from "@repositories/UserRepository";
@@ -8,7 +9,7 @@ import { attachUserRole, requireMinRole } from "@middlewares/roleMiddleware";
 
 const router = Router();
 
-const userRepository = new UserRepository();
+const userRepository = new UserRepository(dbClient);
 const userService = new UserService(userRepository);
 const userController = new UserController(userService);
 
