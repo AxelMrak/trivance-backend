@@ -2,11 +2,44 @@ import app from "@/app";
 import { logger } from "@/utils/logger";
 import { config } from "@config/constants";
 import { dbClient } from "@config/db";
+import { AppointmentRepository } from "@/repositories/AppointmentRepository";
+import { OrderRepository } from "@/repositories/OrderRepository";
+import { PaymentEventRepository } from "@/repositories/PaymentEventRepository";
+import { PaymentWebhookEventRepository } from "@/repositories/PaymentWebhookEventRepository";
+import { PaymentServiceFactory } from "@/services/payments/PaymentServiceFactory";
+import { MercadoPagoWebhookService } from "@/services/webhooks/MercadoPagoWebhookService";
+import { PaymentWebhookWorker } from "@/workers/paymentWebhookWorker";
 
 const PORT = config.PORT;
 
+const orderRepository = new OrderRepository(dbClient);
+const appointmentRepository = new AppointmentRepository(dbClient);
+const paymentEventRepository = new PaymentEventRepository(dbClient);
+const paymentProvider = PaymentServiceFactory.getProvider("mercadopago");
+const paymentWebhookEventRepository = new PaymentWebhookEventRepository(dbClient);
+const mercadoPagoWebhookService = new MercadoPagoWebhookService(
+  orderRepository,
+  appointmentRepository,
+  paymentEventRepository,
+  paymentProvider,
+);
+const paymentWebhookWorker = new PaymentWebhookWorker(
+  paymentWebhookEventRepository,
+  mercadoPagoWebhookService,
+  {
+    onDeadLetter: (event) =>
+      logger.error("payment webhook dead-lettered", {
+        id: event.id,
+        payment_id: event.payment_id,
+        attempts: event.attempts,
+        reason: event.last_error,
+      }),
+  },
+);
+
 const server = app.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`);
+  paymentWebhookWorker.start();
 });
 
 server.on("error", (error: Error) => {
@@ -36,8 +69,9 @@ function shutdown(signal: string, exitCode = 0): void {
   force.unref();
 
   server.close(() => {
-    dbClient
-      .end()
+    paymentWebhookWorker
+      .stop()
+      .then(() => dbClient.end())
       .then(() => finish(exitCode))
       .catch((err: Error) => {
         logger.error("Error closing database pool:", err.message);

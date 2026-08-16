@@ -7,11 +7,32 @@ import { toCents } from "@/utils/money";
 import { InternalServerError } from "@/errors/httpErrors";
 import { DEFAULT_PAYMENT_CURRENCY } from "@/config/constants";
 
+const PAYMENT_FETCH_TIMEOUT_MS = 10_000;
+
+/**
+ * Bounds a promise with a wall-clock timeout. The underlying work is NOT
+ * cancelled — only the caller's await is released with a timeout error. Safe
+ * only for side-effect-free calls (like a plain HTTP fetch).
+ */
+function withTimeout<T>(fn: () => Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms);
+  });
+  return Promise.race([fn(), timeoutPromise]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
 export class MercadoPagoService implements PaymentProvider {
   private preference = new Preference(mercadoPagoClient);
 
   async getPayment(id: string): Promise<PaymentData | null> {
-    const payment = await getPaymentResource().get({ id });
+    const payment = await withTimeout(
+      () => getPaymentResource().get({ id }),
+      PAYMENT_FETCH_TIMEOUT_MS,
+      "Mercado Pago getPayment timed out",
+    );
     if (!payment || !payment.status || !payment.external_reference) {
       return null;
     }
