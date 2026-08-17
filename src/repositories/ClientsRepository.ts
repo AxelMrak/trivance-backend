@@ -46,15 +46,11 @@ export class ClientsRepository {
     const columns = keys.map((k) => k).join(", ");
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(", ");
     const values = Object.values(data);
-    try {
-      const { rows } = await dbClient.query(
-        `INSERT INTO ${this.table} (${columns}) VALUES (${placeholders}) RETURNING *`,
-        values,
-      );
-      return rows[0];
-    } catch (error) {
-      handleDatabaseError(error);
-    }
+    const { rows } = await dbClient.query(
+      `INSERT INTO ${this.table} (${columns}) VALUES (${placeholders}) RETURNING *`,
+      values,
+    );
+    return rows[0];
   }
 
   async update(id: string, data: Partial<ClientEntity>): Promise<ClientEntity | null> {
@@ -62,19 +58,80 @@ export class ClientsRepository {
     if (keys.length === 0) return this.findById(id);
     const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
     const values = [...Object.values(data), id];
-    try {
-      const { rows } = await dbClient.query(
-        `UPDATE ${this.table} SET ${setClause} WHERE id = $${keys.length + 1} RETURNING *`,
-        values,
-      );
-      return rows[0] || null;
-    } catch (error) {
-      handleDatabaseError(error);
-    }
+    const { rows } = await dbClient.query(
+      `UPDATE ${this.table} SET ${setClause} WHERE id = $${keys.length + 1} RETURNING *`,
+      values,
+    );
+    return rows[0] || null;
   }
 
   async delete(id: string): Promise<boolean> {
     const { rowCount } = await dbClient.query(`DELETE FROM ${this.table} WHERE id = $1`, [id]);
     return (rowCount ?? 0) > 0;
+  }
+
+  async isLinkedToUser(clientId: string, userId: string): Promise<boolean> {
+    const { rows } = await dbClient.query(
+      "SELECT 1 FROM clients WHERE id = $1 AND user_id = $2 LIMIT 1",
+      [clientId, userId],
+    );
+    return (rows?.length ?? 0) > 0;
+  }
+
+  async getWithUser(clientId: string): Promise<any | null> {
+    const { rows } = await dbClient.query(
+      `SELECT c.*, u.id as u_id, u.name as u_name, u.email as u_email, u.phone as u_phone, u.address as u_address
+       FROM clients c
+       LEFT JOIN users u ON u.id = c.user_id
+       WHERE c.id = $1`,
+      [clientId],
+    );
+    return rows[0] || null;
+  }
+
+  async getWithUsersByIds(ids: string[]): Promise<any[]> {
+    const { rows } = await dbClient.query(
+      `SELECT c.*, u.id as u_id, u.name as u_name, u.email as u_email, u.phone as u_phone, u.address as u_address
+       FROM clients c
+       LEFT JOIN users u ON u.id = c.user_id
+       WHERE c.id = ANY($1::uuid[])`,
+      [ids],
+    );
+    return rows;
+  }
+
+  async getUserIdByClientId(clientId: string): Promise<string | null> {
+    const { rows } = await dbClient.query("SELECT user_id FROM clients WHERE id = $1", [clientId]);
+    return (rows[0]?.user_id as string | undefined) ?? null;
+  }
+
+  async findIdByClientId(clientId: string): Promise<string | null> {
+    const { rows } = await dbClient.query("SELECT id FROM clients WHERE id = $1", [clientId]);
+    return (rows[0]?.id as string | undefined) ?? null;
+  }
+
+  async findIdByUserId(userId: string): Promise<string | null> {
+    const { rows } = await dbClient.query("SELECT id FROM clients WHERE user_id = $1", [userId]);
+    return (rows[0]?.id as string | undefined) ?? null;
+  }
+
+  async searchByTerm(companyId: string, like: string, limit: number): Promise<any[]> {
+    try {
+      const { rows } = await dbClient.query(
+        `SELECT c.id, COALESCE(c.name, cu.name) as name, COALESCE(c.email, cu.email) as email
+         FROM clients c
+         LEFT JOIN users cu ON cu.id = c.user_id
+         LEFT JOIN user_roles ur ON ur.user_id = cu.id
+         WHERE (c.company_id = $1 OR cu.company_id = $1)
+           AND ($2 = '%%' OR COALESCE(c.name, cu.name) ILIKE $2 OR COALESCE(c.email, cu.email) ILIKE $2)
+           AND (c.user_id IS NULL OR ur.role_level = 1)
+         ORDER BY name NULLS LAST
+         LIMIT $3`,
+        [companyId, like, limit],
+      );
+      return rows;
+    } catch (error) {
+      handleDatabaseError(error);
+    }
   }
 }
