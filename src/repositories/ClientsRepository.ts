@@ -1,4 +1,5 @@
 import { dbClient } from "@/config/db";
+import { handleDatabaseError } from "@/errors/persistenceErrors";
 
 export interface ClientEntity {
   id: string;
@@ -115,18 +116,22 @@ export class ClientsRepository {
   }
 
   async searchByTerm(companyId: string, like: string, limit: number): Promise<any[]> {
-    const { rows } = await dbClient.query(
-      `SELECT c.id, COALESCE(c.name, cu.name) as name, COALESCE(c.email, cu.email) as email
-       FROM clients c
-       LEFT JOIN users cu ON cu.id = c.user_id
-       LEFT JOIN user_roles ur ON ur.user_id = cu.id
-       WHERE (c.company_id = $1 OR cu.company_id = $1)
-         AND ($2 = '%%' OR COALESCE(c.name, cu.name) ILIKE $2 OR COALESCE(c.email, cu.email) ILIKE $2)
-         AND (c.user_id IS NULL OR ur.role_level = 1)
-       ORDER BY name NULLS LAST
-       LIMIT $3`,
-      [companyId, like, limit],
-    );
-    return rows;
+    try {
+      const { rows } = await dbClient.query(
+        `SELECT c.id, COALESCE(c.name, cu.name) as name, COALESCE(c.email, cu.email) as email
+         FROM clients c
+         LEFT JOIN users cu ON cu.id = c.user_id
+         LEFT JOIN user_roles ur ON ur.user_id = cu.id
+         WHERE (c.company_id = $1 OR cu.company_id = $1)
+           AND ($2 = '%%' OR COALESCE(c.name, cu.name) ILIKE $2 OR COALESCE(c.email, cu.email) ILIKE $2)
+           AND (c.user_id IS NULL OR ur.role_level = 1)
+         ORDER BY name NULLS LAST
+         LIMIT $3`,
+        [companyId, like, limit],
+      );
+      return rows;
+    } catch (error) {
+      handleDatabaseError(error);
+    }
   }
 }

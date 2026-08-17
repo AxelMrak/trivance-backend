@@ -62,6 +62,7 @@ export class AuthService {
       ip_address: ipAddress,
     });
 
+    // Link existing client by email: best-effort, never breaks signUp
     if (existingClient) {
       try {
         const updates: any = { user_id: existingClient.user_id ?? user.id };

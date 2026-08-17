@@ -303,7 +303,7 @@ export class AppointmentService {
   async deleteAppointment(id: string): Promise<string | number | null> {
     const deletedAppointment = await this.repository.delete(id);
     if (!deletedAppointment) {
-      throw new Error("Appointment not found");
+      throw new NotFoundError("Turno no encontrado");
     }
     return deletedAppointment;
   }
@@ -368,6 +368,9 @@ export class AppointmentService {
           if (found) clientId = found;
         } catch {}
       }
+      if (!clientId) {
+        throw new NotFoundError("Cliente no encontrado");
+      }
     }
     if (!clientId) {
       try {
@@ -410,7 +413,7 @@ export class AppointmentService {
 
     const createdAppointment = await this.repository.create(appointmentToCreate);
     if (!createdAppointment) {
-      throw new Error("Failed to create appointment");
+      throw new InternalServerError("No se pudo crear el turno");
     }
 
     const newAppointment = await this.getById(createdAppointment.id, currentUser, {
@@ -420,7 +423,7 @@ export class AppointmentService {
     });
 
     if (!newAppointment) {
-      throw new Error("Failed to fetch new appointment");
+      throw new InternalServerError("No se pudo obtener el turno creado");
     }
 
     return newAppointment;
@@ -571,8 +574,12 @@ export class AppointmentService {
 
     try {
       await EmailNotificationService.sendReminder(appt.id, appt.user_id);
-    } catch (_e) {
-      // TODO: optionally log the failure somewhere
+    } catch (error) {
+      console.error("Failed to send appointment reminder", {
+        appointmentId: appt.id,
+        error,
+      });
+      throw new InternalServerError("No se pudo enviar el recordatorio");
     }
     return { ok: true };
   }
