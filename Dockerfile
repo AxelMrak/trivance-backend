@@ -15,6 +15,7 @@ WORKDIR /app
 
 COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
 COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
+COPY --from=builder --chown=appuser:appgroup /app/migrations ./migrations
 COPY --from=builder --chown=appuser:appgroup /app/package*.json ./
 
 USER 1001
