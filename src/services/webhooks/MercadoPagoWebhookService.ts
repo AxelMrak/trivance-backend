@@ -1,8 +1,12 @@
+import { DatabaseError as PgDatabaseError } from "pg";
+
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
 import { OrderRepository } from "@/repositories/OrderRepository";
 import { PaymentEventRepository } from "@/repositories/PaymentEventRepository";
 import { PaymentProvider, PaymentData, PaymentStatus } from "@/entities/PaymentProvider";
 import { AppointmentStatus, OrderStatus } from "@/entities/EnumTypes";
+import { ConflictError } from "@/errors/httpErrors";
+import { mapDatabaseError } from "@/errors/persistenceErrors";
 import { toCents } from "@/utils/money";
 import { logger } from "@/utils/logger";
 import { transaction } from "@/config/db";
@@ -50,16 +54,16 @@ export class MercadoPagoWebhookService {
     raw?: PaymentData;
     reason?: string;
   }): Promise<void> {
-    // TODO(jrz-errors): cuando jerez mergee su PR de errores de persistencia,
-    // el unique violation de payment_events.payment_id (SQLSTATE 23505) se
-    // mapea a ConflictError con code "UNIQUE_VIOLATION" en persistenceErrors.
-    // Volver acá y detectar el duplicado con ese mecanismo en vez del
-    // check-then-rethrow actual, que no depende del refactor de errores.
     try {
       await this.paymentEventRepository.insert(data);
     } catch (error) {
-      const existing = await this.paymentEventRepository.findByPaymentId(data.payment_id);
-      if (!existing) throw error;
+      if (error instanceof PgDatabaseError) {
+        const mapped = mapDatabaseError(error);
+        if (mapped instanceof ConflictError && mapped.code === "UNIQUE_VIOLATION") {
+          return;
+        }
+      }
+      throw error;
     }
   }
 
@@ -155,11 +159,12 @@ export class MercadoPagoWebhookService {
         return { alreadyProcessed: false };
       });
     } catch (error) {
-      // TODO(jrz-errors): tras el merge del PR de errores de jerez, el unique
-      // violation de payment_events (23505) se detecta como ConflictError con
-      // code "UNIQUE_VIOLATION" (persistenceErrors). Volver acá y devolver
-      // already_processed en ese caso, para que la idempotencia por duplicado
-      // vuelva a funcionar sin depender del helper local.
+      if (error instanceof PgDatabaseError) {
+        const mapped = mapDatabaseError(error);
+        if (mapped instanceof ConflictError && mapped.code === "UNIQUE_VIOLATION") {
+          return { status: "already_processed" };
+        }
+      }
       logger.error("Webhook transaction failed", error);
       throw error;
     }
