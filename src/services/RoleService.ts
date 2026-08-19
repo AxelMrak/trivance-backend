@@ -1,4 +1,5 @@
 import { dbClient } from "@/config/db";
+import { handleDatabaseError, isSchemaError } from "@/errors/persistenceErrors";
 
 export class RoleService {
   // Returns numeric level (0..5) where higher = more privileges
@@ -12,13 +13,20 @@ export class RoleService {
       `;
       const result = await dbClient.query(query, [userId]);
       if (result.rowCount && result.rows[0]) return Number(result.rows[0].level);
-    } catch (_e) {
-      // Table may not exist yet; fall back to users.role
-      try {
-        const fallback = await dbClient.query("SELECT role FROM users WHERE id = $1", [userId]);
-        if (fallback.rowCount && fallback.rows[0]) return Number(fallback.rows[0].role);
-      } catch {
-        return null;
+    } catch (error) {
+      // Fall back to users.role only for schema errors (legacy, un-migrated
+      // environments). Any other failure (e.g. DB down) must propagate.
+      if (isSchemaError(error)) {
+        try {
+          const fallback = await dbClient.query("SELECT role FROM users WHERE id = $1", [userId]);
+          if (fallback.rowCount && fallback.rows[0]) return Number(fallback.rows[0].role);
+        } catch (fallbackError) {
+          if (!isSchemaError(fallbackError)) {
+            handleDatabaseError(fallbackError);
+          }
+        }
+      } else {
+        handleDatabaseError(error);
       }
     }
     return null;
@@ -31,8 +39,12 @@ export class RoleService {
          ON CONFLICT (user_id) DO UPDATE SET role_level = EXCLUDED.role_level`,
         [userId, level],
       );
-    } catch {
-      // ignore assignment if pivot not present
+    } catch (error) {
+      // Ignore assignment only when the pivot is absent (legacy schema); any
+      // other failure must propagate.
+      if (!isSchemaError(error)) {
+        handleDatabaseError(error);
+      }
     }
   }
 }

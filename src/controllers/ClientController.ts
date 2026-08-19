@@ -14,7 +14,7 @@ export class ClientController {
       const clients = await this.clientService.getAllClients();
       res.json(clients);
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 
@@ -29,7 +29,7 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 
@@ -45,7 +45,7 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 
@@ -60,7 +60,7 @@ export class ClientController {
         res.status(404).json({ message: "Cliente no encontrado" });
       }
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 
@@ -74,7 +74,7 @@ export class ClientController {
       );
       res.status(201).json(created);
     } catch (error) {
-      next(error as any);
+      next(error);
     }
   };
 }

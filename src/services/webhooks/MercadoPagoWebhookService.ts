@@ -1,23 +1,18 @@
-import { PoolClient } from "pg";
+import { DatabaseError as PgDatabaseError, PoolClient } from "pg";
 
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
 import { OrderRepository } from "@/repositories/OrderRepository";
 import { PaymentEventRepository } from "@/repositories/PaymentEventRepository";
 import { PaymentProvider, PaymentData, PaymentStatus } from "@/entities/PaymentProvider";
 import { AppointmentStatus, OrderStatus } from "@/entities/EnumTypes";
+import { ConflictError } from "@/errors/httpErrors";
+import { mapDatabaseError } from "@/errors/persistenceErrors";
 import { toCents } from "@/utils/money";
 import { logger } from "@/utils/logger";
 import { Db, transaction } from "@/config/db";
 
 function isPoolClient(db: Db | undefined): db is PoolClient {
   return db != null && "release" in db;
-}
-
-/** PostgreSQL unique-violation SQLSTATE (e.g. the payment_events.payment_id unique constraint). */
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" && error !== null && (error as { code?: unknown }).code === "23505"
-  );
 }
 
 export type WebhookProcessResult =
@@ -68,26 +63,23 @@ export class MercadoPagoWebhookService {
     },
     db?: Db,
   ): Promise<void> {
-    // TODO(jrz-errors): cuando jerez mergee su PR de errores de persistencia,
-    // el unique violation de payment_events.payment_id (SQLSTATE 23505) se
-    // mapea a ConflictError con code "UNIQUE_VIOLATION" en persistenceErrors.
-    // Volver acá y detectar el duplicado con ese mecanismo en vez del
-    // check-then-rethrow actual, que no depende del refactor de errores.
-    // Cuando se ejecuta dentro de la transacción compartida del outbox worker
-    // (db = PoolClient), el insert duplicado aborta la transacción; se contiene
-    // con un savepoint para que el check-then-rethrow siga funcionando.
+    // A duplicate insert (payment_events.payment_id unique) aborts the current
+    // transaction. When running inside the outbox worker's shared claim
+    // transaction (db = PoolClient), contain it in a savepoint so the
+    // transaction stays usable after we swallow the benign duplicate.
     const client = isPoolClient(db) ? db : undefined;
     if (client) await client.query("SAVEPOINT record_event");
     try {
       await this.paymentEventRepository.insert(data, db);
     } catch (error) {
       if (client) await client.query("ROLLBACK TO SAVEPOINT record_event");
-      // Only a unique violation (duplicate payment_id) is benign: the event
-      // ledger already has this payment recorded. Any other persistence error
-      // must propagate so the caller retries instead of silently dropping it.
-      if (!isUniqueViolation(error)) throw error;
-      const existing = await this.paymentEventRepository.findByPaymentId(data.payment_id, db);
-      if (!existing) throw error;
+      if (error instanceof PgDatabaseError) {
+        const mapped = mapDatabaseError(error);
+        if (mapped instanceof ConflictError && mapped.code === "UNIQUE_VIOLATION") {
+          return;
+        }
+      }
+      throw error;
     } finally {
       if (client) await client.query("RELEASE SAVEPOINT record_event");
     }
@@ -201,11 +193,12 @@ export class MercadoPagoWebhookService {
         return { alreadyProcessed: false };
       }, db);
     } catch (error) {
-      // TODO(jrz-errors): tras el merge del PR de errores de jerez, el unique
-      // violation de payment_events (23505) se detecta como ConflictError con
-      // code "UNIQUE_VIOLATION" (persistenceErrors). Volver acá y devolver
-      // already_processed en ese caso, para que la idempotencia por duplicado
-      // vuelva a funcionar sin depender del helper local.
+      if (error instanceof PgDatabaseError) {
+        const mapped = mapDatabaseError(error);
+        if (mapped instanceof ConflictError && mapped.code === "UNIQUE_VIOLATION") {
+          return { status: "already_processed" };
+        }
+      }
       logger.error("Webhook transaction failed", error);
       throw error;
     }

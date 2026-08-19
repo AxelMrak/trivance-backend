@@ -1,6 +1,7 @@
 import { Appointment } from "@/entities/Appointment";
 import { Db } from "@/config/db";
 import { BaseRepository } from "@/repositories/BaseRepository";
+import { handleDatabaseError } from "@/errors/persistenceErrors";
 import {
   generateGetAppointmentByIdWithJoinsQuery,
   generateGetAppointmentsWithJoinsQuery,
@@ -37,8 +38,8 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
         `;
         const result = await executor.query(legacyQuery, [companyId]);
         return result.rows as any;
-      } catch (_e) {
-        throw new Error("Error de base de datos");
+      } catch (innerError) {
+        handleDatabaseError(innerError);
       }
     }
   }
@@ -72,8 +73,8 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
         `;
         const result = await executor.query(legacyQuery, [appointmentId, companyId]);
         return result.rows[0] || null;
-      } catch (_e) {
-        throw new Error("Error de base de datos");
+      } catch (innerError) {
+        handleDatabaseError(innerError);
       }
     }
   }
@@ -101,8 +102,8 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
         `;
         const result = await executor.query(legacy, [userId]);
         return result.rows as any;
-      } catch {
-        throw new Error("Error de base de datos");
+      } catch (innerError) {
+        handleDatabaseError(innerError);
       }
     }
   }
@@ -126,9 +127,10 @@ export class AppointmentRepository extends BaseRepository<Appointment> {
       const result = await executor.query(query, [serviceId, startDate]);
       const count = Number(result.rows[0]?.cnt || 0);
       return count === 0;
-    } catch (_e) {
-      // If DB fails, be conservative: assume no availability
-      return false;
+    } catch (error) {
+      // "No sé" no es lo mismo que "no libre": una caída de DB no debe decidir
+      // el status del turno en silencio. Propagar.
+      handleDatabaseError(error);
     }
   }
 
