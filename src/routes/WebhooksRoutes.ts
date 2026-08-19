@@ -2,26 +2,14 @@ import { Router } from "express";
 import express from "express";
 
 import { dbClient } from "@/config/db";
-import { OrderRepository } from "@/repositories/OrderRepository";
-import { AppointmentRepository } from "@/repositories/AppointmentRepository";
-import { PaymentEventRepository } from "@/repositories/PaymentEventRepository";
-import { PaymentServiceFactory } from "@/services/payments/PaymentServiceFactory";
-import { MercadoPagoWebhookService } from "@/services/webhooks/MercadoPagoWebhookService";
+import { PaymentWebhookEventRepository } from "@/repositories/PaymentWebhookEventRepository";
 import { MercadoPagoWebhookController } from "@/controllers/webhooks/MercadoPagoWebhookController";
 
 const router = Router();
-const orderRepository = new OrderRepository(dbClient);
-const appointmentRepository = new AppointmentRepository(dbClient);
-const paymentEventRepository = new PaymentEventRepository(dbClient);
-const paymentProvider = PaymentServiceFactory.getProvider("mercadopago");
-
-const mercadoPagoWebhookService = new MercadoPagoWebhookService(
-  orderRepository,
-  appointmentRepository,
-  paymentEventRepository,
-  paymentProvider,
+const paymentWebhookEventRepository = new PaymentWebhookEventRepository(dbClient);
+const mercadoPagoWebhookController = new MercadoPagoWebhookController(
+  paymentWebhookEventRepository,
 );
-const mercadoPagoWebhookController = new MercadoPagoWebhookController(mercadoPagoWebhookService);
 router.get("/", (_req, res) => {
   res.json({
     message: "Webhooks API esta corriendo",

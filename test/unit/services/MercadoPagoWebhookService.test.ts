@@ -44,19 +44,26 @@ describe("MercadoPagoWebhookService", () => {
 
     const provider = {
       getPayment: jest.fn(async (id: string): Promise<PaymentData | null> => {
-        const byId: Record<string, { status: PaymentStatus; ref: string }> = {
+        if (id === "pay-missing") return null;
+        const byId: Record<
+          string,
+          { status: PaymentStatus; ref: string; amount?: number; liveMode?: boolean }
+        > = {
           "pay-approved": { status: "approved", ref: "pref-123" },
           "pay-rejected": { status: "rejected", ref: "pref-456" },
           "pay-cancelled": { status: "cancelled", ref: "pref-456" },
+          "pay-mismatch": { status: "approved", ref: "pref-123", amount: 9999 },
+          "pay-live-mode": { status: "approved", ref: "pref-123", liveMode: true },
+          "pay-no-order": { status: "approved", ref: "ref-missing" },
         };
         const entry = byId[id] ?? { status: "pending" as PaymentStatus, ref: "pref-789" };
         return {
           id,
           status: entry.status,
           externalReference: entry.ref,
-          transactionAmountCents: toCents(10000),
+          transactionAmountCents: toCents(entry.amount ?? 10000),
           currencyId: "ARS",
-          liveMode: false,
+          liveMode: entry.liveMode ?? false,
         };
       }),
     } as any;
@@ -82,7 +89,7 @@ describe("MercadoPagoWebhookService", () => {
     const result = await service.processWebhook(payload as any);
 
     expect(provider.getPayment).toHaveBeenCalledWith("pay-approved");
-    expect(orderRepository.findByReference).toHaveBeenCalledWith("pref-123");
+    expect(orderRepository.findByReference).toHaveBeenCalledWith("pref-123", undefined);
     expect(orderRepository.update).toHaveBeenCalledWith("order-1", { status: "paid" }, fakeClient);
     expect(appointmentRepository.update).toHaveBeenCalledWith(
       "appt-1",
@@ -134,5 +141,29 @@ describe("MercadoPagoWebhookService", () => {
     const { service } = makeSvc();
     const result = await service.processWebhook({} as any);
     expect(result).toEqual({ status: "ignored", reason: "not_payment" });
+  });
+
+  test("returns a transient retry when the payment is not found", async () => {
+    const { service } = makeSvc();
+    const result = await service.processWebhook({ type: "payment", data: { id: "pay-missing" } });
+    expect(result).toEqual({ status: "retry", reason: "payment_not_found" });
+  });
+
+  test("returns a transient retry when the external reference has no order", async () => {
+    const { service } = makeSvc();
+    const result = await service.processWebhook({ type: "payment", data: { id: "pay-no-order" } });
+    expect(result).toEqual({ status: "retry", reason: "order_not_found" });
+  });
+
+  test("returns a permanent dead_letter when the payment does not match the order", async () => {
+    const { service } = makeSvc();
+    const result = await service.processWebhook({ type: "payment", data: { id: "pay-mismatch" } });
+    expect(result).toEqual({ status: "dead_letter", reason: "mismatch" });
+  });
+
+  test("returns a permanent dead_letter when live_mode does not match the environment", async () => {
+    const { service } = makeSvc();
+    const result = await service.processWebhook({ type: "payment", data: { id: "pay-live-mode" } });
+    expect(result).toEqual({ status: "dead_letter", reason: "live_mode_mismatch" });
   });
 });
