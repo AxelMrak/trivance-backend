@@ -10,6 +10,7 @@ import { mapDatabaseError } from "@/errors/persistenceErrors";
 import { toCents } from "@/utils/money";
 import { logger } from "@/utils/logger";
 import { Db, transaction } from "@/config/db";
+import { isProduction } from "@/config/env";
 
 function isPoolClient(db: Db | undefined): db is PoolClient {
   return db != null && "release" in db;
@@ -104,7 +105,7 @@ export class MercadoPagoWebhookService {
       return { status: "retry", reason: "payment_not_found" };
     }
 
-    if (payment.liveMode !== (process.env.NODE_ENV === "production")) {
+    if (payment.liveMode !== isProduction) {
       await this.recordEvent(
         {
           payment_id: payment.id,

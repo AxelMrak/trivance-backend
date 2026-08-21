@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import crypto from "crypto";
 
-import { TEST_DATABASE_URL } from "@/config/constants";
+import { TEST_DATABASE_URL } from "@/config/env";
 import { PaymentEventRepository } from "@/repositories/PaymentEventRepository";
 
 describe("payment_events concurrent idempotency (two real connections)", () => {

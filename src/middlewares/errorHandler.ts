@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction, ErrorRequestHandler } from "express";
 
 import { AppError } from "@/errors/httpErrors";
+import { isDevelopment } from "@config/env";
 
 function summarizeCause(cause: unknown): unknown {
   if (!(cause instanceof Error)) return cause;
@@ -76,7 +77,7 @@ export const errorHandler: ErrorRequestHandler = (
     ...(err instanceof AppError && err.code ? { code: err.code } : {}),
     error: {
       message,
-      ...(process.env.NODE_ENV === "development" &&
+      ...(isDevelopment &&
         err instanceof Error && {
           details: err.message,
           stack: err.stack,

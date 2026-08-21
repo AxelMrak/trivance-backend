@@ -13,7 +13,7 @@ import {
 } from "@/errors/httpErrors";
 import { CreatePaymentLinkResponse } from "@/entities/Response";
 import { UserRepository } from "@/repositories/UserRepository";
-import { DEFAULT_PAYMENT_CURRENCY } from "@/config/constants";
+import { DEFAULT_PAYMENT_CURRENCY } from "@/config/env";
 import { JwtPayload } from "@/middlewares/authmiddleware";
 import {
   canEditAppointmentDate,
