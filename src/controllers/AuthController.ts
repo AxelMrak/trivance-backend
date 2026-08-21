@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 
 import { AuthService } from "@services/AuthService";
+import { isProduction } from "@config/env";
 import { JwtPayload } from "@/middlewares/authmiddleware";
 
 interface AuthRequest extends Request {
@@ -25,7 +26,7 @@ export class AuthController {
 
       res.cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: isProduction,
         sameSite: "lax",
         maxAge: data?.session?.expiresIn * 1000 || 24 * 60 * 60 * 1000,
         path: "/",
@@ -48,7 +49,7 @@ export class AuthController {
 
       res.cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: isProduction,
         sameSite: "lax",
         maxAge: data.session.expiresIn * 1000,
         path: "/",

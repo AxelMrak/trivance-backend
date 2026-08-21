@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 
 import { MercadoPagoWebhookBody } from "@/services/webhooks/MercadoPagoWebhookService";
 import { verifyWebhookSignature } from "@/services/webhooks/webhookSignature";
-import { MP_WEBHOOK_SECRET, MP_WEBHOOK_TOLERANCE_S } from "@/config/constants";
+import { MP_WEBHOOK_SECRET, MP_WEBHOOK_TOLERANCE_S } from "@/config/env";
 import { PaymentWebhookEventRepository } from "@/repositories/PaymentWebhookEventRepository";
 
 function parseWebhookBody(raw: unknown): MercadoPagoWebhookBody | null {
