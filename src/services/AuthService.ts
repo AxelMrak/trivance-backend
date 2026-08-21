@@ -8,7 +8,7 @@ import { SessionRepository } from "@/repositories/SessionRepository";
 import { SignInResponse } from "@entities/Response";
 import { SignupRequest } from "@entities/Request";
 import { RoleService } from "@/services/RoleService";
-import { config } from "@/config/constants";
+import { config } from "@/config/env";
 
 export class AuthService {
   constructor(
@@ -31,7 +31,7 @@ export class AuthService {
 
     const clientsRepo = new ClientsRepository();
     const existingClient = await clientsRepo.findByEmail(payload.email);
-    const companyId = existingClient?.company_id ?? process.env.COMPANY_ID ?? null;
+    const companyId = existingClient?.company_id ?? config.COMPANY_ID ?? null;
 
     if (!companyId) {
       throw new Error("El ID de la empresa no está configurado");

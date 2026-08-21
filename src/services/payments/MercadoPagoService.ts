@@ -5,7 +5,7 @@ import { PaymentProvider, PaymentData, PaymentStatus } from "@/entities/PaymentP
 import { getPaymentResource } from "@/services/payments/mercadopagoClient";
 import { toCents } from "@/utils/money";
 import { InternalServerError } from "@/errors/httpErrors";
-import { DEFAULT_PAYMENT_CURRENCY } from "@/config/constants";
+import { config, isTest, DEFAULT_PAYMENT_CURRENCY } from "@/config/env";
 
 const PAYMENT_FETCH_TIMEOUT_MS = 10_000;
 
@@ -56,19 +56,13 @@ export class MercadoPagoService implements PaymentProvider {
     orderId: string;
   }): Promise<string> {
     // In tests, avoid external network calls and return a deterministic stub
-    if (process.env.NODE_ENV === "test") {
+    if (isTest) {
       return {
         id: `test-pref-${item.id}`,
         init_point: `https://payments.example.test/pay/${item.id}`,
       } as any;
     }
-    const siteUrlRaw = (await process.env.SITE_URL) || "http://localhost";
-    const siteUrl = siteUrlRaw.replace(/\/$/, "");
-    if (!siteUrl) {
-      throw new InternalServerError(
-        "Configuración inválida: SITE_URL no está definida para generar back_urls",
-      );
-    }
+    const siteUrl = config.SITE_URL;
 
     const payload = {
       items: [

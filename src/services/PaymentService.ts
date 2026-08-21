@@ -2,6 +2,7 @@ import { Preference } from "mercadopago";
 
 import { logger } from "@/utils/logger";
 import { mercadoPagoClient } from "@/config/mercadopago";
+import { config } from "@/config/env";
 
 export class PaymentService {
   private mercadopagoClient = mercadoPagoClient;
@@ -14,11 +15,7 @@ export class PaymentService {
   }): Promise<any> {
     const preference = new Preference(this.mercadopagoClient);
 
-    const siteUrlRaw = (await process.env.SITE_URL) || "http://localhost";
-    const siteUrl = siteUrlRaw.replace(/\/$/, "");
-    if (!siteUrl) {
-      throw new Error("Configuración inválida: SITE_URL no está definida para generar back_urls");
-    }
+    const siteUrl = config.SITE_URL;
     const payload = {
       items: [
         {
