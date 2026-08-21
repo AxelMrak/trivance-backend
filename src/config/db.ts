@@ -1,13 +1,13 @@
 import { Pool, PoolClient } from "pg";
 
-import { config } from "@config/constants";
+import { config, isTest } from "@config/env";
 
 export type Db = Pool | PoolClient;
 
 export const dbClient = new Pool({
-  connectionString: config.DB_URL,
+  connectionString: config.DATABASE_URL,
   connectionTimeoutMillis: 5000,
-  max: process.env.NODE_ENV === "test" ? 1 : undefined,
+  max: isTest ? 1 : undefined,
 });
 
 dbClient.on("error", (err) => {

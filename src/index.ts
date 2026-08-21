@@ -1,6 +1,6 @@
 import app from "@/app";
 import { logger } from "@/utils/logger";
-import { config } from "@config/constants";
+import { config } from "@config/env";
 import { dbClient } from "@config/db";
 import { AppointmentRepository } from "@/repositories/AppointmentRepository";
 import { OrderRepository } from "@/repositories/OrderRepository";

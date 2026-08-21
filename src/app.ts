@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 
-import "@config/constants";
+import { config, isDevelopment, corsAllowedOrigins } from "@config/env";
 import { errorHandler } from "@middlewares/errorHandler";
 import { requestLogger } from "@middlewares/requestLogger";
 import { globalLimiter, signInLimiter, signUpLimiter } from "@middlewares/security/rateLimiters";
@@ -18,14 +18,6 @@ const app = express();
 app.set("trust proxy", 1);
 
 // CORS configuration
-const parseOrigins = (value?: string): string[] => {
-  if (!value) return [];
-  return value
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-};
-
 const isOriginAllowed = (origin: string, allowed: string[]): boolean => {
   if (allowed.includes("*")) return true; // allow all explicitly
   const normalizedOrigin = origin.replace(/\/$/, "");
@@ -62,20 +54,7 @@ const corsOptions = {
     // Accept no-origin requests (mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
 
-    // Support both CORS_ORIGIN (preferred) and legacy CROSS_ORIGIN
-    // Also consider SITE_URL as a single allowed origin if provided
-    const envOrigins = parseOrigins(
-      process.env.CORS_ORIGIN || process.env.CROSS_ORIGIN || process.env.SITE_URL,
-    );
-    const defaults = [
-      "http://localhost",
-      "https://localhost",
-      "http://localhost:3000",
-      "http://localhost:5173",
-    ];
-    const allowed = envOrigins.length ? envOrigins : defaults;
-
-    if (isOriginAllowed(origin, allowed)) {
+    if (isOriginAllowed(origin, corsAllowedOrigins)) {
       return callback(null, true);
     }
 
@@ -106,7 +85,7 @@ app.options("*", cors(corsOptions));
 // Body parsing middleware
 app.use(
   express.json({
-    limit: process.env.JSON_LIMIT || "10mb",
+    limit: config.JSON_LIMIT,
     // Accept JSON even if Content-Type is missing or text/plain
     // (useful when clients don't set headers explicitly)
     type: (req) => {
@@ -127,15 +106,15 @@ app.use(
 app.use(
   express.urlencoded({
     extended: true,
-    limit: process.env.URL_ENCODED_LIMIT || "10mb",
+    limit: config.URL_ENCODED_LIMIT,
   }),
 );
 
 // Cookie parsing
-app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(cookieParser(config.COOKIE_SECRET));
 
 // Request logging only in development
-if (process.env.NODE_ENV === "development") {
+if (isDevelopment) {
   app.use(requestLogger);
 }
 
@@ -156,8 +135,8 @@ app.get("/health", (_req, res) => {
     message: "Server is running",
     status: "OK",
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "development",
-    version: process.env.npm_package_version || "unknown",
+    environment: config.NODE_ENV,
+    version: config.npm_package_version,
   };
 
   res.status(200).json(healthCheck);
