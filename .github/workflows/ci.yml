@@ -22,6 +22,16 @@ jobs:
       - name: Lint and typecheck
         run: npm run lint && npm run typecheck
 
+      - name: Enforce config boundary (process.env only in src/config/env.ts)
+        run: |
+          matches=$(grep -rn "process\.env" --include="*.ts" src/ | grep -v "src/config/env.ts" || true)
+          if [ -n "$matches" ]; then
+            echo "FAIL: process.env found outside src/config/env.ts:"
+            echo "$matches"
+            exit 1
+          fi
+          echo "OK: process.env is confined to src/config/env.ts"
+
   test:
     runs-on: ubuntu-latest
     services:
