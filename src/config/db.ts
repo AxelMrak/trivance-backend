@@ -14,22 +14,25 @@ dbClient.on("error", (err) => {
   console.error("Postgres pool error:", err.message);
 });
 
-export async function transaction<T>(work: (db: Db) => Promise<T>): Promise<T> {
-  const client = await dbClient.connect();
+export async function transaction<T>(work: (db: Db) => Promise<T>, client?: Db): Promise<T> {
+  // The caller (e.g. the payment webhook outbox worker) already manages the
+  // transaction on this connection, so run the work directly on it.
+  if (client) return work(client);
+  const conn = await dbClient.connect();
   let rollbackError: unknown;
   try {
-    await client.query("BEGIN");
-    const result = await work(client);
-    await client.query("COMMIT");
+    await conn.query("BEGIN");
+    const result = await work(conn);
+    await conn.query("COMMIT");
     return result;
   } catch (cause) {
     try {
-      await client.query("ROLLBACK");
+      await conn.query("ROLLBACK");
     } catch (rollbackCause) {
       rollbackError = rollbackCause;
     }
     throw cause;
   } finally {
-    client.release(rollbackError as Error | undefined);
+    conn.release(rollbackError as Error | undefined);
   }
 }
