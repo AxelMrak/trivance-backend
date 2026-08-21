@@ -69,7 +69,7 @@ jobs:
           SQL
 
       - name: Prepare test env
-        run: printf 'NODE_ENV=test\nDATABASE_URL=postgres://trivance_app:trivance_app_dev@localhost:5432/trivance_db_test\n' > .env.test
+        run: printf 'NODE_ENV=test\nDATABASE_URL=postgres://trivance_app:trivance_app_dev@localhost:5432/trivance_db_test\nJWT_SECRET=test-secret\n' > .env.test
 
       - name: Run migrations
         run: npm run migrate:test
