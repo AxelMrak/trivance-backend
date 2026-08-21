@@ -16,7 +16,7 @@ export class EmailNotificationService {
   static async notify(_payload: AppointmentEmailPayload): Promise<void> {
     // TODO: Implement call to mailer service inside docker network.
     // Example:
-    // await fetch(process.env.MAILER_URL + '/notifications', { method: 'POST', body: JSON.stringify(payload) })
+    // await fetch(config.MAILER_URL + '/notifications', { method: 'POST', body: JSON.stringify(payload) })
     return;
   }
 

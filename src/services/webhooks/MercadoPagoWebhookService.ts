@@ -6,6 +6,7 @@ import { AppointmentStatus, OrderStatus } from "@/entities/EnumTypes";
 import { toCents } from "@/utils/money";
 import { logger } from "@/utils/logger";
 import { transaction } from "@/config/db";
+import { isProduction } from "@/config/env";
 
 export type WebhookResult =
   | { status: "processed" }
@@ -77,7 +78,7 @@ export class MercadoPagoWebhookService {
       return { status: "ignored", reason: "payment_not_found" };
     }
 
-    if (payment.liveMode !== (process.env.NODE_ENV === "production")) {
+    if (payment.liveMode !== isProduction) {
       await this.recordEvent({
         payment_id: payment.id,
         event: "live_mode_mismatch",
