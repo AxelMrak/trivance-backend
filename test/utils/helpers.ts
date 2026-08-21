@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 
-import { config } from "@config/constants";
+import { config } from "@config/env";
 import { getTestAgent } from "@test/setup";
 
 export const signInAndGetToken = async (email: string, password: string) => {
