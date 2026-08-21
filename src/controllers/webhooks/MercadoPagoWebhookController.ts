@@ -5,7 +5,7 @@ import {
   MercadoPagoWebhookService,
 } from "@/services/webhooks/MercadoPagoWebhookService";
 import { verifyWebhookSignature } from "@/services/webhooks/webhookSignature";
-import { MP_WEBHOOK_SECRET, MP_WEBHOOK_TOLERANCE_S } from "@/config/constants";
+import { MP_WEBHOOK_SECRET, MP_WEBHOOK_TOLERANCE_S } from "@/config/env";
 
 function parseWebhookBody(raw: unknown): MercadoPagoWebhookBody | null {
   let parsed: unknown = raw;
